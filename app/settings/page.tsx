@@ -539,7 +539,7 @@ export default function SettingsPage() {
                           Documentation →
                         </a>
                         <a
-                          href="https://github.com/samuelvinay91/argus-dashboard"
+                          href="https://github.com/samuelvinay91/argus"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="block text-sm text-primary hover:underline"
