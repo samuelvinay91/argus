@@ -283,36 +283,30 @@ function MessageContent({ message }: { message: Message }) {
 }
 
 export function ChatInterface({ conversationId, initialMessages = [], onMessagesChange }: ChatInterfaceProps) {
+  // Track last saved message count to prevent duplicate saves
+  const lastSavedCountRef = useRef(0);
+
   const { messages, input, handleInputChange, handleSubmit, isLoading, setInput, stop } = useChat({
     api: '/api/chat',
     id: conversationId,
     initialMessages,
     maxSteps: 5, // Allow multi-step tool calls
     onFinish: () => {
-      // Persist messages when response completes
-      if (onMessagesChange) {
+      // Persist messages when AI response completes
+      if (onMessagesChange && messages.length > lastSavedCountRef.current) {
         onMessagesChange(messages);
+        lastSavedCountRef.current = messages.length;
       }
     },
   });
 
-  // Also persist when user sends a message
+  // Persist when user sends a message (no setTimeout needed)
   const handleSubmitWithPersist = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     handleSubmit(e);
-    // Wait for message to be added then persist
-    setTimeout(() => {
-      if (onMessagesChange && messages.length > 0) {
-        onMessagesChange(messages);
-      }
-    }, 100);
-  }, [handleSubmit, onMessagesChange, messages]);
+  }, [handleSubmit]);
 
-  // Persist on message changes
-  useEffect(() => {
-    if (onMessagesChange && messages.length > 0) {
-      onMessagesChange(messages);
-    }
-  }, [messages, onMessagesChange]);
+  // REMOVED: useEffect that was causing infinite re-renders
+  // Messages are now only persisted on explicit events (onFinish)
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
