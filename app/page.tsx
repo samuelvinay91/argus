@@ -98,15 +98,19 @@ function AppContent() {
       // Generate a proper UUID for Supabase instead of using AI SDK's short ID
       const messageId = crypto.randomUUID();
 
-      await addMessage.mutateAsync({
+      const messageData = {
         id: messageId,
         conversation_id: activeConversationId,
         role: latestMessage.role as 'user' | 'assistant' | 'system',
         content: latestMessage.content,
         tool_invocations: latestMessage.toolInvocations as unknown as Json | null,
-      });
+      };
+
+      console.log('Attempting to save message:', messageData);
+      await addMessage.mutateAsync(messageData);
     } catch (error) {
-      console.error('Failed to save message:', error);
+      console.error('Failed to save message - Full error:', JSON.stringify(error, null, 2));
+      console.error('Error object:', error);
     }
   }, [activeConversationId, storedMessages, addMessage]);
 
