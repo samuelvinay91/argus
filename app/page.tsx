@@ -53,11 +53,20 @@ function AppContent() {
 
   const handleNewConversation = async () => {
     try {
+      console.log('Creating new conversation...');
       const conversation = await createConversation.mutateAsync({});
+      console.log('Conversation created successfully:', conversation.id);
+
+      // Set the active conversation ID
       setActiveConversationId(conversation.id);
       setInitialMessages([]);
+
+      // Give React Query a moment to update its cache
+      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('Conversation ready for messages');
     } catch (error) {
       console.error('Failed to create conversation:', error);
+      alert('Failed to create conversation. Please try again.');
     }
   };
 
@@ -80,19 +89,9 @@ function AppContent() {
 
   // Callback to save messages when they're sent/received
   const handleMessagesChange = useCallback(async (messages: Message[]) => {
-    // CRITICAL: Only save if we have a valid conversation ID
+    // Only save if we have a valid conversation ID
     if (!activeConversationId || messages.length === 0) {
       console.warn('Cannot save message: missing conversation ID or no messages');
-      return;
-    }
-
-    // Verify conversation exists in our list
-    const conversationExists = conversations.some(c => c.id === activeConversationId);
-    if (!conversationExists) {
-      console.error('Cannot save message: conversation not found in database', {
-        activeConversationId,
-        availableConversations: conversations.map(c => c.id)
-      });
       return;
     }
 
@@ -133,7 +132,7 @@ function AppContent() {
       console.error('Failed to save message - Full error:', JSON.stringify(error, null, 2));
       console.error('Error object:', error);
     }
-  }, [activeConversationId, storedMessages, addMessage, conversations]);
+  }, [activeConversationId, storedMessages, addMessage]);
 
   return (
     <div className="flex min-h-screen">

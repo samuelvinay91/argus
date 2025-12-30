@@ -116,13 +116,29 @@ export function useAddMessage() {
 
   return useMutation({
     mutationFn: async (message: InsertTables<'chat_messages'>) => {
+      console.log('Inserting message into Supabase:', {
+        conversation_id: message.conversation_id,
+        role: message.role,
+        content_length: message.content?.length || 0
+      });
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('chat_messages') as any)
         .insert(message)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insert error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+
+      console.log('Message inserted successfully:', data.id);
       return data as ChatMessage;
     },
     onSuccess: (data) => {
