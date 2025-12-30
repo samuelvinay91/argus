@@ -813,8 +813,6 @@ export interface Database {
           conversation_id: string;
           role: 'user' | 'assistant' | 'system';
           content: string;
-          tool_calls: Json | null;
-          tool_results: Json | null;
           tool_invocations: Json | null;
           created_at: string;
         };
@@ -823,8 +821,6 @@ export interface Database {
           conversation_id: string;
           role: 'user' | 'assistant' | 'system';
           content: string;
-          tool_calls?: Json | null;
-          tool_results?: Json | null;
           tool_invocations?: Json | null;
           created_at?: string;
         };
@@ -833,8 +829,6 @@ export interface Database {
           conversation_id?: string;
           role?: 'user' | 'assistant' | 'system';
           content?: string;
-          tool_calls?: Json | null;
-          tool_results?: Json | null;
           tool_invocations?: Json | null;
           created_at?: string;
         };

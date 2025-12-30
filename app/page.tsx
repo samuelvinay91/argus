@@ -80,7 +80,21 @@ function AppContent() {
 
   // Callback to save messages when they're sent/received
   const handleMessagesChange = useCallback(async (messages: Message[]) => {
-    if (!activeConversationId || messages.length === 0) return;
+    // CRITICAL: Only save if we have a valid conversation ID
+    if (!activeConversationId || messages.length === 0) {
+      console.warn('Cannot save message: missing conversation ID or no messages');
+      return;
+    }
+
+    // Verify conversation exists in our list
+    const conversationExists = conversations.some(c => c.id === activeConversationId);
+    if (!conversationExists) {
+      console.error('Cannot save message: conversation not found in database', {
+        activeConversationId,
+        availableConversations: conversations.map(c => c.id)
+      });
+      return;
+    }
 
     // Get the latest message
     const latestMessage = messages[messages.length - 1];
@@ -106,13 +120,20 @@ function AppContent() {
         tool_invocations: latestMessage.toolInvocations as unknown as Json | null,
       };
 
-      console.log('Attempting to save message:', messageData);
+      console.log('Saving message to conversation:', {
+        conversationId: activeConversationId,
+        messageId,
+        role: messageData.role,
+        contentPreview: messageData.content.substring(0, 50)
+      });
+
       await addMessage.mutateAsync(messageData);
+      console.log('Message saved successfully');
     } catch (error) {
       console.error('Failed to save message - Full error:', JSON.stringify(error, null, 2));
       console.error('Error object:', error);
     }
-  }, [activeConversationId, storedMessages, addMessage]);
+  }, [activeConversationId, storedMessages, addMessage, conversations]);
 
   return (
     <div className="flex min-h-screen">
