@@ -62,8 +62,8 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
 
   const [settings, setSettings] = useState({
-    anthropicApiKey: ''  // Load from environment or user input - NEVER hardcode,
-    backendUrl: 'http://localhost:8000',
+    anthropicApiKey: '',  // Load from environment or user input - NEVER hardcode
+    backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000',
     defaultModel: 'claude-sonnet-4-5',
     maxIterations: 50,
     screenshotResolution: '1920x1080',
