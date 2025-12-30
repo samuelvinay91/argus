@@ -30,6 +30,7 @@ export function useTests(projectId: string | null) {
       return data as Test[];
     },
     enabled: !!projectId,
+    placeholderData: [], // Prevent loading state flash
   });
 }
 
@@ -120,6 +121,7 @@ export function useTestRuns(projectId: string | null, limit = 50) {
       return data as TestRun[];
     },
     enabled: !!projectId,
+    placeholderData: [], // Prevent loading state flash
   });
 }
 

@@ -90,31 +90,32 @@ export function useLatestDiscoveryData(projectId: string | null) {
 
       const latestSession = sessions[0] as DiscoverySession;
 
-      // Get pages for this session
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: pages, error: pagesError } = await (supabase.from('discovered_pages') as any)
-        .select('*')
-        .eq('discovery_session_id', latestSession.id)
-        .order('created_at', { ascending: false });
+      // Fetch pages and flows in parallel instead of sequentially
+      const [pagesResult, flowsResult] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('discovered_pages') as any)
+          .select('*')
+          .eq('discovery_session_id', latestSession.id)
+          .order('created_at', { ascending: false }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('discovered_flows') as any)
+          .select('*')
+          .eq('discovery_session_id', latestSession.id)
+          .order('created_at', { ascending: false }),
+      ]);
 
-      if (pagesError) throw pagesError;
-
-      // Get flows for this session
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: flows, error: flowsError } = await (supabase.from('discovered_flows') as any)
-        .select('*')
-        .eq('discovery_session_id', latestSession.id)
-        .order('created_at', { ascending: false });
-
-      if (flowsError) throw flowsError;
+      if (pagesResult.error) throw pagesResult.error;
+      if (flowsResult.error) throw flowsResult.error;
 
       return {
         session: latestSession,
-        pages: pages as DiscoveredPage[],
-        flows: flows as DiscoveredFlow[],
+        pages: pagesResult.data as DiscoveredPage[],
+        flows: flowsResult.data as DiscoveredFlow[],
       };
     },
     enabled: !!projectId,
+    staleTime: 2 * 60 * 1000, // 2 minutes - discovery data changes less frequently
+    placeholderData: null, // Prevent loading state flash
   });
 }
 

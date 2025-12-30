@@ -85,13 +85,21 @@ function AppContent() {
     // Get the latest message
     const latestMessage = messages[messages.length - 1];
 
-    // Check if this message is already stored
-    const isStored = storedMessages.some((m: ChatMessage) => m.id === latestMessage.id);
+    // Check if this message is already stored by matching content and role
+    // (can't use AI SDK's ID since we generate new UUIDs for Supabase)
+    const isStored = storedMessages.some(
+      (m: ChatMessage) =>
+        m.content === latestMessage.content &&
+        m.role === latestMessage.role
+    );
     if (isStored) return;
 
     try {
+      // Generate a proper UUID for Supabase instead of using AI SDK's short ID
+      const messageId = crypto.randomUUID();
+
       await addMessage.mutateAsync({
-        id: latestMessage.id,
+        id: messageId,
         conversation_id: activeConversationId,
         role: latestMessage.role as 'user' | 'assistant' | 'system',
         content: latestMessage.content,

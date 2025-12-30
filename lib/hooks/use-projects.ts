@@ -24,6 +24,8 @@ export function useProjects() {
       return data as Project[];
     },
     enabled: !!user?.id,
+    staleTime: 10 * 60 * 1000, // 10 minutes - projects rarely change
+    placeholderData: [], // Prevent loading state flash
   });
 }
 
