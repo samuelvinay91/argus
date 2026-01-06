@@ -285,6 +285,7 @@ function MessageContent({ message }: { message: Message }) {
 export function ChatInterface({ conversationId, initialMessages = [], onMessagesChange }: ChatInterfaceProps) {
   // Track last saved message count to prevent duplicate saves
   const lastSavedCountRef = useRef(0);
+  const [error, setError] = useState<string | null>(null);
 
   // Store conversationId in ref to avoid stale closure issues
   const conversationIdRef = useRef(conversationId);
@@ -309,7 +310,12 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     id: isValidConversationId ? conversationId : undefined,
     initialMessages,
     maxSteps: 5, // Allow multi-step tool calls
+    onError: (err) => {
+      console.error('Chat error:', err);
+      setError(err.message || 'An error occurred while processing your request');
+    },
     onFinish: (message) => {
+      setError(null); // Clear any previous errors on success
       // Use refs to get latest values, avoiding stale closures
       const currentConversationId = conversationIdRef.current;
       const currentOnMessagesChange = onMessagesChangeRef.current;
@@ -464,6 +470,21 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
           </motion.div>
         )}
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="mx-4 mb-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center justify-between">
+          <span>{error}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setError(null)}
+            className="h-6 px-2 text-destructive hover:text-destructive"
+          >
+            <XCircle className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Input Area */}
       <div className="border-t bg-background/80 backdrop-blur-sm p-4">
