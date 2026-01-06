@@ -9,12 +9,22 @@ export const runtime = 'edge';
 export const maxDuration = 60;
 
 // Cloudflare Worker API URL
-const WORKER_URL = process.env.E2E_WORKER_URL || 'https://e2e-testing-agent.samuelvinay-kumar.workers.dev';
+const WORKER_URL = process.env.E2E_WORKER_URL || 'https://argus-api.samuelvinay-kumar.workers.dev';
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  try {
+    // Check for API key
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY is not set');
+      return new Response(
+        JSON.stringify({ error: 'ANTHROPIC_API_KEY environment variable is not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
-  const result = streamText({
+    const { messages } = await req.json();
+
+    const result = streamText({
     model: anthropic('claude-sonnet-4-20250514'),
     system: `You are an AI-powered E2E Testing Agent. You help users:
 1. Create tests from natural language descriptions
@@ -204,5 +214,15 @@ When showing test steps, use numbered lists. When showing code or selectors, use
     },
   });
 
-  return result.toDataStreamResponse();
+    return result.toDataStreamResponse();
+  } catch (error) {
+    console.error('Chat API error:', error);
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'An unexpected error occurred',
+        details: String(error)
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 }
