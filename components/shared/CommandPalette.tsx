@@ -318,10 +318,10 @@ export function CommandPalette() {
 
   return (
     <>
-      {/* Trigger button for visibility */}
+      {/* Trigger button - fixed position on desktop */}
       <button
         onClick={() => setOpen(true)}
-        className="hidden lg:flex items-center gap-2 h-9 px-3 text-sm text-muted-foreground rounded-md border bg-background hover:bg-muted transition-colors"
+        className="hidden lg:flex fixed top-4 right-4 z-40 items-center gap-2 h-9 px-3 text-sm text-muted-foreground rounded-md border bg-card shadow-sm hover:bg-muted transition-colors"
       >
         <Search className="h-4 w-4" />
         <span>Search...</span>
