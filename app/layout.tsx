@@ -13,6 +13,13 @@ export const metadata: Metadata = {
   title: 'Argus | AI-Powered E2E Testing',
   description: 'Hey Argus - Your AI testing companion. Generate tests from production errors, predict bugs before they ship, and ship quality software faster.',
   keywords: ['e2e testing', 'ai testing', 'automated testing', 'qa automation', 'argus', 'test generation', 'self-healing tests'],
+  manifest: '/manifest.json',
+  themeColor: '#6366F1',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Argus',
+  },
   openGraph: {
     title: 'Argus | AI-Powered E2E Testing',
     description: 'Generate tests from production errors. Predict bugs before they ship. Self-healing tests that adapt to your UI.',
@@ -38,6 +45,12 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
   },
 };
 

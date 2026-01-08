@@ -1263,3 +1263,32 @@ export type GeneratedTest = Tables<'generated_tests'>;
 export type RiskScore = Tables<'risk_scores'>;
 export type TestGenerationJob = Tables<'test_generation_jobs'>;
 export type QualityIntelligenceStats = Tables<'quality_intelligence_stats'>;
+
+// Activity System types (for live session tracking)
+export interface ActivityLog {
+  id: string;
+  project_id: string;
+  session_id: string;
+  activity_type: 'discovery' | 'visual_test' | 'test_run' | 'quality_audit' | 'global_test';
+  event_type: 'started' | 'step' | 'screenshot' | 'thinking' | 'action' | 'error' | 'completed' | 'cancelled';
+  title: string;
+  description: string | null;
+  metadata: Json;
+  screenshot_url: string | null;
+  duration_ms: number | null;
+  created_at: string;
+}
+
+export interface LiveSession {
+  id: string;
+  project_id: string;
+  session_type: 'discovery' | 'visual_test' | 'test_run' | 'quality_audit' | 'global_test';
+  status: 'active' | 'completed' | 'failed' | 'cancelled';
+  current_step: string | null;
+  total_steps: number;
+  completed_steps: number;
+  last_screenshot_url: string | null;
+  started_at: string;
+  completed_at: string | null;
+  metadata: Json;
+}
