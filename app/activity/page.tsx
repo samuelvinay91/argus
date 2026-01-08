@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -21,181 +21,24 @@ import {
   User,
   Settings,
   Wrench,
-  Eye,
   FileText,
   Zap,
   Clock,
   ExternalLink,
   Bell,
-  ChevronDown,
+  Eye,
+  Compass,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  useActivityFeed,
+  useRealtimeActivity,
+  useActivityStats,
+  type ActivityEvent,
+  type ActivityEventType,
+} from '@/lib/hooks/use-activity';
 
-// Event types
-type EventType =
-  | 'test_started'
-  | 'test_passed'
-  | 'test_failed'
-  | 'test_created'
-  | 'test_updated'
-  | 'test_deleted'
-  | 'project_created'
-  | 'project_updated'
-  | 'healing_applied'
-  | 'healing_suggested'
-  | 'schedule_triggered'
-  | 'user_joined'
-  | 'settings_changed'
-  | 'integration_connected';
-
-interface ActivityEvent {
-  id: string;
-  type: EventType;
-  title: string;
-  description: string;
-  timestamp: string;
-  user?: {
-    name: string;
-    avatar?: string;
-  };
-  metadata?: {
-    projectId?: string;
-    projectName?: string;
-    testId?: string;
-    testName?: string;
-    duration?: number;
-    link?: string;
-  };
-}
-
-// Mock activity data
-const mockActivities: ActivityEvent[] = [
-  {
-    id: '1',
-    type: 'test_passed',
-    title: 'Test run completed successfully',
-    description: 'User Login Flow passed all 5 steps in 4.2s',
-    timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-    user: { name: 'System' },
-    metadata: {
-      projectName: 'E-commerce App',
-      testName: 'User Login Flow',
-      duration: 4200,
-      link: '/tests',
-    },
-  },
-  {
-    id: '2',
-    type: 'healing_applied',
-    title: 'Self-healing fix applied',
-    description: 'Updated selector for Submit button: #submit-btn -> [data-testid="submit"]',
-    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    user: { name: 'Argus AI' },
-    metadata: {
-      projectName: 'E-commerce App',
-      testName: 'Checkout Flow',
-      link: '/healing',
-    },
-  },
-  {
-    id: '3',
-    type: 'test_failed',
-    title: 'Test run failed',
-    description: 'Payment Processing failed at step 3: Element not found',
-    timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-    user: { name: 'System' },
-    metadata: {
-      projectName: 'E-commerce App',
-      testName: 'Payment Processing',
-      duration: 8500,
-      link: '/tests',
-    },
-  },
-  {
-    id: '4',
-    type: 'test_created',
-    title: 'New test created',
-    description: 'Added "Product Search" test with 8 steps',
-    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    user: { name: 'John Doe' },
-    metadata: {
-      projectName: 'E-commerce App',
-      testName: 'Product Search',
-      link: '/tests',
-    },
-  },
-  {
-    id: '5',
-    type: 'schedule_triggered',
-    title: 'Scheduled run started',
-    description: 'Daily regression suite started (15 tests)',
-    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    user: { name: 'Scheduler' },
-    metadata: {
-      projectName: 'E-commerce App',
-      link: '/schedules',
-    },
-  },
-  {
-    id: '6',
-    type: 'project_created',
-    title: 'New project created',
-    description: 'Created project "Mobile App" with URL https://mobile.example.com',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    user: { name: 'Jane Smith' },
-    metadata: {
-      projectName: 'Mobile App',
-      link: '/projects',
-    },
-  },
-  {
-    id: '7',
-    type: 'healing_suggested',
-    title: 'Healing suggestion available',
-    description: '3 potential fixes identified for failing tests',
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    user: { name: 'Argus AI' },
-    metadata: {
-      link: '/healing',
-    },
-  },
-  {
-    id: '8',
-    type: 'integration_connected',
-    title: 'Integration connected',
-    description: 'GitHub integration enabled for E-commerce App',
-    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    user: { name: 'Admin User' },
-    metadata: {
-      projectName: 'E-commerce App',
-      link: '/integrations',
-    },
-  },
-  {
-    id: '9',
-    type: 'user_joined',
-    title: 'Team member joined',
-    description: 'Sarah Connor joined the team as Developer',
-    timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-    user: { name: 'Sarah Connor' },
-    metadata: {
-      link: '/team',
-    },
-  },
-  {
-    id: '10',
-    type: 'settings_changed',
-    title: 'Settings updated',
-    description: 'Self-healing auto-apply threshold changed to 95%',
-    timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    user: { name: 'Admin User' },
-    metadata: {
-      link: '/healing',
-    },
-  },
-];
-
-function getEventIcon(type: EventType) {
+function getEventIcon(type: ActivityEventType) {
   switch (type) {
     case 'test_started':
       return <Play className="h-4 w-4" />;
@@ -221,19 +64,34 @@ function getEventIcon(type: EventType) {
       return <Settings className="h-4 w-4" />;
     case 'integration_connected':
       return <Zap className="h-4 w-4" />;
+    case 'discovery_started':
+    case 'discovery_completed':
+      return <Compass className="h-4 w-4" />;
+    case 'visual_test_started':
+    case 'visual_test_completed':
+      return <Eye className="h-4 w-4" />;
+    case 'quality_audit_started':
+    case 'quality_audit_completed':
+      return <Activity className="h-4 w-4" />;
     default:
       return <Activity className="h-4 w-4" />;
   }
 }
 
-function getEventColor(type: EventType) {
+function getEventColor(type: ActivityEventType) {
   switch (type) {
     case 'test_passed':
+    case 'discovery_completed':
+    case 'visual_test_completed':
+    case 'quality_audit_completed':
       return 'bg-green-500/10 text-green-500 border-green-500/20';
     case 'test_failed':
       return 'bg-red-500/10 text-red-500 border-red-500/20';
     case 'test_started':
     case 'schedule_triggered':
+    case 'discovery_started':
+    case 'visual_test_started':
+    case 'quality_audit_started':
       return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
     case 'healing_applied':
     case 'healing_suggested':
@@ -300,15 +158,27 @@ function ActivityItem({ event }: { event: ActivityEvent }) {
 }
 
 export default function ActivityPage() {
-  const [activities, setActivities] = useState<ActivityEvent[]>(mockActivities);
+  // Data fetching hooks
+  const { data: activities = [], isLoading, error, refetch } = useActivityFeed(50);
+  const { newActivities, clearNewActivities } = useRealtimeActivity();
+  const activityStats = useActivityStats();
+
+  // UI State
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<EventFilter>('all');
-  const [isLoading, setIsLoading] = useState(false);
   const [isLive, setIsLive] = useState(true);
+
+  // Combine real-time activities with fetched activities
+  const allActivities = useMemo(() => {
+    if (!isLive) return activities;
+    const newIds = new Set(newActivities.map(a => a.id));
+    const filteredExisting = activities.filter(a => !newIds.has(a.id));
+    return [...newActivities, ...filteredExisting];
+  }, [activities, newActivities, isLive]);
 
   // Filter activities
   const filteredActivities = useMemo(() => {
-    return activities.filter((activity) => {
+    return allActivities.filter((activity) => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -326,7 +196,11 @@ export default function ActivityPage() {
       if (filter !== 'all') {
         switch (filter) {
           case 'tests':
-            if (!activity.type.startsWith('test_') && activity.type !== 'schedule_triggered') {
+            if (!activity.type.startsWith('test_') &&
+                activity.type !== 'schedule_triggered' &&
+                !activity.type.startsWith('discovery_') &&
+                !activity.type.startsWith('visual_test_') &&
+                !activity.type.startsWith('quality_audit_')) {
               return false;
             }
             break;
@@ -350,50 +224,22 @@ export default function ActivityPage() {
 
       return true;
     });
-  }, [activities, searchQuery, filter]);
+  }, [allActivities, searchQuery, filter]);
 
-  // Stats
-  const stats = useMemo(() => {
-    const now = Date.now();
-    const lastHour = activities.filter(
-      (a) => new Date(a.timestamp).getTime() > now - 60 * 60 * 1000
-    ).length;
-    const testRuns = activities.filter(
-      (a) => a.type === 'test_passed' || a.type === 'test_failed'
-    ).length;
-    const heals = activities.filter((a) => a.type === 'healing_applied').length;
-    const failures = activities.filter((a) => a.type === 'test_failed').length;
-
-    return { lastHour, testRuns, heals, failures };
-  }, [activities]);
-
-  // Simulate real-time updates
-  useEffect(() => {
-    if (!isLive) return;
-
-    const interval = setInterval(() => {
-      // Randomly add a new event (for demo purposes)
-      if (Math.random() > 0.7) {
-        const newEvent: ActivityEvent = {
-          id: Date.now().toString(),
-          type: Math.random() > 0.5 ? 'test_passed' : 'test_started',
-          title: 'Live test event',
-          description: 'Real-time activity update demonstration',
-          timestamp: new Date().toISOString(),
-          user: { name: 'System' },
-        };
-        setActivities((prev) => [newEvent, ...prev]);
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [isLive]);
+  // Stats from hook
+  const stats = activityStats;
 
   const handleRefresh = useCallback(async () => {
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsLoading(false);
-  }, []);
+    clearNewActivities();
+    await refetch();
+  }, [refetch, clearNewActivities]);
+
+  const handleToggleLive = useCallback(() => {
+    if (isLive) {
+      clearNewActivities();
+    }
+    setIsLive(!isLive);
+  }, [isLive, clearNewActivities]);
 
   return (
     <div className="flex min-h-screen">
@@ -414,7 +260,7 @@ export default function ActivityPage() {
             <Button
               variant={isLive ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setIsLive(!isLive)}
+              onClick={handleToggleLive}
               className="gap-2"
             >
               <span className={cn('h-2 w-2 rounded-full', isLive ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground')} />
@@ -465,7 +311,7 @@ export default function ActivityPage() {
                     <Wrench className="h-6 w-6 text-purple-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{stats.heals}</p>
+                    <p className="text-2xl font-bold">{stats.healsApplied}</p>
                     <p className="text-sm text-muted-foreground">Heals Applied</p>
                   </div>
                 </div>
@@ -486,6 +332,18 @@ export default function ActivityPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* New Activities Notification */}
+          {newActivities.length > 0 && isLive && (
+            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-between">
+              <span className="text-sm">
+                {newActivities.length} new {newActivities.length === 1 ? 'activity' : 'activities'} received
+              </span>
+              <Button variant="ghost" size="sm" onClick={clearNewActivities}>
+                Clear
+              </Button>
+            </div>
+          )}
 
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-4">
@@ -537,6 +395,18 @@ export default function ActivityPage() {
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : error ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Failed to load activity</h3>
+                  <p className="text-sm text-muted-foreground text-center max-w-md mb-4">
+                    There was an error loading the activity feed. Please try again.
+                  </p>
+                  <Button onClick={handleRefresh}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry
+                  </Button>
                 </div>
               ) : filteredActivities.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">

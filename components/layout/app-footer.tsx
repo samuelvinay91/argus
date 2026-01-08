@@ -44,6 +44,12 @@ export function AppFooter() {
               Docs
               <ExternalLink className="w-3 h-3" />
             </a>
+            <a
+              href="mailto:support@heyargus.com"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Support
+            </a>
           </div>
 
           {/* Right - Social */}

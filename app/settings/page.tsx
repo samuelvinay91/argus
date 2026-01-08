@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,6 @@ import {
   User,
   Building,
   Camera,
-  Mail,
   Users,
   CreditCard,
   Crown,
@@ -29,10 +28,14 @@ import {
   UserPlus,
   Clock,
   Monitor,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
 import { APP_VERSION } from '@/lib/version';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+const DEFAULT_ORG_ID = 'default';
 
 interface SettingSection {
   id: string;
@@ -52,11 +55,19 @@ const sections: SettingSection[] = [
 
 interface TeamMember {
   id: string;
-  name: string;
   email: string;
   role: 'owner' | 'admin' | 'member' | 'viewer';
-  avatar: string;
-  joinedAt: string;
+  status: 'active' | 'pending';
+  invited_at?: string;
+  accepted_at?: string;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  member_count: number;
 }
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -82,6 +93,9 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('profile');
   const [showApiKey, setShowApiKey] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamLoading, setTeamLoading] = useState(true);
+  const [orgData, setOrgData] = useState<Organization | null>(null);
 
   // Profile state
   const [profile, setProfile] = useState({
@@ -98,19 +112,55 @@ export default function SettingsPage() {
     name: 'Acme Corporation',
     slug: 'acme-corp',
     plan: 'pro',
-    billing_email: 'billing@acme.com',
-    membersCount: 8,
+    billing_email: 'billing@heyargus.com',
+    membersCount: 0,
     maxMembers: 25,
   });
 
-  // Team members mock data
-  const [teamMembers] = useState<TeamMember[]>([
-    { id: '1', name: 'John Doe', email: 'john@acme.com', role: 'owner', avatar: '', joinedAt: '2024-01-15' },
-    { id: '2', name: 'Jane Smith', email: 'jane@acme.com', role: 'admin', avatar: '', joinedAt: '2024-02-20' },
-    { id: '3', name: 'Bob Johnson', email: 'bob@acme.com', role: 'member', avatar: '', joinedAt: '2024-03-10' },
-    { id: '4', name: 'Alice Brown', email: 'alice@acme.com', role: 'member', avatar: '', joinedAt: '2024-04-05' },
-    { id: '5', name: 'Charlie Davis', email: 'charlie@acme.com', role: 'viewer', avatar: '', joinedAt: '2024-05-15' },
-  ]);
+  // Fetch organization data from API
+  const fetchOrganization = useCallback(async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}`);
+      if (response.ok) {
+        const data = await response.json();
+        setOrgData(data);
+        setOrganization(prev => ({
+          ...prev,
+          name: data.name || prev.name,
+          slug: data.slug || prev.slug,
+          plan: data.plan || prev.plan,
+          membersCount: data.member_count || 0,
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch organization:', err);
+    }
+  }, []);
+
+  // Fetch team members from API
+  const fetchMembers = useCallback(async () => {
+    try {
+      setTeamLoading(true);
+      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}/members`);
+      if (response.ok) {
+        const data = await response.json();
+        setTeamMembers(data.members || []);
+        setOrganization(prev => ({
+          ...prev,
+          membersCount: (data.members || []).length,
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+    } finally {
+      setTeamLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrganization();
+    fetchMembers();
+  }, [fetchOrganization, fetchMembers]);
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -420,31 +470,58 @@ export default function SettingsPage() {
                           Invite Member
                         </Button>
                       </div>
-                      <div className="space-y-3">
-                        {teamMembers.map((member) => (
-                          <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/60 to-purple-600/60 flex items-center justify-center text-white font-medium">
-                                {member.name.split(' ').map(n => n[0]).join('')}
+                      {teamLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : teamMembers.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Users className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                          <p>No team members found</p>
+                          <p className="text-sm">Invite members to collaborate on testing</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {teamMembers.map((member) => (
+                            <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className={cn(
+                                  "h-10 w-10 rounded-full flex items-center justify-center text-white font-medium",
+                                  member.status === 'pending' ? 'bg-muted text-muted-foreground' : 'bg-gradient-to-br from-primary/60 to-purple-600/60'
+                                )}>
+                                  {member.email[0].toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="font-medium flex items-center gap-2">
+                                    {member.email}
+                                    {member.status === 'pending' && (
+                                      <span className="px-2 py-0.5 text-xs rounded-full bg-amber-500/10 text-amber-500">
+                                        Pending
+                                      </span>
+                                    )}
+                                  </div>
+                                  {member.invited_at && (
+                                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      Invited {new Date(member.invited_at).toLocaleDateString()}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <div>
-                                <div className="font-medium">{member.name}</div>
-                                <div className="text-sm text-muted-foreground">{member.email}</div>
+                              <div className="flex items-center gap-3">
+                                <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getRoleBadgeColor(member.role))}>
+                                  {member.role}
+                                </span>
+                                {member.role !== 'owner' && (
+                                  <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getRoleBadgeColor(member.role))}>
-                                {member.role}
-                              </span>
-                              {member.role !== 'owner' && (
-                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </>

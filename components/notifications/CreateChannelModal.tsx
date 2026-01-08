@@ -88,13 +88,29 @@ export interface NotificationRule {
   enabled: boolean;
 }
 
-export interface ChannelFormData {
+// Internal form data type - not exported, use ChannelFormData from use-notifications hook
+interface InternalChannelFormData {
   name: string;
   channel_type: ChannelType;
   config: ChannelConfig;
   enabled: boolean;
   rate_limit_per_hour: number;
   rules: NotificationRule[];
+}
+
+// Props use generic record type for config to be compatible with the hook's ChannelFormData
+export interface ChannelFormData {
+  name: string;
+  channel_type: ChannelType;
+  config: Record<string, unknown>;
+  enabled: boolean;
+  rate_limit_per_hour: number;
+  rules: {
+    event_type: string;
+    conditions?: Record<string, unknown>;
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
+    cooldown_minutes?: number;
+  }[];
 }
 
 interface CreateChannelModalProps {
@@ -471,7 +487,7 @@ export function CreateChannelModal({
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'type' | 'config' | 'rules'>('type');
 
-  const [formData, setFormData] = useState<ChannelFormData>({
+  const [formData, setFormData] = useState<InternalChannelFormData>({
     name: '',
     channel_type: 'slack',
     config: getDefaultConfig('slack'),
@@ -486,29 +502,44 @@ export function CreateChannelModal({
         enabled: true,
       },
     ],
-    ...initialData,
+    ...(initialData as Partial<InternalChannelFormData>),
+  });
+
+  // Convert internal form data to the exported type for callbacks
+  const toExportFormat = (data: InternalChannelFormData): ChannelFormData => ({
+    name: data.name,
+    channel_type: data.channel_type,
+    config: data.config as unknown as Record<string, unknown>,
+    enabled: data.enabled,
+    rate_limit_per_hour: data.rate_limit_per_hour,
+    rules: data.rules.map(r => ({
+      event_type: r.event_type,
+      conditions: r.conditions,
+      priority: r.priority,
+      cooldown_minutes: r.cooldown_minutes,
+    })),
   });
 
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
       const channelType = initialData?.channel_type || 'slack';
+      const defaultRules: NotificationRule[] = [
+        {
+          event_type: 'test.run.failed',
+          conditions: {},
+          priority: 'normal',
+          cooldown_minutes: 0,
+          enabled: true,
+        },
+      ];
       setFormData({
-        name: '',
+        name: initialData?.name || '',
         channel_type: channelType,
-        config: initialData?.config || getDefaultConfig(channelType),
-        enabled: true,
-        rate_limit_per_hour: 100,
-        rules: initialData?.rules || [
-          {
-            event_type: 'test.run.failed',
-            conditions: {},
-            priority: 'normal',
-            cooldown_minutes: 0,
-            enabled: true,
-          },
-        ],
-        ...initialData,
+        config: (initialData?.config as unknown as ChannelConfig) || getDefaultConfig(channelType),
+        enabled: initialData?.enabled ?? true,
+        rate_limit_per_hour: initialData?.rate_limit_per_hour ?? 100,
+        rules: (initialData?.rules as unknown as NotificationRule[]) || defaultRules,
       });
       setStep(isEditing ? 'config' : 'type');
       setError(null);
@@ -532,7 +563,7 @@ export function CreateChannelModal({
     setTestResult(null);
 
     try {
-      const success = await onTest(formData);
+      const success = await onTest(toExportFormat(formData));
       setTestResult(success ? 'success' : 'error');
     } catch {
       setTestResult('error');
@@ -552,7 +583,7 @@ export function CreateChannelModal({
     setError(null);
 
     try {
-      await onSave(formData);
+      await onSave(toExportFormat(formData));
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save channel');

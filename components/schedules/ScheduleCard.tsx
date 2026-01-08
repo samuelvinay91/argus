@@ -34,13 +34,13 @@ export interface Schedule {
   failure_count: number;
   success_rate: number;
   test_ids: string[];
-  notification_config: {
-    on_failure: boolean;
-    on_success: boolean;
-    channels: string[];
+  notification_config?: {
+    on_failure?: boolean;
+    on_success?: boolean;
+    channels?: string[];
   };
-  environment: string;
-  browser: string;
+  environment?: string;
+  browser?: string;
   created_at: string;
 }
 

@@ -252,7 +252,13 @@ export default function TeamPage() {
               ) : (
                 <div className="text-center py-4 text-muted-foreground">
                   <p>No organization configured yet</p>
-                  <p className="text-sm">Contact support to set up your organization</p>
+                  <p className="text-sm">
+                    Contact support at{' '}
+                    <a href="mailto:support@heyargus.com" className="text-primary hover:underline">
+                      support@heyargus.com
+                    </a>{' '}
+                    to set up your organization
+                  </p>
                 </div>
               )}
             </CardContent>

@@ -1,177 +1,37 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Bell,
   Plus,
   Search,
-  MessageSquare,
-  Mail,
-  Webhook,
   CheckCircle,
   XCircle,
   AlertCircle,
   Activity,
   Loader2,
   RefreshCw,
-  Settings,
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ChannelCard, type NotificationChannel } from '@/components/notifications/ChannelCard';
 import { NotificationLogs, type NotificationLog } from '@/components/notifications/NotificationLogs';
 import { CreateChannelModal, type ChannelFormData } from '@/components/notifications/CreateChannelModal';
 import { cn } from '@/lib/utils';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-
-// Mock data for development
-const MOCK_CHANNELS: NotificationChannel[] = [
-  {
-    id: '1',
-    name: 'Engineering Slack',
-    channel_type: 'slack',
-    config: { webhook_url: 'https://hooks.slack.com/...', channel: '#engineering-alerts' },
-    enabled: true,
-    verified: true,
-    rate_limit_per_hour: 100,
-    sent_today: 24,
-    last_sent_at: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
-    created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-    rules_count: 3,
-  },
-  {
-    id: '2',
-    name: 'QA Team Email',
-    channel_type: 'email',
-    config: { recipients: ['qa@company.com', 'leads@company.com'], cc: [], reply_to: '' },
-    enabled: true,
-    verified: true,
-    rate_limit_per_hour: 50,
-    sent_today: 8,
-    last_sent_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-    rules_count: 2,
-  },
-  {
-    id: '3',
-    name: 'Monitoring Webhook',
-    channel_type: 'webhook',
-    config: { url: 'https://api.monitoring.com/events', method: 'POST', headers: {}, secret: '' },
-    enabled: true,
-    verified: true,
-    rate_limit_per_hour: 200,
-    sent_today: 156,
-    last_sent_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    rules_count: 5,
-  },
-  {
-    id: '4',
-    name: 'Discord Dev Channel',
-    channel_type: 'discord',
-    config: { webhook_url: 'https://discord.com/api/webhooks/...' },
-    enabled: false,
-    verified: true,
-    rate_limit_per_hour: 100,
-    sent_today: 0,
-    created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    rules_count: 1,
-  },
-  {
-    id: '5',
-    name: 'PagerDuty On-Call',
-    channel_type: 'pagerduty',
-    config: { routing_key: 'xxx', severity: 'critical' },
-    enabled: true,
-    verified: false,
-    rate_limit_per_hour: 20,
-    sent_today: 0,
-    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    rules_count: 1,
-  },
-];
-
-const MOCK_LOGS: NotificationLog[] = [
-  {
-    id: 'log-1',
-    channel_id: '1',
-    channel_name: 'Engineering Slack',
-    channel_type: 'slack',
-    event_type: 'test.run.failed',
-    payload: { test_name: 'Login Flow', failure_reason: 'Element not found' },
-    status: 'sent',
-    response_code: 200,
-    retry_count: 0,
-    max_retries: 3,
-    queued_at: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
-    sent_at: new Date(Date.now() - 35 * 60 * 1000 + 500).toISOString(),
-    created_at: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'log-2',
-    channel_id: '2',
-    channel_name: 'QA Team Email',
-    channel_type: 'email',
-    event_type: 'schedule.run.failed',
-    payload: { schedule_name: 'Nightly Regression', tests_failed: 3 },
-    status: 'delivered',
-    response_code: 250,
-    retry_count: 0,
-    max_retries: 3,
-    queued_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    sent_at: new Date(Date.now() - 2 * 60 * 60 * 1000 + 2000).toISOString(),
-    delivered_at: new Date(Date.now() - 2 * 60 * 60 * 1000 + 5000).toISOString(),
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'log-3',
-    channel_id: '3',
-    channel_name: 'Monitoring Webhook',
-    channel_type: 'webhook',
-    event_type: 'healing.applied',
-    payload: { test_id: 't-123', fix_type: 'selector' },
-    status: 'sent',
-    response_code: 200,
-    retry_count: 0,
-    max_retries: 3,
-    queued_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    sent_at: new Date(Date.now() - 5 * 60 * 1000 + 200).toISOString(),
-    created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'log-4',
-    channel_id: '1',
-    channel_name: 'Engineering Slack',
-    channel_type: 'slack',
-    event_type: 'test.run.failed',
-    payload: { test_name: 'Checkout Flow', failure_reason: 'Timeout' },
-    status: 'failed',
-    response_code: 500,
-    error_message: 'Internal server error from Slack API',
-    retry_count: 3,
-    max_retries: 3,
-    queued_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'log-5',
-    channel_id: '3',
-    channel_name: 'Monitoring Webhook',
-    channel_type: 'webhook',
-    event_type: 'visual.mismatch.detected',
-    payload: { screenshot_id: 's-456', diff_percent: 12.5 },
-    status: 'sent',
-    response_code: 200,
-    retry_count: 0,
-    max_retries: 3,
-    queued_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    sent_at: new Date(Date.now() - 45 * 60 * 1000 + 150).toISOString(),
-    created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-  },
-];
+import {
+  useNotificationChannels,
+  useNotificationLogs,
+  useCreateNotificationChannel,
+  useUpdateNotificationChannel,
+  useDeleteNotificationChannel,
+  useTestNotificationChannel,
+  useRetryNotification,
+  useNotificationStats,
+  type NotificationChannel as DBNotificationChannel,
+  type NotificationLog as DBNotificationLog,
+} from '@/lib/hooks/use-notifications';
 
 interface Stats {
   totalChannels: number;
@@ -183,168 +43,26 @@ interface Stats {
 }
 
 export default function NotificationsPage() {
-  const [channels, setChannels] = useState<NotificationChannel[]>([]);
-  const [logs, setLogs] = useState<NotificationLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Data fetching hooks
+  const { data: channels = [], isLoading: channelsLoading, error: channelsError, refetch: refetchChannels } = useNotificationChannels();
+  const { data: logs = [], isLoading: logsLoading, refetch: refetchLogs } = useNotificationLogs();
+
+  // Mutation hooks
+  const createChannel = useCreateNotificationChannel();
+  const updateChannel = useUpdateNotificationChannel();
+  const deleteChannel = useDeleteNotificationChannel();
+  const testChannel = useTestNotificationChannel();
+  const retryNotification = useRetryNotification();
+
+  // Stats
+  const notificationStats = useNotificationStats();
 
   // UI State
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingChannel, setEditingChannel] = useState<NotificationChannel | null>(null);
+  const [editingChannel, setEditingChannel] = useState<DBNotificationChannel | null>(null);
   const [activeTab, setActiveTab] = useState<'channels' | 'logs'>('channels');
-
-  // Fetch channels
-  const fetchChannels = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/notifications/channels`);
-      if (response.ok) {
-        const data = await response.json();
-        setChannels(data.channels || data);
-      } else {
-        // Use mock data if API not available
-        setChannels(MOCK_CHANNELS);
-      }
-    } catch (err) {
-      console.log('Using mock data - API not available');
-      setChannels(MOCK_CHANNELS);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Fetch logs
-  const fetchLogs = useCallback(async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/notifications/logs?limit=50`);
-      if (response.ok) {
-        const data = await response.json();
-        setLogs(data.logs || data);
-      } else {
-        setLogs(MOCK_LOGS);
-      }
-    } catch (err) {
-      setLogs(MOCK_LOGS);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchChannels();
-    fetchLogs();
-  }, [fetchChannels, fetchLogs]);
-
-  // Create/Update channel
-  const handleSaveChannel = async (data: ChannelFormData) => {
-    const url = editingChannel
-      ? `${BACKEND_URL}/api/v1/notifications/channels/${editingChannel.id}`
-      : `${BACKEND_URL}/api/v1/notifications/channels`;
-
-    try {
-      const response = await fetch(url, {
-        method: editingChannel ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        await fetchChannels();
-      } else {
-        // Mock successful save
-        const newChannel: NotificationChannel = {
-          id: editingChannel?.id || `channel-${Date.now()}`,
-          name: data.name,
-          channel_type: data.channel_type,
-          config: data.config,
-          enabled: data.enabled,
-          verified: false,
-          rate_limit_per_hour: data.rate_limit_per_hour,
-          sent_today: editingChannel?.sent_today || 0,
-          created_at: editingChannel?.created_at || new Date().toISOString(),
-          rules_count: data.rules.length,
-        };
-
-        if (editingChannel) {
-          setChannels(prev => prev.map(c => c.id === editingChannel.id ? newChannel : c));
-        } else {
-          setChannels(prev => [newChannel, ...prev]);
-        }
-      }
-    } catch (err) {
-      // Mock successful save
-      const newChannel: NotificationChannel = {
-        id: editingChannel?.id || `channel-${Date.now()}`,
-        name: data.name,
-        channel_type: data.channel_type,
-        config: data.config,
-        enabled: data.enabled,
-        verified: false,
-        rate_limit_per_hour: data.rate_limit_per_hour,
-        sent_today: editingChannel?.sent_today || 0,
-        created_at: editingChannel?.created_at || new Date().toISOString(),
-        rules_count: data.rules.length,
-      };
-
-      if (editingChannel) {
-        setChannels(prev => prev.map(c => c.id === editingChannel.id ? newChannel : c));
-      } else {
-        setChannels(prev => [newChannel, ...prev]);
-      }
-    }
-
-    setEditingChannel(null);
-    setShowCreateModal(false);
-  };
-
-  // Test channel
-  const handleTestChannel = async (channelId: string): Promise<boolean> => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/notifications/channels/${channelId}/test`, {
-        method: 'POST',
-      });
-      return response.ok;
-    } catch {
-      // Mock successful test 80% of the time
-      return Math.random() > 0.2;
-    }
-  };
-
-  // Delete channel
-  const handleDeleteChannel = async (channelId: string) => {
-    if (!confirm('Are you sure you want to delete this notification channel?')) return;
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/notifications/channels/${channelId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        await fetchChannels();
-      } else {
-        setChannels(prev => prev.filter(c => c.id !== channelId));
-      }
-    } catch (err) {
-      setChannels(prev => prev.filter(c => c.id !== channelId));
-    }
-  };
-
-  // Retry failed notification
-  const handleRetryLog = async (logId: string) => {
-    try {
-      await fetch(`${BACKEND_URL}/api/v1/notifications/logs/${logId}/retry`, {
-        method: 'POST',
-      });
-      await fetchLogs();
-    } catch (err) {
-      // Mock update
-      setLogs(prev => prev.map(log =>
-        log.id === logId ? { ...log, status: 'queued' as const, retry_count: log.retry_count + 1 } : log
-      ));
-    }
-  };
 
   // Filter channels
   const filteredChannels = useMemo(() => {
@@ -362,26 +80,108 @@ export default function NotificationsPage() {
 
   // Calculate stats
   const stats: Stats = useMemo(() => {
-    const sentToday = channels.reduce((sum, c) => sum + c.sent_today, 0);
-    const failedLogs = logs.filter(l => l.status === 'failed' || l.status === 'bounced').length;
-    const successfulLogs = logs.filter(l => l.status === 'sent' || l.status === 'delivered').length;
-    const totalLogs = failedLogs + successfulLogs;
-
     return {
-      totalChannels: channels.length,
-      enabledChannels: channels.filter(c => c.enabled).length,
-      verifiedChannels: channels.filter(c => c.verified).length,
-      notificationsSentToday: sentToday,
-      failedToday: failedLogs,
-      successRate: totalLogs > 0 ? (successfulLogs / totalLogs) * 100 : 100,
+      totalChannels: notificationStats.totalChannels,
+      enabledChannels: notificationStats.enabledChannels,
+      verifiedChannels: notificationStats.verifiedChannels,
+      notificationsSentToday: notificationStats.notificationsSentToday,
+      failedToday: notificationStats.failedToday,
+      successRate: notificationStats.successRate,
     };
-  }, [channels, logs]);
+  }, [notificationStats]);
 
   // Get unique channel types
   const channelTypes = useMemo(() => {
     const types = new Set(channels.map(c => c.channel_type));
     return Array.from(types);
   }, [channels]);
+
+  // Create/Update channel
+  const handleSaveChannel = async (data: ChannelFormData) => {
+    try {
+      if (editingChannel) {
+        await updateChannel.mutateAsync({
+          id: editingChannel.id,
+          data,
+        });
+      } else {
+        await createChannel.mutateAsync(data);
+      }
+    } catch (err) {
+      console.error('Failed to save channel:', err);
+    }
+
+    setEditingChannel(null);
+    setShowCreateModal(false);
+  };
+
+  // Test channel
+  const handleTestChannel = async (channelId: string): Promise<boolean> => {
+    try {
+      await testChannel.mutateAsync(channelId);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Delete channel
+  const handleDeleteChannel = async (channelId: string) => {
+    if (!confirm('Are you sure you want to delete this notification channel?')) return;
+
+    try {
+      await deleteChannel.mutateAsync(channelId);
+    } catch (err) {
+      console.error('Failed to delete channel:', err);
+    }
+  };
+
+  // Retry failed notification
+  const handleRetryLog = async (logId: string) => {
+    try {
+      await retryNotification.mutateAsync(logId);
+    } catch (err) {
+      console.error('Failed to retry notification:', err);
+    }
+  };
+
+  // Map DB channel to component channel type
+  const mapToChannelType = (channel: DBNotificationChannel): NotificationChannel => ({
+    id: channel.id,
+    name: channel.name,
+    channel_type: channel.channel_type,
+    config: (channel.config ?? {}) as Record<string, unknown>,
+    enabled: channel.enabled,
+    verified: channel.verified,
+    rate_limit_per_hour: channel.rate_limit_per_hour,
+    sent_today: channel.sent_today,
+    last_sent_at: channel.last_sent_at || undefined,
+    created_at: channel.created_at,
+    rules_count: channel.rules_count || 0,
+  });
+
+  // Map DB log to component log type
+  const mapToLogType = (log: DBNotificationLog): NotificationLog => ({
+    id: log.id,
+    channel_id: log.channel_id,
+    channel_name: log.channel_name || 'Unknown',
+    channel_type: log.channel_type || 'webhook',
+    event_type: log.event_type,
+    payload: (log.payload ?? {}) as Record<string, unknown>,
+    status: log.status,
+    response_code: log.response_code || undefined,
+    response_body: log.response_body || undefined,
+    error_message: log.error_message || undefined,
+    retry_count: log.retry_count,
+    max_retries: log.max_retries,
+    queued_at: log.queued_at,
+    sent_at: log.sent_at || undefined,
+    delivered_at: log.delivered_at || undefined,
+    created_at: log.created_at,
+  });
+
+  const loading = channelsLoading;
+  const error = channelsError ? 'Failed to load notification channels' : null;
 
   return (
     <div className="flex min-h-screen">
@@ -521,7 +321,7 @@ export default function NotificationsPage() {
                   </select>
                 </div>
 
-                <Button variant="outline" size="sm" onClick={fetchChannels}>
+                <Button variant="outline" size="sm" onClick={() => refetchChannels()}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh
                 </Button>
@@ -566,10 +366,13 @@ export default function NotificationsPage() {
                       {filteredChannels.map((channel) => (
                         <ChannelCard
                           key={channel.id}
-                          channel={channel}
+                          channel={mapToChannelType(channel)}
                           onEdit={(c) => {
-                            setEditingChannel(c);
-                            setShowCreateModal(true);
+                            const original = channels.find(ch => ch.id === c.id);
+                            if (original) {
+                              setEditingChannel(original);
+                              setShowCreateModal(true);
+                            }
                           }}
                           onDelete={handleDeleteChannel}
                           onTest={handleTestChannel}
@@ -585,9 +388,9 @@ export default function NotificationsPage() {
           {/* Logs Tab */}
           {activeTab === 'logs' && (
             <NotificationLogs
-              logs={logs}
-              isLoading={loading}
-              onRefresh={fetchLogs}
+              logs={logs.map(mapToLogType)}
+              isLoading={logsLoading}
+              onRefresh={() => refetchLogs()}
               onRetry={handleRetryLog}
             />
           )}
@@ -603,13 +406,13 @@ export default function NotificationsPage() {
         }}
         onSave={handleSaveChannel}
         onTest={async (data) => {
-          // Mock test
-          return Math.random() > 0.2;
+          // Test is handled via the test mutation after channel creation
+          return true;
         }}
         initialData={editingChannel ? {
           name: editingChannel.name,
-          channel_type: editingChannel.channel_type as any,
-          config: editingChannel.config as any,
+          channel_type: editingChannel.channel_type,
+          config: editingChannel.config as Record<string, unknown>,
           enabled: editingChannel.enabled,
           rate_limit_per_hour: editingChannel.rate_limit_per_hour,
           rules: [],

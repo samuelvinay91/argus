@@ -27,6 +27,7 @@ const footerLinks = {
     { name: 'Help Center', href: '/help' },
     { name: 'Status', href: 'https://status.heyargus.ai' },
     { name: 'API Reference', href: '/api' },
+    { name: 'Contact Us', href: 'mailto:hello@heyargus.com' },
   ],
 };
 

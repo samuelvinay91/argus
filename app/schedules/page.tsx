@@ -1,161 +1,39 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { useState, useMemo } from 'react';
 import {
   Calendar,
   Plus,
   Search,
-  Clock,
-  Play,
-  Pause,
-  CheckCircle,
   XCircle,
   TrendingUp,
   Activity,
   Loader2,
   RefreshCw,
   AlertCircle,
-  Filter,
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ScheduleCard, type Schedule } from '@/components/schedules/ScheduleCard';
 import { ScheduleRunHistory, type ScheduleRun } from '@/components/schedules/ScheduleRunHistory';
 import { CreateScheduleModal, type ScheduleFormData } from '@/components/schedules/CreateScheduleModal';
 import { cn } from '@/lib/utils';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-
-// Mock data for development
-const MOCK_SCHEDULES: Schedule[] = [
-  {
-    id: '1',
-    name: 'Nightly Regression Suite',
-    description: 'Full regression test suite running overnight',
-    cron_expression: '0 0 * * *',
-    timezone: 'America/New_York',
-    enabled: true,
-    next_run_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
-    last_run_at: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(),
-    run_count: 45,
-    failure_count: 3,
-    success_rate: 93.33,
-    test_ids: [],
-    notification_config: { on_failure: true, on_success: false, channels: [] },
-    environment: 'staging',
-    browser: 'chromium',
-    created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Hourly Smoke Tests',
-    description: 'Quick smoke tests running every hour',
-    cron_expression: '0 * * * *',
-    timezone: 'UTC',
-    enabled: true,
-    next_run_at: new Date(Date.now() + 35 * 60 * 1000).toISOString(),
-    last_run_at: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-    run_count: 720,
-    failure_count: 12,
-    success_rate: 98.33,
-    test_ids: [],
-    notification_config: { on_failure: true, on_success: false, channels: [] },
-    environment: 'production',
-    browser: 'chromium',
-    created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '3',
-    name: 'Weekday CI Tests',
-    description: 'Full test suite running on weekdays at 9 AM',
-    cron_expression: '0 9 * * 1-5',
-    timezone: 'Europe/London',
-    enabled: true,
-    next_run_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    last_run_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    run_count: 120,
-    failure_count: 8,
-    success_rate: 93.33,
-    test_ids: [],
-    notification_config: { on_failure: true, on_success: true, channels: [] },
-    environment: 'staging',
-    browser: 'chromium',
-    created_at: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '4',
-    name: 'Paused Schedule',
-    description: 'A temporarily disabled schedule',
-    cron_expression: '0 6 * * *',
-    timezone: 'America/Los_Angeles',
-    enabled: false,
-    last_run_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    run_count: 30,
-    failure_count: 5,
-    success_rate: 83.33,
-    test_ids: [],
-    notification_config: { on_failure: true, on_success: false, channels: [] },
-    environment: 'staging',
-    browser: 'firefox',
-    created_at: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
-const MOCK_RUNS: Record<string, ScheduleRun[]> = {
-  '1': [
-    {
-      id: 'run-1',
-      schedule_id: '1',
-      test_run_id: 'tr-1',
-      triggered_at: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(),
-      started_at: new Date(Date.now() - 16 * 60 * 60 * 1000 + 5000).toISOString(),
-      completed_at: new Date(Date.now() - 15.5 * 60 * 60 * 1000).toISOString(),
-      status: 'passed',
-      trigger_type: 'scheduled',
-      tests_total: 24,
-      tests_passed: 24,
-      tests_failed: 0,
-      tests_skipped: 0,
-      duration_ms: 1800000,
-    },
-    {
-      id: 'run-2',
-      schedule_id: '1',
-      test_run_id: 'tr-2',
-      triggered_at: new Date(Date.now() - 40 * 60 * 60 * 1000).toISOString(),
-      started_at: new Date(Date.now() - 40 * 60 * 60 * 1000 + 5000).toISOString(),
-      completed_at: new Date(Date.now() - 39.5 * 60 * 60 * 1000).toISOString(),
-      status: 'failed',
-      trigger_type: 'scheduled',
-      tests_total: 24,
-      tests_passed: 21,
-      tests_failed: 3,
-      tests_skipped: 0,
-      duration_ms: 1800000,
-      error_message: 'Assertion failed: Expected element to be visible',
-    },
-  ],
-  '2': [
-    {
-      id: 'run-3',
-      schedule_id: '2',
-      test_run_id: 'tr-3',
-      triggered_at: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-      started_at: new Date(Date.now() - 25 * 60 * 1000 + 2000).toISOString(),
-      completed_at: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
-      status: 'passed',
-      trigger_type: 'scheduled',
-      tests_total: 5,
-      tests_passed: 5,
-      tests_failed: 0,
-      tests_skipped: 0,
-      duration_ms: 300000,
-    },
-  ],
-};
+import {
+  useSchedules,
+  useScheduleRuns,
+  useScheduleStats,
+  useCreateSchedule,
+  useUpdateSchedule,
+  useToggleSchedule,
+  useDeleteSchedule,
+  useTriggerSchedule,
+  useTestsForSchedule,
+  type TestSchedule,
+} from '@/lib/hooks/use-schedules';
+import { useNotificationChannels } from '@/lib/hooks/use-notifications';
+import { useProjects } from '@/lib/hooks/use-projects';
 
 interface Stats {
   totalSchedules: number;
@@ -167,189 +45,32 @@ interface Stats {
 }
 
 export default function SchedulesPage() {
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [scheduleRuns, setScheduleRuns] = useState<Record<string, ScheduleRun[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Data fetching hooks
+  const { data: schedules = [], isLoading: schedulesLoading, error: schedulesError, refetch: refetchSchedules } = useSchedules();
+  const { data: projects = [] } = useProjects();
+  const { data: channels = [] } = useNotificationChannels();
+  const scheduleStats = useScheduleStats();
+
+  // Mutation hooks
+  const createSchedule = useCreateSchedule();
+  const updateSchedule = useUpdateSchedule();
+  const toggleSchedule = useToggleSchedule();
+  const deleteSchedule = useDeleteSchedule();
+  const triggerSchedule = useTriggerSchedule();
 
   // UI State
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [expandedScheduleId, setExpandedScheduleId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
+  const [editingSchedule, setEditingSchedule] = useState<TestSchedule | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
-  // Mock tests and notification channels
-  const [tests] = useState([
-    { id: 't1', name: 'Login Flow Test', tags: ['smoke', 'auth'] },
-    { id: 't2', name: 'Checkout Process', tags: ['critical', 'payment'] },
-    { id: 't3', name: 'User Registration', tags: ['auth'] },
-    { id: 't4', name: 'Product Search', tags: ['smoke'] },
-    { id: 't5', name: 'Cart Management', tags: ['critical'] },
-  ]);
+  // Get schedule runs for expanded schedule
+  const { data: scheduleRuns = [], isLoading: runsLoading } = useScheduleRuns(expandedScheduleId);
 
-  const [notificationChannels] = useState([
-    { id: 'nc1', name: 'Engineering Slack', channel_type: 'slack' },
-    { id: 'nc2', name: 'QA Team Email', channel_type: 'email' },
-  ]);
-
-  // Fetch schedules
-  const fetchSchedules = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/schedules`);
-      if (response.ok) {
-        const data = await response.json();
-        setSchedules(data.schedules || data);
-      } else {
-        // Use mock data if API not available
-        setSchedules(MOCK_SCHEDULES);
-        setScheduleRuns(MOCK_RUNS);
-      }
-    } catch (err) {
-      console.log('Using mock data - API not available');
-      setSchedules(MOCK_SCHEDULES);
-      setScheduleRuns(MOCK_RUNS);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSchedules();
-  }, [fetchSchedules]);
-
-  // Fetch run history for a schedule
-  const fetchScheduleRuns = useCallback(async (scheduleId: string) => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/schedules/${scheduleId}/runs`);
-      if (response.ok) {
-        const data = await response.json();
-        setScheduleRuns(prev => ({ ...prev, [scheduleId]: data.runs || data }));
-      }
-    } catch (err) {
-      // Use mock data if available
-      if (MOCK_RUNS[scheduleId]) {
-        setScheduleRuns(prev => ({ ...prev, [scheduleId]: MOCK_RUNS[scheduleId] }));
-      }
-    }
-  }, []);
-
-  // Create/Update schedule
-  const handleSaveSchedule = async (data: ScheduleFormData) => {
-    const url = editingSchedule
-      ? `${BACKEND_URL}/api/v1/schedules/${editingSchedule.id}`
-      : `${BACKEND_URL}/api/v1/schedules`;
-
-    try {
-      const response = await fetch(url, {
-        method: editingSchedule ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        await fetchSchedules();
-      } else {
-        // Mock successful save
-        const newSchedule: Schedule = {
-          id: editingSchedule?.id || `schedule-${Date.now()}`,
-          ...data,
-          enabled: true,
-          run_count: editingSchedule?.run_count || 0,
-          failure_count: editingSchedule?.failure_count || 0,
-          success_rate: editingSchedule?.success_rate || 0,
-          created_at: editingSchedule?.created_at || new Date().toISOString(),
-        };
-
-        if (editingSchedule) {
-          setSchedules(prev => prev.map(s => s.id === editingSchedule.id ? newSchedule : s));
-        } else {
-          setSchedules(prev => [newSchedule, ...prev]);
-        }
-      }
-    } catch (err) {
-      // Mock successful save
-      const newSchedule: Schedule = {
-        id: editingSchedule?.id || `schedule-${Date.now()}`,
-        ...data,
-        enabled: true,
-        run_count: editingSchedule?.run_count || 0,
-        failure_count: editingSchedule?.failure_count || 0,
-        success_rate: editingSchedule?.success_rate || 0,
-        created_at: editingSchedule?.created_at || new Date().toISOString(),
-      };
-
-      if (editingSchedule) {
-        setSchedules(prev => prev.map(s => s.id === editingSchedule.id ? newSchedule : s));
-      } else {
-        setSchedules(prev => [newSchedule, ...prev]);
-      }
-    }
-
-    setEditingSchedule(null);
-    setShowCreateModal(false);
-  };
-
-  // Toggle schedule enabled state
-  const handleToggleSchedule = async (scheduleId: string, enabled: boolean) => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/schedules/${scheduleId}/toggle`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled }),
-      });
-
-      if (response.ok) {
-        await fetchSchedules();
-      } else {
-        setSchedules(prev => prev.map(s =>
-          s.id === scheduleId ? { ...s, enabled } : s
-        ));
-      }
-    } catch (err) {
-      setSchedules(prev => prev.map(s =>
-        s.id === scheduleId ? { ...s, enabled } : s
-      ));
-    }
-  };
-
-  // Delete schedule
-  const handleDeleteSchedule = async (scheduleId: string) => {
-    if (!confirm('Are you sure you want to delete this schedule?')) return;
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/schedules/${scheduleId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        await fetchSchedules();
-      } else {
-        setSchedules(prev => prev.filter(s => s.id !== scheduleId));
-      }
-    } catch (err) {
-      setSchedules(prev => prev.filter(s => s.id !== scheduleId));
-    }
-  };
-
-  // Trigger schedule now
-  const handleTriggerNow = async (scheduleId: string) => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/schedules/${scheduleId}/trigger`, {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        // Refresh runs for this schedule
-        fetchScheduleRuns(scheduleId);
-      }
-    } catch (err) {
-      console.log('Mock trigger - would execute schedule:', scheduleId);
-    }
-  };
+  // Get tests for selected project (for schedule creation)
+  const { data: availableTests = [] } = useTestsForSchedule(selectedProjectId || (projects[0]?.id ?? null));
 
   // Filter schedules
   const filteredSchedules = useMemo(() => {
@@ -381,16 +102,74 @@ export default function SchedulesPage() {
       enabledSchedules: schedules.filter(s => s.enabled).length,
       totalRuns,
       successRate,
-      runsToday: Math.floor(Math.random() * 50), // Mock data
-      failuresToday: Math.floor(Math.random() * 5), // Mock data
+      runsToday: scheduleStats.data?.runsToday || 0,
+      failuresToday: scheduleStats.data?.failuresToday || 0,
     };
-  }, [schedules]);
+  }, [schedules, scheduleStats.data]);
+
+  // Create/Update schedule
+  const handleSaveSchedule = async (data: ScheduleFormData) => {
+    const projectId = selectedProjectId || projects[0]?.id;
+    if (!projectId) {
+      console.error('No project selected');
+      return;
+    }
+
+    try {
+      if (editingSchedule) {
+        await updateSchedule.mutateAsync({
+          id: editingSchedule.id,
+          data,
+        });
+      } else {
+        await createSchedule.mutateAsync({
+          projectId,
+          data,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save schedule:', err);
+    }
+
+    setEditingSchedule(null);
+    setShowCreateModal(false);
+  };
+
+  // Toggle schedule enabled state
+  const handleToggleSchedule = async (scheduleId: string, enabled: boolean) => {
+    try {
+      await toggleSchedule.mutateAsync({ id: scheduleId, enabled });
+    } catch (err) {
+      console.error('Failed to toggle schedule:', err);
+    }
+  };
+
+  // Delete schedule
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    if (!confirm('Are you sure you want to delete this schedule?')) return;
+
+    try {
+      await deleteSchedule.mutateAsync(scheduleId);
+    } catch (err) {
+      console.error('Failed to delete schedule:', err);
+    }
+  };
+
+  // Trigger schedule now
+  const handleTriggerNow = async (scheduleId: string) => {
+    try {
+      await triggerSchedule.mutateAsync(scheduleId);
+    } catch (err) {
+      console.error('Failed to trigger schedule:', err);
+    }
+  };
 
   // Get last run status for a schedule
   const getLastRunStatus = (scheduleId: string): 'passed' | 'failed' | 'running' | 'pending' | undefined => {
-    const runs = scheduleRuns[scheduleId];
-    if (!runs || runs.length === 0) return undefined;
-    return runs[0].status as any;
+    if (expandedScheduleId === scheduleId && scheduleRuns.length > 0) {
+      return scheduleRuns[0].status as 'passed' | 'failed' | 'running' | 'pending';
+    }
+    return undefined;
   };
 
   // Handle expand schedule
@@ -399,11 +178,64 @@ export default function SchedulesPage() {
       setExpandedScheduleId(null);
     } else {
       setExpandedScheduleId(scheduleId);
-      if (!scheduleRuns[scheduleId]) {
-        fetchScheduleRuns(scheduleId);
-      }
     }
   };
+
+  // Map TestSchedule to Schedule type expected by components
+  const mapToScheduleType = (schedule: TestSchedule): Schedule => ({
+    id: schedule.id,
+    name: schedule.name,
+    description: schedule.description || undefined,
+    cron_expression: schedule.cron_expression,
+    timezone: schedule.timezone,
+    enabled: schedule.enabled,
+    next_run_at: schedule.next_run_at || undefined,
+    last_run_at: schedule.last_run_at || undefined,
+    run_count: schedule.run_count,
+    failure_count: schedule.failure_count,
+    success_rate: schedule.success_rate,
+    test_ids: schedule.test_ids,
+    notification_config: schedule.notification_config as Schedule['notification_config'],
+    environment: schedule.environment || undefined,
+    browser: schedule.browser || undefined,
+    created_at: schedule.created_at,
+  });
+
+  // Map schedule runs
+  const mapScheduleRuns = (runs: typeof scheduleRuns): ScheduleRun[] =>
+    runs.map(run => ({
+      id: run.id,
+      schedule_id: run.schedule_id,
+      test_run_id: run.test_run_id || undefined,
+      triggered_at: run.triggered_at,
+      started_at: run.started_at || undefined,
+      completed_at: run.completed_at || undefined,
+      status: run.status,
+      trigger_type: run.trigger_type,
+      tests_total: run.tests_total,
+      tests_passed: run.tests_passed,
+      tests_failed: run.tests_failed,
+      tests_skipped: run.tests_skipped,
+      duration_ms: run.duration_ms || undefined,
+      error_message: run.error_message || undefined,
+    }));
+
+  const loading = schedulesLoading;
+  const error = schedulesError ? 'Failed to load schedules' : null;
+
+  // Format notification channels for modal
+  const notificationChannels = channels.map(c => ({
+    id: c.id,
+    name: c.name,
+    channel_type: c.channel_type,
+  }));
+
+  // Format tests for modal
+  const tests = availableTests.map(t => ({
+    id: t.id,
+    name: t.name,
+    tags: t.tags,
+  }));
 
   return (
     <div className="flex min-h-screen">
@@ -518,7 +350,7 @@ export default function SchedulesPage() {
               </div>
             </div>
 
-            <Button variant="outline" size="sm" onClick={fetchSchedules}>
+            <Button variant="outline" size="sm" onClick={() => refetchSchedules()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
@@ -563,10 +395,14 @@ export default function SchedulesPage() {
                   {filteredSchedules.map((schedule) => (
                     <div key={schedule.id}>
                       <ScheduleCard
-                        schedule={schedule}
+                        schedule={mapToScheduleType(schedule)}
                         onEdit={(s) => {
-                          setEditingSchedule(s);
-                          setShowCreateModal(true);
+                          const original = schedules.find(sch => sch.id === s.id);
+                          if (original) {
+                            setEditingSchedule(original);
+                            setSelectedProjectId(original.project_id);
+                            setShowCreateModal(true);
+                          }
                         }}
                         onDelete={handleDeleteSchedule}
                         onToggle={handleToggleSchedule}
@@ -580,8 +416,8 @@ export default function SchedulesPage() {
                       {expandedScheduleId === schedule.id && (
                         <div className="mt-2 ml-4 animate-fade-up">
                           <ScheduleRunHistory
-                            runs={scheduleRuns[schedule.id] || []}
-                            isLoading={!scheduleRuns[schedule.id]}
+                            runs={mapScheduleRuns(scheduleRuns)}
+                            isLoading={runsLoading}
                             onViewReport={(runId) => {
                               // Navigate to report page
                               console.log('View report:', runId);
@@ -604,6 +440,7 @@ export default function SchedulesPage() {
         onClose={() => {
           setShowCreateModal(false);
           setEditingSchedule(null);
+          setSelectedProjectId(null);
         }}
         onSave={handleSaveSchedule}
         initialData={editingSchedule ? {
@@ -612,14 +449,14 @@ export default function SchedulesPage() {
           cron_expression: editingSchedule.cron_expression,
           timezone: editingSchedule.timezone,
           test_ids: editingSchedule.test_ids,
-          test_filter: {},
+          test_filter: editingSchedule.test_filter as Record<string, unknown>,
           notification_config: editingSchedule.notification_config,
           environment: editingSchedule.environment,
           browser: editingSchedule.browser,
-          max_parallel_tests: 5,
-          timeout_ms: 3600000,
-          retry_failed_tests: true,
-          retry_count: 2,
+          max_parallel_tests: editingSchedule.max_parallel_tests,
+          timeout_ms: editingSchedule.timeout_ms,
+          retry_failed_tests: editingSchedule.retry_failed_tests,
+          retry_count: editingSchedule.retry_count,
         } : undefined}
         tests={tests}
         notificationChannels={notificationChannels}

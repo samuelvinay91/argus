@@ -898,8 +898,11 @@ export function LandingPage() {
                 </div>
                 <span className="text-xl font-bold">Argus</span>
               </Link>
-              <p className="text-muted-foreground mb-6 max-w-sm">
+              <p className="text-muted-foreground mb-4 max-w-sm">
                 The all-seeing quality intelligence platform. Probes at every layer of your SDLC, unified in one AI-powered brain.
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                <a href="mailto:hello@heyargus.com" className="hover:text-foreground transition-colors">hello@heyargus.com</a>
               </p>
               <div className="flex items-center gap-4">
                 <a href="https://github.com/heyargus" target="_blank" rel="noopener noreferrer" className="link-subtle p-2 hover:bg-muted rounded-lg transition-colors">

@@ -37,113 +37,13 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-
-// Mock flaky test data
-const mockFlakyTests = [
-  {
-    id: '1',
-    name: 'User Login with SSO',
-    path: 'tests/auth/login.spec.ts',
-    flakinessScore: 0.45,
-    totalRuns: 100,
-    passCount: 55,
-    failCount: 45,
-    lastRun: '2024-01-08T10:30:00Z',
-    trend: 'increasing' as const,
-    isQuarantined: false,
-    rootCauses: [
-      { type: 'timing', description: 'Race condition with SSO redirect', confidence: 0.85 },
-      { type: 'network', description: 'Intermittent API timeout', confidence: 0.65 },
-    ],
-    recentResults: [true, false, true, true, false, false, true, false, true, true],
-    avgDuration: 4500,
-    suggestedFix: 'Add explicit wait for SSO callback and increase timeout for auth API calls',
-  },
-  {
-    id: '2',
-    name: 'Checkout Payment Flow',
-    path: 'tests/checkout/payment.spec.ts',
-    flakinessScore: 0.32,
-    totalRuns: 80,
-    passCount: 54,
-    failCount: 26,
-    lastRun: '2024-01-08T09:15:00Z',
-    trend: 'decreasing' as const,
-    isQuarantined: false,
-    rootCauses: [
-      { type: 'external', description: 'Payment gateway response variability', confidence: 0.72 },
-    ],
-    recentResults: [true, true, false, true, true, true, false, true, true, true],
-    avgDuration: 6200,
-    suggestedFix: 'Mock payment gateway responses in CI environment',
-  },
-  {
-    id: '3',
-    name: 'Dashboard Widget Load',
-    path: 'tests/dashboard/widgets.spec.ts',
-    flakinessScore: 0.28,
-    totalRuns: 150,
-    passCount: 108,
-    failCount: 42,
-    lastRun: '2024-01-08T11:00:00Z',
-    trend: 'stable' as const,
-    isQuarantined: true,
-    rootCauses: [
-      { type: 'timing', description: 'Widget animation completion detection', confidence: 0.90 },
-    ],
-    recentResults: [false, false, true, false, true, false, false, true, false, true],
-    avgDuration: 3100,
-    suggestedFix: 'Wait for animation complete event instead of fixed timeout',
-  },
-  {
-    id: '4',
-    name: 'Search Results Pagination',
-    path: 'tests/search/pagination.spec.ts',
-    flakinessScore: 0.18,
-    totalRuns: 200,
-    passCount: 164,
-    failCount: 36,
-    lastRun: '2024-01-08T08:45:00Z',
-    trend: 'decreasing' as const,
-    isQuarantined: false,
-    rootCauses: [
-      { type: 'data', description: 'Test data dependency on seed state', confidence: 0.78 },
-    ],
-    recentResults: [true, true, true, false, true, true, true, true, false, true],
-    avgDuration: 2800,
-    suggestedFix: 'Isolate test data using fixtures with consistent seed',
-  },
-  {
-    id: '5',
-    name: 'Real-time Notifications',
-    path: 'tests/notifications/realtime.spec.ts',
-    flakinessScore: 0.52,
-    totalRuns: 60,
-    passCount: 29,
-    failCount: 31,
-    lastRun: '2024-01-08T10:00:00Z',
-    trend: 'increasing' as const,
-    isQuarantined: true,
-    rootCauses: [
-      { type: 'network', description: 'WebSocket connection instability', confidence: 0.88 },
-      { type: 'timing', description: 'Message delivery timing variance', confidence: 0.75 },
-    ],
-    recentResults: [false, true, false, false, true, false, true, false, false, true],
-    avgDuration: 5800,
-    suggestedFix: 'Implement WebSocket connection retry with exponential backoff',
-  },
-];
-
-// Flakiness trend data for chart
-const trendData = [
-  { date: 'Dec 1', flaky: 12, fixed: 2 },
-  { date: 'Dec 8', flaky: 15, fixed: 4 },
-  { date: 'Dec 15', flaky: 14, fixed: 6 },
-  { date: 'Dec 22', flaky: 11, fixed: 8 },
-  { date: 'Dec 29', flaky: 9, fixed: 10 },
-  { date: 'Jan 5', flaky: 7, fixed: 12 },
-  { date: 'Jan 8', flaky: 5, fixed: 14 },
-];
+import {
+  useFlakyTests,
+  useFlakinesssTrend,
+  useToggleQuarantine,
+  useFlakyTestStats,
+  type FlakyTest,
+} from '@/lib/hooks/use-flaky-tests';
 
 type SeverityFilter = 'all' | 'high' | 'medium' | 'low';
 
@@ -170,7 +70,7 @@ function FlakyTestCard({
   onRunTest,
   onApplyFix,
 }: {
-  test: (typeof mockFlakyTests)[0];
+  test: FlakyTest;
   onQuarantine: (id: string) => void;
   onRunTest: (id: string) => void;
   onApplyFix: (id: string) => void;
@@ -204,6 +104,11 @@ function FlakyTestCard({
               )}
             </div>
             <CardDescription className="font-mono text-xs truncate">{test.path}</CardDescription>
+            {test.projectName && (
+              <span className="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
+                {test.projectName}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <span
@@ -276,49 +181,55 @@ function FlakyTestCard({
         {expanded && (
           <div className="mt-4 pt-4 border-t border-border space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
             {/* Root Causes */}
-            <div>
-              <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                <Target className="h-4 w-4 text-muted-foreground" />
-                Root Cause Analysis
-              </h4>
-              <div className="space-y-2">
-                {test.rootCauses.map((cause, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
-                  >
-                    <span
-                      className={cn(
-                        'px-2 py-0.5 rounded text-xs font-medium capitalize',
-                        cause.type === 'timing' && 'bg-purple-500/10 text-purple-500',
-                        cause.type === 'network' && 'bg-blue-500/10 text-blue-500',
-                        cause.type === 'data' && 'bg-green-500/10 text-green-500',
-                        cause.type === 'external' && 'bg-orange-500/10 text-orange-500'
-                      )}
+            {test.rootCauses.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                  <Target className="h-4 w-4 text-muted-foreground" />
+                  Root Cause Analysis
+                </h4>
+                <div className="space-y-2">
+                  {test.rootCauses.map((cause, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
                     >
-                      {cause.type}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm">{cause.description}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Confidence: {(cause.confidence * 100).toFixed(0)}%
-                      </p>
+                      <span
+                        className={cn(
+                          'px-2 py-0.5 rounded text-xs font-medium capitalize',
+                          cause.type === 'timing' && 'bg-purple-500/10 text-purple-500',
+                          cause.type === 'network' && 'bg-blue-500/10 text-blue-500',
+                          cause.type === 'data' && 'bg-green-500/10 text-green-500',
+                          cause.type === 'external' && 'bg-orange-500/10 text-orange-500',
+                          cause.type === 'selector' && 'bg-cyan-500/10 text-cyan-500',
+                          cause.type === 'state' && 'bg-pink-500/10 text-pink-500'
+                        )}
+                      >
+                        {cause.type}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">{cause.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Confidence: {(cause.confidence * 100).toFixed(0)}%
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Suggested Fix */}
-            <div>
-              <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                <Wrench className="h-4 w-4 text-muted-foreground" />
-                AI Suggested Fix
-              </h4>
-              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                <p className="text-sm">{test.suggestedFix}</p>
+            {test.suggestedFix && (
+              <div>
+                <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                  <Wrench className="h-4 w-4 text-muted-foreground" />
+                  AI Suggested Fix
+                </h4>
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <p className="text-sm">{test.suggestedFix}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Actions */}
             <div className="flex items-center gap-2 pt-2">
@@ -331,15 +242,17 @@ function FlakyTestCard({
                 <Play className="h-3.5 w-3.5 mr-1.5" />
                 Run Test
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onApplyFix(test.id)}
-                className="h-8"
-              >
-                <Zap className="h-3.5 w-3.5 mr-1.5" />
-                Apply Fix
-              </Button>
+              {test.suggestedFix && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onApplyFix(test.id)}
+                  className="h-8"
+                >
+                  <Zap className="h-3.5 w-3.5 mr-1.5" />
+                  Apply Fix
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant={test.isQuarantined ? 'default' : 'outline'}
@@ -367,20 +280,26 @@ function FlakyTestCard({
 }
 
 export default function FlakyTestsPage() {
+  // Data fetching hooks
+  const { data: flakyTests = [], isLoading, error, refetch } = useFlakyTests();
+  const { data: trendData = [] } = useFlakinesssTrend();
+  const toggleQuarantine = useToggleQuarantine();
+  const stats = useFlakyTestStats();
+
+  // UI State
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>('all');
   const [showQuarantined, setShowQuarantined] = useState(true);
-  const [tests, setTests] = useState(mockFlakyTests);
-  const [isLoading, setIsLoading] = useState(false);
 
   const filteredTests = useMemo(() => {
-    return tests.filter((test) => {
+    return flakyTests.filter((test) => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         if (
           !test.name.toLowerCase().includes(query) &&
-          !test.path.toLowerCase().includes(query)
+          !test.path.toLowerCase().includes(query) &&
+          !test.projectName?.toLowerCase().includes(query)
         ) {
           return false;
         }
@@ -397,40 +316,35 @@ export default function FlakyTestsPage() {
 
       return true;
     });
-  }, [tests, searchQuery, severityFilter, showQuarantined]);
+  }, [flakyTests, searchQuery, severityFilter, showQuarantined]);
 
-  const stats = useMemo(() => {
-    const high = tests.filter((t) => getSeverity(t.flakinessScore) === 'high').length;
-    const medium = tests.filter((t) => getSeverity(t.flakinessScore) === 'medium').length;
-    const low = tests.filter((t) => getSeverity(t.flakinessScore) === 'low').length;
-    const quarantined = tests.filter((t) => t.isQuarantined).length;
-    const avgScore = tests.reduce((sum, t) => sum + t.flakinessScore, 0) / tests.length;
-
-    return { high, medium, low, quarantined, avgScore, total: tests.length };
-  }, [tests]);
-
-  const handleQuarantine = useCallback((id: string) => {
-    setTests((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isQuarantined: !t.isQuarantined } : t))
-    );
-  }, []);
+  const handleQuarantine = useCallback(async (id: string) => {
+    const test = flakyTests.find(t => t.id === id);
+    if (test) {
+      try {
+        await toggleQuarantine.mutateAsync({
+          testId: id,
+          quarantine: !test.isQuarantined,
+        });
+      } catch (err) {
+        console.error('Failed to toggle quarantine:', err);
+      }
+    }
+  }, [flakyTests, toggleQuarantine]);
 
   const handleRunTest = useCallback((id: string) => {
     console.log('Running test:', id);
-    // TODO: Implement test run
+    // TODO: Implement test run - navigate to test execution
   }, []);
 
   const handleApplyFix = useCallback((id: string) => {
     console.log('Applying fix for test:', id);
-    // TODO: Implement fix application
+    // TODO: Implement fix application - navigate to healing page
   }, []);
 
   const handleRefresh = useCallback(async () => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsLoading(false);
-  }, []);
+    await refetch();
+  }, [refetch]);
 
   return (
     <div className="flex min-h-screen">
@@ -540,46 +454,52 @@ export default function FlakyTestsPage() {
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trendData}>
-                    <defs>
-                      <linearGradient id="flakyGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="fixedGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="date" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="flaky"
-                      stroke="#ef4444"
-                      fillOpacity={1}
-                      fill="url(#flakyGradient)"
-                      name="Flaky Tests"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="fixed"
-                      stroke="#22c55e"
-                      fillOpacity={1}
-                      fill="url(#fixedGradient)"
-                      name="Fixed Tests"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {trendData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={trendData}>
+                      <defs>
+                        <linearGradient id="flakyGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="fixedGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="date" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                      <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="flaky"
+                        stroke="#ef4444"
+                        fillOpacity={1}
+                        fill="url(#flakyGradient)"
+                        name="Flaky Tests"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="fixed"
+                        stroke="#22c55e"
+                        fillOpacity={1}
+                        fill="url(#fixedGradient)"
+                        name="Fixed Tests"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    No trend data available yet
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -627,6 +547,20 @@ export default function FlakyTestsPage() {
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
+            ) : error ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Failed to load flaky tests</h3>
+                  <p className="text-sm text-muted-foreground text-center max-w-md mb-4">
+                    There was an error loading the flaky test data. Please try again.
+                  </p>
+                  <Button onClick={handleRefresh}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry
+                  </Button>
+                </CardContent>
+              </Card>
             ) : filteredTests.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">

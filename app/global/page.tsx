@@ -705,7 +705,12 @@ export default function GlobalTestingPage() {
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Success Rate</span>
-                            <span className="text-success">{results.length > 0 ? '95%' : '-'}</span>
+                            <span className="text-success">
+                              {results.length > 0
+                                ? `${Math.round(results.filter(r => r.status === 'success').length / results.length * 100)}%`
+                                : '-'
+                              }
+                            </span>
                           </div>
                         </div>
                       </div>
