@@ -33,10 +33,10 @@ interface ChatInterfaceProps {
 }
 
 const SUGGESTIONS = [
-  { icon: TestTube, text: 'Create a login test for email test@example.com', color: 'text-green-500' },
-  { icon: Eye, text: 'Discover all interactive elements on https://demo.vercel.store', color: 'text-blue-500' },
-  { icon: Compass, text: 'Run a test: Go to demo.vercel.store, click on a product, add to cart', color: 'text-purple-500' },
-  { icon: Sparkles, text: 'Extract all product names from https://demo.vercel.store', color: 'text-orange-500' },
+  { icon: TestTube, text: 'Create a login test', fullText: 'Create a login test for email test@example.com', color: 'text-green-500' },
+  { icon: Eye, text: 'Discover elements', fullText: 'Discover all interactive elements on https://demo.vercel.store', color: 'text-blue-500' },
+  { icon: Compass, text: 'Run e-commerce test', fullText: 'Run a test: Go to demo.vercel.store, click on a product, add to cart', color: 'text-purple-500' },
+  { icon: Sparkles, text: 'Extract product data', fullText: 'Extract all product names from https://demo.vercel.store', color: 'text-orange-500' },
 ];
 
 // Tool call display component
@@ -97,7 +97,7 @@ function ToolCallDisplay({ toolName, args, result, isLoading }: {
         {getStatusIcon()}
         <span className="font-medium text-sm">{label}</span>
         {urlValue && (
-          <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+          <span className="text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[200px]">
             {urlValue}
           </span>
         )}
@@ -487,45 +487,44 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)]">
+    <div className="flex flex-col h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] lg:h-[calc(100vh-12rem)]">
       {/* Chat Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-4 p-4"
+        className="flex-1 overflow-y-auto space-y-3 sm:space-y-4 p-2 sm:p-4"
       >
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full space-y-8">
+          <div className="flex flex-col items-center justify-center h-full space-y-4 sm:space-y-8 px-2">
             <div className="text-center space-y-2">
               <div className="flex justify-center">
-                <div className="p-4 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20">
-                  <Bot className="w-12 h-12 text-primary" />
+                <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20">
+                  <Bot className="w-8 h-8 sm:w-12 sm:h-12 text-primary" />
                 </div>
               </div>
-              <h2 className="text-2xl font-bold">Hey Argus</h2>
-              <p className="text-muted-foreground max-w-md">
-                Your AI testing companion. I can create tests, discover elements, run browser automations, and extract data.
-                Just describe what you want in plain English.
+              <h2 className="text-xl sm:text-2xl font-bold">Hey Argus</h2>
+              <p className="text-sm sm:text-base text-muted-foreground max-w-md">
+                Your AI testing companion. Describe what you want to test in plain English.
               </p>
             </div>
 
-            {/* Suggestions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl w-full">
+            {/* Suggestions - 2x2 grid on mobile, 2 columns on desktop */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 max-w-2xl w-full">
               {SUGGESTIONS.map((suggestion, index) => (
                 <motion.button
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  onClick={() => handleSuggestionClick(suggestion.text)}
-                  className="flex items-center gap-3 p-4 rounded-lg border bg-card hover:bg-accent transition-colors text-left group"
+                  onClick={() => handleSuggestionClick(suggestion.fullText)}
+                  className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg border bg-card hover:bg-accent transition-colors text-center sm:text-left group"
                 >
                   <div className={cn(
-                    "p-2 rounded-md bg-muted group-hover:bg-primary/10 transition-colors",
+                    "p-2 rounded-md bg-muted group-hover:bg-primary/10 transition-colors flex-shrink-0",
                     suggestion.color
                   )}>
-                    <suggestion.icon className="w-5 h-5" />
+                    <suggestion.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <span className="text-sm">{suggestion.text}</span>
+                  <span className="text-xs sm:text-sm leading-tight">{suggestion.text}</span>
                 </motion.button>
               ))}
             </div>
@@ -544,17 +543,17 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                 )}
               >
                 {message.role === 'assistant' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-primary" />
+                  <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
+                    <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   </div>
                 )}
                 <Card className={cn(
-                  'max-w-[85%]',
+                  'max-w-[90%] sm:max-w-[85%]',
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-card'
                 )}>
-                  <CardContent className="p-3">
+                  <CardContent className="p-2 sm:p-3">
                     {message.role === 'user' ? (
                       <div className="prose prose-sm dark:prose-invert max-w-none">
                         {message.content.split('\n').map((line, i) => (
@@ -569,8 +568,8 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                   </CardContent>
                 </Card>
                 {message.role === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                    <User className="w-5 h-5" />
+                  <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-secondary flex items-center justify-center">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                 )}
               </motion.div>
@@ -583,16 +582,17 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex gap-3"
+            className="flex gap-2 sm:gap-3"
           >
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
-              <Bot className="w-5 h-5 text-primary" />
+            <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
+              <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
             <Card className="bg-card">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2 text-muted-foreground">
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Processing your request...</span>
+                  <span className="hidden sm:inline">Processing your request...</span>
+                  <span className="sm:hidden">Processing...</span>
                 </div>
               </CardContent>
             </Card>
@@ -616,30 +616,30 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
       )}
 
       {/* Input Area */}
-      <div className="border-t bg-background/80 backdrop-blur-sm p-4">
+      <div className="border-t bg-background/80 backdrop-blur-sm p-2 sm:p-4 safe-area-inset-bottom">
         <form onSubmit={handleSubmitWithPersist} className="flex gap-2 max-w-4xl mx-auto">
           <div className="flex-1 relative">
             <input
               ref={inputRef}
               value={input}
               onChange={handleInputChange}
-              placeholder="Describe what you want to test or discover..."
+              placeholder="Describe what to test..."
               disabled={isLoading}
-              className="w-full h-11 px-4 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full h-10 sm:h-11 px-3 sm:px-4 text-sm sm:text-base rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           {isLoading ? (
-            <Button type="button" variant="outline" onClick={stop}>
+            <Button type="button" variant="outline" size="sm" className="h-10 sm:h-11 px-3" onClick={stop}>
               Stop
             </Button>
           ) : (
-            <Button type="submit" disabled={!input.trim()}>
+            <Button type="submit" disabled={!input.trim()} size="sm" className="h-10 sm:h-11 px-3">
               <Send className="w-4 h-4" />
             </Button>
           )}
         </form>
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          Try: "Discover elements on https://demo.vercel.store" or "Run a login test on my app"
+        <p className="hidden sm:block text-xs text-muted-foreground text-center mt-2">
+          Try: "Discover elements on https://demo.vercel.store" or "Run a login test"
         </p>
       </div>
     </div>
