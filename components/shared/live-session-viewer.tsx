@@ -1,16 +1,61 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Maximize2, Minimize2, Activity, Brain, CheckCircle2, XCircle, Loader2, Image as ImageIcon } from 'lucide-react';
+import { X, Maximize2, Minimize2, Activity, Brain, CheckCircle2, XCircle, Loader2, Image as ImageIcon, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useActivityStream, type ActivityLog, type LiveSession } from '@/lib/hooks/use-live-session';
+import { useActivityStream, type ActivityLog, type LiveSession, type ConnectionStatus } from '@/lib/hooks/use-live-session';
 
 interface LiveSessionViewerProps {
   session: LiveSession | null;
   onClose?: () => void;
   className?: string;
   minimizable?: boolean;
+}
+
+// Connection status indicator component
+function ConnectionStatusIndicator({
+  status,
+  onReconnect
+}: {
+  status: ConnectionStatus;
+  onReconnect?: () => void;
+}) {
+  const getStatusConfig = () => {
+    switch (status) {
+      case 'connected':
+        return { icon: Wifi, color: 'text-success', bg: 'bg-success/10', label: 'Connected' };
+      case 'connecting':
+        return { icon: Loader2, color: 'text-info', bg: 'bg-info/10', label: 'Connecting...', animate: true };
+      case 'reconnecting':
+        return { icon: RefreshCw, color: 'text-warning', bg: 'bg-warning/10', label: 'Reconnecting...', animate: true };
+      case 'error':
+        return { icon: WifiOff, color: 'text-error', bg: 'bg-error/10', label: 'Connection Error' };
+      case 'disconnected':
+      default:
+        return { icon: WifiOff, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Disconnected' };
+    }
+  };
+
+  const config = getStatusConfig();
+  const Icon = config.icon;
+
+  return (
+    <div className={cn('flex items-center gap-1.5 px-2 py-1 rounded-md text-xs', config.bg)}>
+      <Icon className={cn('h-3 w-3', config.color, config.animate && 'animate-spin')} />
+      <span className={config.color}>{config.label}</span>
+      {(status === 'error' || status === 'disconnected') && onReconnect && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-5 w-5 p-0 ml-1"
+          onClick={onReconnect}
+        >
+          <RefreshCw className="h-3 w-3" />
+        </Button>
+      )}
+    </div>
+  );
 }
 
 export function LiveSessionViewer({
@@ -21,7 +66,7 @@ export function LiveSessionViewer({
 }: LiveSessionViewerProps) {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const activities = useActivityStream(session?.id || null);
+  const { activities, connectionStatus, reconnect } = useActivityStream(session?.id || null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new activities arrive
@@ -98,7 +143,8 @@ export function LiveSessionViewer({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <ConnectionStatusIndicator status={connectionStatus} onReconnect={reconnect} />
           {minimizable && (
             <Button
               variant="ghost"
@@ -249,7 +295,7 @@ export function InlineLiveSession({
   session: LiveSession | null;
   className?: string;
 }) {
-  const activities = useActivityStream(session?.id || null);
+  const { activities, connectionStatus, isReconnecting } = useActivityStream(session?.id || null);
 
   if (!session || session.status !== 'active') return null;
 
@@ -269,7 +315,15 @@ export function InlineLiveSession({
           <p className="font-medium text-sm">Processing...</p>
           <p className="text-xs text-muted-foreground">{session.current_step || 'Initializing'}</p>
         </div>
-        <span className="text-sm font-medium text-info">{progress}%</span>
+        <div className="flex items-center gap-2">
+          {isReconnecting && (
+            <span className="flex items-center gap-1 text-xs text-warning">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              Reconnecting
+            </span>
+          )}
+          <span className="text-sm font-medium text-info">{progress}%</span>
+        </div>
       </div>
 
       <div className="h-2 bg-muted rounded-full overflow-hidden mb-3">
@@ -285,6 +339,13 @@ export function InlineLiveSession({
           <p className="text-muted-foreground italic">
             &quot;{latestActivity.description}&quot;
           </p>
+        </div>
+      )}
+
+      {connectionStatus === 'error' && (
+        <div className="flex items-center gap-2 text-xs text-error mt-2 p-2 bg-error/5 rounded-md">
+          <WifiOff className="h-3 w-3" />
+          <span>Connection lost. Activity updates may be delayed.</span>
         </div>
       )}
     </div>

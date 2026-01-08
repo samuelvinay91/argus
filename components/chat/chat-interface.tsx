@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat, Message } from 'ai/react';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, memo } from 'react';
 import {
   Send,
   Loader2,
@@ -25,6 +25,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { CompactExecutionProgress } from './live-execution-progress';
 
 interface ChatInterfaceProps {
   conversationId?: string;
@@ -38,6 +43,114 @@ const SUGGESTIONS = [
   { icon: Compass, text: 'Run e-commerce test', fullText: 'Run a test: Go to demo.vercel.store, click on a product, add to cart', color: 'text-purple-500' },
   { icon: Sparkles, text: 'Extract product data', fullText: 'Extract all product names from https://demo.vercel.store', color: 'text-orange-500' },
 ];
+
+// Memoized Markdown renderer component for chat messages
+const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { content: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        code({ className, children, ...props }) {
+          const match = /language-(\w+)/.exec(className || '');
+          const codeContent = String(children).replace(/\n$/, '');
+
+          // Check if it's an inline code or code block
+          const isInline = !match && !codeContent.includes('\n');
+
+          if (isInline) {
+            return (
+              <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                {children}
+              </code>
+            );
+          }
+
+          return (
+            <SyntaxHighlighter
+              style={oneDark}
+              language={match ? match[1] : 'text'}
+              PreTag="div"
+              className="rounded-lg text-sm !my-2"
+              customStyle={{ margin: 0, padding: '1rem' }}
+            >
+              {codeContent}
+            </SyntaxHighlighter>
+          );
+        },
+        p({ children }) {
+          return <p className="mb-2 last:mb-0">{children}</p>;
+        },
+        ul({ children }) {
+          return <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>;
+        },
+        ol({ children }) {
+          return <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>;
+        },
+        li({ children }) {
+          return <li className="ml-2">{children}</li>;
+        },
+        h1({ children }) {
+          return <h1 className="text-xl font-bold mb-2 mt-3">{children}</h1>;
+        },
+        h2({ children }) {
+          return <h2 className="text-lg font-bold mb-2 mt-3">{children}</h2>;
+        },
+        h3({ children }) {
+          return <h3 className="text-base font-bold mb-1 mt-2">{children}</h3>;
+        },
+        blockquote({ children }) {
+          return (
+            <blockquote className="border-l-4 border-muted-foreground/30 pl-4 italic my-2">
+              {children}
+            </blockquote>
+          );
+        },
+        a({ href, children }) {
+          return (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline hover:no-underline"
+            >
+              {children}
+            </a>
+          );
+        },
+        table({ children }) {
+          return (
+            <div className="overflow-x-auto my-2">
+              <table className="min-w-full border-collapse border border-muted">
+                {children}
+              </table>
+            </div>
+          );
+        },
+        th({ children }) {
+          return (
+            <th className="border border-muted bg-muted px-3 py-1 text-left font-semibold">
+              {children}
+            </th>
+          );
+        },
+        td({ children }) {
+          return <td className="border border-muted px-3 py-1">{children}</td>;
+        },
+        hr() {
+          return <hr className="my-4 border-muted" />;
+        },
+        strong({ children }) {
+          return <strong className="font-bold">{children}</strong>;
+        },
+        em({ children }) {
+          return <em className="italic">{children}</em>;
+        },
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+});
 
 // Tool call display component
 function ToolCallDisplay({ toolName, args, result, isLoading }: {
@@ -267,6 +380,9 @@ function ResultDisplay({ result }: { result: unknown }) {
 
   const data = result as Record<string, unknown>;
 
+  // Show live execution progress if there's an active session
+  const sessionId = data.sessionId as string | undefined;
+
   // Extract screenshots from various possible locations
   const screenshots: string[] = [];
   if (Array.isArray(data.screenshots)) {
@@ -277,6 +393,18 @@ function ResultDisplay({ result }: { result: unknown }) {
   }
   if (typeof data.finalScreenshot === 'string') {
     screenshots.push(data.finalScreenshot);
+  }
+
+  // If we have a sessionId and the result isn't finalized yet, show live progress
+  if (sessionId && !data.success && !data.error) {
+    return (
+      <div className="space-y-3">
+        <CompactExecutionProgress sessionId={sessionId} />
+        {screenshots.length > 0 && (
+          <ScreenshotGallery screenshots={screenshots} />
+        )}
+      </div>
+    );
   }
 
   // Handle actions array (from discoverElements)
@@ -378,12 +506,8 @@ function MessageContent({ message }: { message: Message }) {
     return (
       <div>
         {message.content && (
-          <div className="prose prose-sm dark:prose-invert max-w-none mb-3">
-            {message.content.split('\n').map((line, i) => (
-              <p key={i} className="mb-1 last:mb-0">
-                {line || '\u00A0'}
-              </p>
-            ))}
+          <div className="max-w-none mb-3">
+            <MarkdownRenderer content={message.content} />
           </div>
         )}
         {message.toolInvocations.map((tool, index) => (
@@ -399,14 +523,10 @@ function MessageContent({ message }: { message: Message }) {
     );
   }
 
-  // Regular text content
+  // Regular text content - use markdown renderer
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none">
-      {message.content.split('\n').map((line, i) => (
-        <p key={i} className="mb-1 last:mb-0">
-          {line || '\u00A0'}
-        </p>
-      ))}
+    <div className="max-w-none">
+      <MarkdownRenderer content={message.content} />
     </div>
   );
 }
@@ -555,12 +675,8 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                 )}>
                   <CardContent className="p-2 sm:p-3">
                     {message.role === 'user' ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        {message.content.split('\n').map((line, i) => (
-                          <p key={i} className="mb-1 last:mb-0 text-primary-foreground">
-                            {line || '\u00A0'}
-                          </p>
-                        ))}
+                      <div className="max-w-none text-primary-foreground [&_p]:text-primary-foreground [&_a]:text-primary-foreground [&_code]:bg-primary-foreground/20">
+                        <MarkdownRenderer content={message.content} />
                       </div>
                     ) : (
                       <MessageContent message={message} />
