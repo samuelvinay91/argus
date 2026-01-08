@@ -128,6 +128,8 @@ export function useStartQualityAudit() {
           body: JSON.stringify({
             url,
             instruction: 'Analyze this page for accessibility issues, missing alt text, form labels, and semantic HTML problems',
+            projectId,  // Pass for activity logging
+            activityType: 'quality_audit',
           }),
           signal: controller.signal,
         });

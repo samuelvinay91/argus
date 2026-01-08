@@ -205,6 +205,8 @@ export function useRunVisualTest() {
           screenshot: true,
           device,
           timeout: 30000,
+          projectId,  // Pass for activity logging
+          activityType: 'visual_test',
         }),
         signal: controller.signal,
       });

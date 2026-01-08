@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Providers } from '@/lib/providers';
+import { SidebarProvider, MobileSidebar, MobileHeader } from '@/components/layout/sidebar';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -81,9 +82,13 @@ export default function RootLayout({
       <html lang="en" className="dark">
         <body className={inter.className}>
           <Providers>
-            <div className="min-h-screen bg-background">
-              {children}
-            </div>
+            <SidebarProvider>
+              <div className="min-h-screen bg-background">
+                <MobileHeader />
+                <MobileSidebar />
+                {children}
+              </div>
+            </SidebarProvider>
           </Providers>
           <SpeedInsights />
         </body>

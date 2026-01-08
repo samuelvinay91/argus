@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, createContext, useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
@@ -24,9 +25,35 @@ import {
   Key,
   ScrollText,
   FolderKanban,
+  Menu,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
+import { Button } from '@/components/ui/button';
+
+// Sidebar context for global state
+const SidebarContext = createContext<{
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+} | null>(null);
+
+export function useSidebar() {
+  const context = useContext(SidebarContext);
+  if (!context) {
+    throw new Error('useSidebar must be used within a SidebarProvider');
+  }
+  return context;
+}
+
+export function SidebarProvider({ children }: { children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <SidebarContext.Provider value={{ isOpen, setIsOpen }}>
+      {children}
+    </SidebarContext.Provider>
+  );
+}
 
 const coreNavigation = [
   { name: 'Projects', href: '/projects', icon: FolderKanban, description: 'Manage apps' },
@@ -65,11 +92,33 @@ const legalLinks = [
   { name: 'Terms', href: '/legal/terms' },
 ];
 
-export function Sidebar() {
-  const pathname = usePathname();
+// Mobile menu button component
+export function MobileMenuButton() {
+  const { isOpen, setIsOpen } = useSidebar();
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-card flex flex-col">
+    <Button
+      variant="ghost"
+      size="sm"
+      className="lg:hidden h-10 w-10 p-0"
+      onClick={() => setIsOpen(!isOpen)}
+      aria-label={isOpen ? 'Close menu' : 'Open menu'}
+    >
+      {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+    </Button>
+  );
+}
+
+// Sidebar content (shared between desktop and mobile)
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+
+  const handleClick = () => {
+    onNavigate?.();
+  };
+
+  return (
+    <>
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-border px-6">
         <div className="relative">
@@ -91,6 +140,7 @@ export function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={handleClick}
                 className={cn(
                   'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                   isActive
@@ -120,6 +170,7 @@ export function Sidebar() {
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={handleClick}
                   className={cn(
                     'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                     isActive
@@ -150,6 +201,7 @@ export function Sidebar() {
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={handleClick}
                   className={cn(
                     'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                     isActive
@@ -180,6 +232,7 @@ export function Sidebar() {
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={handleClick}
                   className={cn(
                     'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                     isActive
@@ -207,6 +260,7 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={handleClick}
               className={cn(
                 'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 isActive
@@ -268,7 +322,7 @@ export function Sidebar() {
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             {legalLinks.map((link, i) => (
               <span key={link.name} className="flex items-center gap-3">
-                <Link href={link.href} className="hover:text-foreground transition-colors">
+                <Link href={link.href} onClick={handleClick} className="hover:text-foreground transition-colors">
                   {link.name}
                 </Link>
                 {i < legalLinks.length - 1 && <span className="text-border">·</span>}
@@ -278,6 +332,98 @@ export function Sidebar() {
           <VersionBadge variant="minimal" />
         </div>
       </div>
+    </>
+  );
+}
+
+// Desktop sidebar (always visible on lg+)
+export function Sidebar() {
+  return (
+    <aside className="hidden lg:flex fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-card flex-col">
+      <SidebarContent />
     </aside>
+  );
+}
+
+// Mobile sidebar (slide-in overlay)
+export function MobileSidebar() {
+  const { isOpen, setIsOpen } = useSidebar();
+  const pathname = usePathname();
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname, setIsOpen]);
+
+  // Prevent body scroll when sidebar is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className={cn(
+          'fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden transition-opacity duration-300',
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+        onClick={() => setIsOpen(false)}
+      />
+
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          'fixed left-0 top-0 z-50 h-screen w-72 border-r border-border bg-card flex flex-col lg:hidden transform transition-transform duration-300 ease-in-out',
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        {/* Close button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="absolute top-4 right-4 h-8 w-8 p-0"
+          onClick={() => setIsOpen(false)}
+        >
+          <X className="h-5 w-5" />
+        </Button>
+
+        <SidebarContent onNavigate={() => setIsOpen(false)} />
+      </aside>
+    </>
+  );
+}
+
+// Mobile header with menu button
+export function MobileHeader() {
+  return (
+    <div className="flex lg:hidden items-center justify-between h-16 px-4 border-b border-border bg-card sticky top-0 z-30">
+      <div className="flex items-center gap-3">
+        <MobileMenuButton />
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
+              <Eye className="h-4 w-4 text-white" />
+            </div>
+          </div>
+          <span className="font-bold text-lg tracking-tight">Argus</span>
+        </div>
+      </div>
+      <UserButton
+        appearance={{
+          elements: {
+            avatarBox: "h-8 w-8 rounded-lg",
+          },
+        }}
+        afterSignOutUrl="/"
+      />
+    </div>
   );
 }

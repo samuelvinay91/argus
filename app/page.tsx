@@ -160,7 +160,7 @@ function AppContent() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 ml-64 flex">
+      <main className="flex-1 lg:ml-64 flex">
         {/* Conversation History Sidebar */}
         <div className="w-64 border-r bg-muted/30 flex flex-col">
           <div className="p-4 border-b">

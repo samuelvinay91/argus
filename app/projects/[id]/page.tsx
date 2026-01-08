@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -28,11 +28,13 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { LiveSessionViewer } from '@/components/shared/live-session-viewer';
 import { useProject, useUpdateProject, useDeleteProject } from '@/lib/hooks/use-projects';
 import { useTests, useTestRuns } from '@/lib/hooks/use-tests';
 import { useDiscoverySessions, useDiscoveredPages } from '@/lib/hooks/use-discovery';
 import { useVisualBaselines, useVisualComparisons } from '@/lib/hooks/use-visual';
 import { useQualityAudits } from '@/lib/hooks/use-quality';
+import { useActiveSessions, useActivityStream, type ActivityLog, type LiveSession } from '@/lib/hooks/use-live-session';
 import { cn } from '@/lib/utils';
 
 type TabId = 'overview' | 'tests' | 'discovery' | 'visual' | 'quality' | 'activity' | 'settings';
@@ -59,7 +61,7 @@ export default function ProjectDetailPage() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <main className="flex-1 ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </main>
       </div>
@@ -70,7 +72,7 @@ export default function ProjectDetailPage() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <main className="flex-1 ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">Project not found</h2>
             <p className="text-muted-foreground mb-4">
@@ -89,7 +91,7 @@ export default function ProjectDetailPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 ml-64">
+      <main className="flex-1 lg:ml-64">
         {/* Header */}
         <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="px-6 py-4">
@@ -567,11 +569,194 @@ function ScoreCard({ label, score }: { label: string; score: number | null }) {
 
 // Activity Tab
 function ActivityTab({ projectId }: { projectId: string }) {
+  const { data: activeSessions = [], isLoading } = useActiveSessions(projectId);
+  const [selectedSession, setSelectedSession] = useState<LiveSession | null>(null);
+
+  // Auto-select the first active session
+  React.useEffect(() => {
+    if (activeSessions.length > 0 && !selectedSession) {
+      setSelectedSession(activeSessions[0]);
+    }
+  }, [activeSessions, selectedSession]);
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+      </div>
+    );
+  }
+
   return (
-    <div className="text-center py-8 text-muted-foreground">
-      <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-      <p>Activity log coming soon</p>
-      <p className="text-sm">Real-time activity stream will be shown here</p>
+    <div className="space-y-6">
+      {/* Active Sessions */}
+      {activeSessions.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+            </span>
+            Active Sessions ({activeSessions.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeSessions.map((session) => (
+              <button
+                key={session.id}
+                onClick={() => setSelectedSession(session)}
+                className={cn(
+                  'border rounded-lg p-4 text-left transition-all hover:shadow-md',
+                  selectedSession?.id === session.id
+                    ? 'border-primary bg-primary/5'
+                    : 'hover:border-primary/50'
+                )}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Activity className="h-4 w-4 text-primary animate-pulse" />
+                  <span className="font-medium capitalize">
+                    {session.session_type.replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Step {session.completed_steps}/{session.total_steps || '?'}
+                </div>
+                {session.current_step && (
+                  <p className="text-xs text-muted-foreground mt-1 truncate">
+                    {session.current_step}
+                  </p>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Activity Logs */}
+      <div>
+        <h3 className="font-semibold mb-4">Recent Activity</h3>
+        <RecentActivityList projectId={projectId} />
+      </div>
+
+      {/* Live Session Viewer */}
+      {selectedSession && (
+        <LiveSessionViewer
+          session={selectedSession}
+          onClose={() => setSelectedSession(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Recent Activity List Component
+function RecentActivityList({ projectId }: { projectId: string }) {
+  const supabase = require('@/lib/supabase/client').getSupabaseClient();
+  const [activities, setActivities] = React.useState<ActivityLog[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchActivities = async () => {
+      const { data, error } = await (supabase.from('activity_logs') as any)
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (!error && data) {
+        setActivities(data);
+      }
+      setIsLoading(false);
+    };
+
+    fetchActivities();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel(`activity-project-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'activity_logs',
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload: any) => {
+          setActivities((prev) => [payload.new as ActivityLog, ...prev].slice(0, 50));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId, supabase]);
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-4">
+        <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+      </div>
+    );
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p>No activity yet</p>
+        <p className="text-sm">Activity will appear here when you run tests, discovery, or audits</p>
+      </div>
+    );
+  }
+
+  const getEventIcon = (eventType: string) => {
+    switch (eventType) {
+      case 'started':
+        return <Activity className="h-4 w-4 text-info" />;
+      case 'step':
+        return <CheckCircle2 className="h-4 w-4 text-success" />;
+      case 'thinking':
+        return <Clock className="h-4 w-4 text-primary animate-pulse" />;
+      case 'error':
+        return <XCircle className="h-4 w-4 text-error" />;
+      case 'completed':
+        return <CheckCircle2 className="h-4 w-4 text-success" />;
+      default:
+        return <Activity className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  return (
+    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+      {activities.map((activity) => (
+        <div
+          key={activity.id}
+          className={cn(
+            'border rounded-lg p-3 flex items-start gap-3',
+            activity.event_type === 'error' && 'border-error/50 bg-error/5',
+            activity.event_type === 'completed' && 'border-success/50 bg-success/5'
+          )}
+        >
+          {getEventIcon(activity.event_type)}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-sm">{activity.title}</span>
+              <span className="text-xs text-muted-foreground capitalize px-2 py-0.5 bg-muted rounded">
+                {activity.activity_type.replace('_', ' ')}
+              </span>
+            </div>
+            {activity.description && (
+              <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
+                {activity.description}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

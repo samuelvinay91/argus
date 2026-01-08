@@ -175,6 +175,8 @@ export function useStartDiscovery() {
           body: JSON.stringify({
             url: appUrl,
             instruction: 'Analyze this page and identify all interactive elements, forms, links, and possible user flows',
+            projectId,  // Pass for activity logging
+            activityType: 'discovery',
           }),
           signal: controller.signal,
         });
