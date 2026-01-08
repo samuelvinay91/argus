@@ -20,6 +20,8 @@ import {
   ChevronRight,
   Copy,
   Check,
+  RefreshCw,
+  Wand2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -368,6 +370,16 @@ function ScreenshotGallery({ screenshots, label }: { screenshots: string[]; labe
   );
 }
 
+// Error category icons and colors
+const ERROR_CATEGORY_CONFIG: Record<string, { icon: typeof XCircle; color: string; bgColor: string }> = {
+  network: { icon: XCircle, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
+  browser: { icon: XCircle, color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' },
+  timeout: { icon: XCircle, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
+  element: { icon: XCircle, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+  assertion: { icon: XCircle, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+  unknown: { icon: XCircle, color: 'text-gray-500', bgColor: 'bg-gray-500/10' },
+};
+
 // Result display component
 function ResultDisplay({ result }: { result: unknown }) {
   if (!result || typeof result !== 'object') {
@@ -407,6 +419,83 @@ function ResultDisplay({ result }: { result: unknown }) {
     );
   }
 
+  // Handle categorized errors with user-friendly display
+  const errorDetails = data.errorDetails as { category?: string; originalError?: string; isRetryable?: boolean; suggestedAction?: string } | undefined;
+  const newHealingSuggestions = data.newHealingSuggestions as Array<{ selector: string; confidence: number; reason: string }> | undefined;
+
+  if (data.error || (data.success === false && errorDetails)) {
+    const category = errorDetails?.category || 'unknown';
+    const config = ERROR_CATEGORY_CONFIG[category] || ERROR_CATEGORY_CONFIG.unknown;
+    const Icon = config.icon;
+    const hasHealingSuggestions = newHealingSuggestions && newHealingSuggestions.length > 0;
+
+    return (
+      <div className="space-y-2">
+        <div className={cn("rounded-lg p-3", config.bgColor)}>
+          <div className="flex items-start gap-2">
+            <Icon className={cn("h-4 w-4 mt-0.5 flex-shrink-0", config.color)} />
+            <div className="flex-1 min-w-0">
+              <p className={cn("text-sm font-medium", config.color)}>
+                {String(data.error || data.message || 'Operation failed')}
+              </p>
+              {errorDetails?.suggestedAction && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  💡 {errorDetails.suggestedAction}
+                </p>
+              )}
+              {errorDetails?.isRetryable && !hasHealingSuggestions && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  This error may be temporary. You can try again.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* AI Healing Suggestions */}
+          {hasHealingSuggestions && (
+            <div className="mt-3 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+              <div className="flex items-center gap-1.5 text-blue-500 text-xs font-medium mb-2">
+                <Wand2 className="h-3 w-3" />
+                AI found {newHealingSuggestions.length} potential fix{newHealingSuggestions.length > 1 ? 'es' : ''}
+              </div>
+              <div className="space-y-1.5">
+                {newHealingSuggestions.slice(0, 3).map((suggestion, idx) => (
+                  <div key={idx} className="flex items-start gap-2 text-xs">
+                    <span className="text-blue-400 font-mono">{idx + 1}.</span>
+                    <div className="flex-1">
+                      <code className="text-[10px] bg-blue-500/20 px-1 rounded font-mono">{suggestion.selector}</code>
+                      <span className="ml-1 text-[10px] text-muted-foreground">
+                        ({Math.round(suggestion.confidence * 100)}% confidence)
+                      </span>
+                      <p className="text-[10px] text-muted-foreground/70 mt-0.5">{suggestion.reason}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 pt-2 border-t border-blue-500/20">
+                <p className="text-[10px] text-muted-foreground mb-1.5">
+                  Click &quot;Retry with AI Fix&quot; to try the highest-confidence suggestion automatically.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {errorDetails?.originalError && errorDetails.originalError !== data.error && (
+            <details className="mt-2">
+              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                Technical details
+              </summary>
+              <pre className="text-xs bg-background/50 rounded p-2 mt-1 overflow-x-auto whitespace-pre-wrap">
+                {errorDetails.originalError}
+              </pre>
+            </details>
+          )}
+        </div>
+        {screenshots.length > 0 && <ScreenshotGallery screenshots={screenshots} />}
+      </div>
+    );
+  }
+
   // Handle actions array (from discoverElements)
   if (Array.isArray(data.actions) && data.actions.length > 0 && !data.steps) {
     return (
@@ -442,26 +531,64 @@ function ResultDisplay({ result }: { result: unknown }) {
 
   // Handle test steps (from runTest)
   if (Array.isArray(data.steps)) {
+    // Find failed step with healing suggestions
+    const failedStep = data.steps.find((s: any) => !s.success && s.healingSuggestions?.length > 0);
+
     return (
       <div className="space-y-2">
         <div className="text-xs text-muted-foreground">
           Test {data.success ? 'passed' : 'failed'}:
         </div>
         <div className="space-y-1">
-          {data.steps.map((step: { instruction?: string; success?: boolean; screenshot?: string }, index: number) => (
-            <div
-              key={index}
-              className={cn(
-                "text-xs rounded p-2 flex items-center gap-2",
-                step.success ? "bg-green-500/10" : "bg-red-500/10"
+          {data.steps.map((step: {
+            instruction?: string;
+            success?: boolean;
+            screenshot?: string;
+            error?: string;
+            failedAction?: { selector: string; description: string; action: string; value?: string };
+            healingSuggestions?: Array<{ selector: string; confidence: number; reason: string }>;
+          }, index: number) => (
+            <div key={index}>
+              <div
+                className={cn(
+                  "text-xs rounded p-2 flex items-center gap-2",
+                  step.success ? "bg-green-500/10" : "bg-red-500/10"
+                )}
+              >
+                {step.success ? (
+                  <CheckCircle className="h-3 w-3 text-green-500" />
+                ) : (
+                  <XCircle className="h-3 w-3 text-red-500" />
+                )}
+                <span className="flex-1">{step.instruction}</span>
+              </div>
+              {/* Show AI healing suggestions for failed steps */}
+              {!step.success && step.healingSuggestions && step.healingSuggestions.length > 0 && (
+                <div className="mt-1 ml-5 p-2 bg-blue-500/5 border border-blue-500/20 rounded text-xs">
+                  <div className="flex items-center gap-1 text-blue-500 font-medium mb-1">
+                    <Sparkles className="h-3 w-3" />
+                    AI found {step.healingSuggestions.length} potential fix{step.healingSuggestions.length > 1 ? 'es' : ''}:
+                  </div>
+                  <div className="space-y-1">
+                    {step.healingSuggestions.slice(0, 3).map((suggestion, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-muted-foreground">
+                        <span className="text-blue-400">{idx + 1}.</span>
+                        <div className="flex-1">
+                          <code className="text-[10px] bg-blue-500/10 px-1 rounded">{suggestion.selector}</code>
+                          <span className="ml-1 text-[10px]">({Math.round(suggestion.confidence * 100)}%)</span>
+                          <p className="text-[10px] text-muted-foreground/70">{suggestion.reason}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
-            >
-              {step.success ? (
-                <CheckCircle className="h-3 w-3 text-green-500" />
-              ) : (
-                <XCircle className="h-3 w-3 text-red-500" />
+              {/* Show error message */}
+              {!step.success && step.error && !step.healingSuggestions?.length && (
+                <div className="mt-1 ml-5 text-[10px] text-red-400">
+                  {step.error}
+                </div>
               )}
-              <span>{step.instruction}</span>
             </div>
           ))}
         </div>
