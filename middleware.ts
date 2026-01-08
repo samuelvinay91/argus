@@ -7,6 +7,10 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhook(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/manifest.json',
+  '/favicon.ico',
+  '/robots.txt',
+  '/sitemap.xml',
 ]);
 
 // API routes that need auth but shouldn't redirect (return 401 instead)

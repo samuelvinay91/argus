@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
@@ -179,6 +180,9 @@ export function LiveExecutionModal({
               </span>
             )}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Live test execution viewer showing step-by-step progress and screenshots
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-auto">
