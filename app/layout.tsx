@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { ClerkProvider } from '@clerk/nextjs';
+import { ClerkProvider, SignedIn } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Providers } from '@/lib/providers';
@@ -89,7 +89,9 @@ export default function RootLayout({
                 <MobileHeader />
                 <MobileSidebar />
                 {children}
-                <CommandPalette />
+                <SignedIn>
+                  <CommandPalette />
+                </SignedIn>
                 <Toaster />
               </div>
             </SidebarProvider>
