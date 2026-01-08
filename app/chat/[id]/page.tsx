@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { SignedIn, SignedOut } from '@clerk/nextjs';
+import { useEffect, useCallback, useRef, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
 import { Sidebar } from '@/components/layout/sidebar';
-import { LandingPage } from '@/components/landing/landing-page';
+import { ChatInterface } from '@/components/chat/chat-interface';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -18,6 +18,8 @@ import {
   useConversations,
   useCreateConversation,
   useDeleteConversation,
+  useAddMessage,
+  useConversationMessages
 } from '@/lib/hooks/use-chat';
 import {
   MessageSquarePlus,
@@ -27,18 +29,29 @@ import {
   Clock,
   History,
   Bot,
-  Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import type { Message } from 'ai/react';
+import type { ChatMessage, Json } from '@/lib/supabase/types';
+
+// UUID validation helper
+function isValidUUID(str: string | null | undefined): str is string {
+  if (!str) return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
 
 // Conversation list component
 function ConversationList({
   conversations,
+  activeConversationId,
   onSelect,
   onDelete,
   isLoading,
 }: {
   conversations: Array<{ id: string; title: string | null; preview: string | null; updated_at: string }>;
+  activeConversationId: string | null;
   onSelect: (id: string) => void;
   onDelete: (id: string, e: React.MouseEvent) => void;
   isLoading: boolean;
@@ -67,7 +80,8 @@ function ConversationList({
           onClick={() => onSelect(conv.id)}
           className={cn(
             'w-full text-left p-3 rounded-lg transition-colors group',
-            'hover:bg-muted'
+            'hover:bg-muted',
+            activeConversationId === conv.id && 'bg-muted'
           )}
         >
           <div className="flex items-start gap-2">
@@ -101,13 +115,58 @@ function ConversationList({
   );
 }
 
-function AppContent() {
+function ChatPageContent() {
+  const params = useParams();
   const router = useRouter();
+  const conversationId = params.id as string;
+
+  const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  // Ref for stable callback
+  const conversationIdRef = useRef<string>(conversationId);
 
   const { data: conversations = [], isLoading: conversationsLoading } = useConversations();
+  const { data: storedMessages = [], isLoading: messagesLoading } = useConversationMessages(
+    isValidUUID(conversationId) ? conversationId : null
+  );
   const createConversation = useCreateConversation();
   const deleteConversation = useDeleteConversation();
+  const addMessage = useAddMessage();
+
+  // Keep ref in sync
+  useEffect(() => {
+    conversationIdRef.current = conversationId;
+  }, [conversationId]);
+
+  // Validate conversation exists
+  useEffect(() => {
+    if (!conversationsLoading && conversations.length > 0) {
+      const exists = conversations.some(c => c.id === conversationId);
+      if (!exists && isValidUUID(conversationId)) {
+        setNotFound(true);
+      } else {
+        setNotFound(false);
+      }
+    }
+  }, [conversations, conversationsLoading, conversationId]);
+
+  // Convert stored messages to AI SDK format
+  useEffect(() => {
+    if (storedMessages.length > 0 && conversationId) {
+      const aiMessages: Message[] = storedMessages.map((msg: ChatMessage) => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content,
+        createdAt: new Date(msg.created_at),
+        toolInvocations: msg.tool_invocations as unknown as Message['toolInvocations'],
+      }));
+      setInitialMessages(aiMessages);
+    } else {
+      setInitialMessages([]);
+    }
+  }, [storedMessages, conversationId]);
 
   const handleNewConversation = async () => {
     try {
@@ -123,6 +182,10 @@ function AppContent() {
     e.stopPropagation();
     try {
       await deleteConversation.mutateAsync(id);
+      // If deleting current conversation, go home
+      if (conversationId === id) {
+        router.push('/');
+      }
     } catch (error) {
       console.error('Failed to delete conversation:', error);
     }
@@ -132,6 +195,76 @@ function AppContent() {
     setMobileHistoryOpen(false);
     router.push(`/chat/${id}`);
   };
+
+  // Message persistence callback
+  const handleMessagesChange = useCallback(async (messages: Message[]) => {
+    const currentConversationId = conversationIdRef.current;
+
+    if (!isValidUUID(currentConversationId)) {
+      console.warn('Cannot save message: invalid conversation ID');
+      return;
+    }
+
+    if (messages.length === 0) return;
+
+    const latestMessage = messages[messages.length - 1];
+
+    // Check if already stored
+    const isStored = storedMessages.some(
+      (m: ChatMessage) =>
+        m.content === latestMessage.content &&
+        m.role === latestMessage.role
+    );
+    if (isStored) return;
+
+    try {
+      const messageId = crypto.randomUUID();
+      await addMessage.mutateAsync({
+        id: messageId,
+        conversation_id: currentConversationId,
+        role: latestMessage.role as 'user' | 'assistant' | 'system',
+        content: latestMessage.content,
+        tool_invocations: latestMessage.toolInvocations as unknown as Json | null,
+      });
+    } catch (error) {
+      console.error('Failed to save message:', error);
+    }
+  }, [storedMessages, addMessage]);
+
+  // Invalid UUID in URL
+  if (!isValidUUID(conversationId)) {
+    return (
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+            <h2 className="text-lg font-medium">Invalid conversation ID</h2>
+            <Button onClick={() => router.push('/')}>Go Home</Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Conversation not found
+  if (notFound) {
+    return (
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+            <h2 className="text-lg font-medium">Conversation not found</h2>
+            <p className="text-sm text-muted-foreground">
+              This conversation may have been deleted.
+            </p>
+            <Button onClick={() => router.push('/')}>Go Home</Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -153,6 +286,7 @@ function AppContent() {
                 <div className="flex-1 overflow-y-auto">
                   <ConversationList
                     conversations={conversations}
+                    activeConversationId={conversationId}
                     onSelect={handleSelectConversation}
                     onDelete={handleDeleteConversation}
                     isLoading={conversationsLoading}
@@ -199,6 +333,7 @@ function AppContent() {
           <div className="flex-1 overflow-y-auto">
             <ConversationList
               conversations={conversations}
+              activeConversationId={conversationId}
               onSelect={handleSelectConversation}
               onDelete={handleDeleteConversation}
               isLoading={conversationsLoading}
@@ -206,7 +341,7 @@ function AppContent() {
           </div>
         </div>
 
-        {/* Main Content - Welcome Screen */}
+        {/* Chat Area */}
         <div className="flex-1 flex flex-col min-h-0">
           <header className="hidden lg:flex sticky top-0 z-30 h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
             <div className="flex-1">
@@ -221,58 +356,19 @@ function AppContent() {
             </div>
           </header>
 
-          {/* Welcome/Empty State */}
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="max-w-md text-center space-y-6">
-              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-primary" />
+          <div className="flex-1 p-3 sm:p-4 lg:p-6 overflow-hidden">
+            {messagesLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-
-              <div className="space-y-2">
-                <h2 className="text-2xl font-bold">Welcome to Argus</h2>
-                <p className="text-muted-foreground">
-                  Your AI-powered E2E testing assistant. Create, run, and manage tests using natural language.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Button
-                  onClick={handleNewConversation}
-                  size="lg"
-                  className="w-full"
-                  disabled={createConversation.isPending}
-                >
-                  {createConversation.isPending ? (
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  ) : (
-                    <MessageSquarePlus className="h-5 w-5 mr-2" />
-                  )}
-                  Start New Conversation
-                </Button>
-
-                {conversations.length > 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    or select a conversation from the sidebar
-                  </p>
-                )}
-              </div>
-
-              {/* Quick Tips */}
-              <div className="pt-6 border-t">
-                <p className="text-xs text-muted-foreground mb-3">Try asking:</p>
-                <div className="space-y-2 text-sm text-left">
-                  <div className="p-2 rounded bg-muted/50">
-                    "Run a login test on example.com"
-                  </div>
-                  <div className="p-2 rounded bg-muted/50">
-                    "Discover all interactive elements on my page"
-                  </div>
-                  <div className="p-2 rounded bg-muted/50">
-                    "Extract product data from demo.vercel.store"
-                  </div>
-                </div>
-              </div>
-            </div>
+            ) : (
+              <ChatInterface
+                key={conversationId}
+                conversationId={conversationId}
+                initialMessages={initialMessages}
+                onMessagesChange={handleMessagesChange}
+              />
+            )}
           </div>
         </div>
       </main>
@@ -280,14 +376,14 @@ function AppContent() {
   );
 }
 
-export default function Home() {
+export default function ChatPage() {
   return (
     <>
       <SignedOut>
-        <LandingPage />
+        <RedirectToSignIn />
       </SignedOut>
       <SignedIn>
-        <AppContent />
+        <ChatPageContent />
       </SignedIn>
     </>
   );
