@@ -18,11 +18,11 @@ import {
   Loader2,
   AlertCircle,
   X,
+  LogIn,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-const DEFAULT_ORG_ID = 'default';
+import { useAuthApi } from '@/lib/hooks/use-auth-api';
+import { SignInButton } from '@clerk/nextjs';
 
 interface APIKey {
   id: string;
@@ -46,6 +46,8 @@ const AVAILABLE_SCOPES = [
 ];
 
 export default function APIKeysPage() {
+  const { fetchJson, isLoaded, isSignedIn, orgId, backendUrl } = useAuthApi();
+
   const [keys, setKeys] = useState<APIKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,26 +60,43 @@ export default function APIKeysPage() {
   const [creating, setCreating] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Use org ID from Clerk, fallback to 'default' for backwards compatibility
+  const organizationId = orgId || 'default';
+
   const fetchKeys = useCallback(async () => {
+    if (!isSignedIn) return;
+
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/api-keys/organizations/${DEFAULT_ORG_ID}/keys`);
-      if (response.ok) {
-        const data = await response.json();
-        setKeys(data.keys || []);
+      const response = await fetchJson<APIKey[]>(
+        `/api/v1/api-keys/organizations/${organizationId}/keys`
+      );
+      if (response.data) {
+        setKeys(Array.isArray(response.data) ? response.data : []);
+        setError(null);
+      } else if (response.error) {
+        console.error('Failed to fetch API keys:', response.error);
+        // Don't show error for 401 - user needs to sign in
+        if (response.status !== 401) {
+          setError(response.error);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch API keys:', err);
     }
-  }, []);
+  }, [fetchJson, organizationId, isSignedIn]);
 
   useEffect(() => {
+    if (!isLoaded) return;
+
     const loadData = async () => {
       setLoading(true);
-      await fetchKeys();
+      if (isSignedIn) {
+        await fetchKeys();
+      }
       setLoading(false);
     };
     loadData();
-  }, [fetchKeys]);
+  }, [fetchKeys, isLoaded, isSignedIn]);
 
   const activeKeys = keys.filter(k => k.is_active);
   const revokedKeys = keys.filter(k => !k.is_active);
@@ -89,29 +108,41 @@ export default function APIKeysPage() {
     setError(null);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/api-keys/organizations/${DEFAULT_ORG_ID}/keys`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newKeyName,
-          scopes: newKeyScopes,
-          expires_in_days: newKeyExpires,
-        }),
-      });
+      const response = await fetchJson<{ key: string; id: string; name: string; key_prefix: string; scopes: string[]; expires_at: string | null; created_at: string }>(
+        `/api/v1/api-keys/organizations/${organizationId}/keys`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            name: newKeyName,
+            scopes: newKeyScopes,
+            expires_in_days: newKeyExpires,
+          }),
+        }
+      );
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.data) {
         // Store the full key to show to the user (only time it's visible)
-        setShowNewKey(data.key);
+        setShowNewKey(response.data.key);
         // Add the key to state (without full key)
-        setKeys([data.api_key, ...keys]);
+        const newKey: APIKey = {
+          id: response.data.id,
+          name: response.data.name,
+          key_prefix: response.data.key_prefix,
+          scopes: response.data.scopes,
+          last_used_at: null,
+          request_count: 0,
+          expires_at: response.data.expires_at,
+          revoked_at: null,
+          created_at: response.data.created_at,
+          is_active: true,
+        };
+        setKeys([newKey, ...keys]);
         setNewKeyName('');
         setNewKeyScopes(['read', 'write']);
         setNewKeyExpires(null);
         setShowCreateModal(false);
       } else {
-        const data = await response.json();
-        setError(data.detail || 'Failed to create API key');
+        setError(response.error || 'Failed to create API key');
       }
     } catch (err) {
       setError('Failed to connect to server');
@@ -125,19 +156,19 @@ export default function APIKeysPage() {
     setError(null);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/api-keys/organizations/${DEFAULT_ORG_ID}/keys/${keyId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetchJson<{ message: string }>(
+        `/api/v1/api-keys/organizations/${organizationId}/keys/${keyId}`,
+        { method: 'DELETE' }
+      );
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 204 || response.data) {
         setKeys(keys.map(k =>
           k.id === keyId
             ? { ...k, is_active: false, revoked_at: new Date().toISOString() }
             : k
         ));
       } else {
-        const data = await response.json();
-        setError(data.detail || 'Failed to revoke API key');
+        setError(response.error || 'Failed to revoke API key');
       }
     } catch (err) {
       setError('Failed to connect to server');
@@ -151,17 +182,17 @@ export default function APIKeysPage() {
     setError(null);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/api-keys/organizations/${DEFAULT_ORG_ID}/keys/${keyId}/rotate`, {
-        method: 'POST',
-      });
+      const response = await fetchJson<{ key: string; new_key: APIKey }>(
+        `/api/v1/api-keys/organizations/${organizationId}/keys/${keyId}/rotate`,
+        { method: 'POST' }
+      );
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.data) {
         // Show the new key
-        setShowNewKey(data.key);
+        setShowNewKey(response.data.key);
         // Update keys list
         setKeys([
-          data.new_key,
+          response.data.new_key,
           ...keys.map(k =>
             k.id === keyId
               ? { ...k, is_active: false, revoked_at: new Date().toISOString() }
@@ -169,8 +200,7 @@ export default function APIKeysPage() {
           ),
         ]);
       } else {
-        const data = await response.json();
-        setError(data.detail || 'Failed to rotate API key');
+        setError(response.error || 'Failed to rotate API key');
       }
     } catch (err) {
       setError('Failed to connect to server');
@@ -193,7 +223,8 @@ export default function APIKeysPage() {
     }
   };
 
-  if (loading) {
+  // Show loading state
+  if (!isLoaded || loading) {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
@@ -202,6 +233,36 @@ export default function APIKeysPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-muted-foreground">Loading API keys...</p>
           </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show sign-in prompt if not authenticated
+  if (!isSignedIn) {
+    return (
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Key className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>Sign In Required</CardTitle>
+              <CardDescription>
+                You need to sign in to manage API keys
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <SignInButton mode="modal">
+                <Button size="lg">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
+                </Button>
+              </SignInButton>
+            </CardContent>
+          </Card>
         </main>
       </div>
     );
