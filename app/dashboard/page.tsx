@@ -28,6 +28,7 @@ import {
   QuickActions,
   QuickActionsSkeleton,
 } from '@/components/dashboard';
+import { DashboardHero, DashboardHeroSkeleton } from '@/components/dashboard/DashboardHero';
 import type { ActivityItem, TestHealthDataPoint } from '@/components/dashboard';
 import { useProjects } from '@/lib/hooks/use-projects';
 import { useReportsStats, useRecentRuns } from '@/lib/hooks/use-reports';
@@ -214,21 +215,44 @@ export default function DashboardPage() {
     <div className="flex min-h-screen">
       <Sidebar />
       <main className="flex-1 lg:ml-64">
-        {/* Header */}
-        <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex h-16 items-center justify-between gap-4 px-6">
-            {/* Greeting & Project Selector */}
-            <div className="flex items-center gap-4">
-              <div>
-                <h1 className="text-lg font-semibold">
-                  {getGreeting()}{userLoaded && user?.firstName ? `, ${user.firstName}` : ''}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {currentProject ? `Managing ${currentProject.name}` : 'Select a project'}
-                </p>
-              </div>
+        {/* Main Content */}
+        <div className="p-6 space-y-6">
+          {/* Dashboard Hero */}
+          {isLoading ? (
+            <DashboardHeroSkeleton />
+          ) : (
+            <DashboardHero
+              userName={user?.firstName || user?.fullName || 'there'}
+              qualityScore={Math.round(metrics.passRate)}
+              trend={
+                stats?.dailyStats && stats.dailyStats.length > 1
+                  ? (stats.dailyStats[stats.dailyStats.length - 1]?.passed || 0) >=
+                    (stats.dailyStats[0]?.passed || 0)
+                    ? 'up'
+                    : 'down'
+                  : 'stable'
+              }
+              todayInsight={
+                metrics.flakyTests > 0
+                  ? `You have ${metrics.flakyTests} flaky tests that need attention. Consider reviewing them to improve test reliability.`
+                  : metrics.passRate >= 90
+                  ? 'Your test suite is performing excellently! Keep up the great work.'
+                  : 'Focus on improving failing tests to boost your quality score.'
+              }
+              stats={{
+                testsToday: recentRuns.filter(
+                  (r) => new Date(r.created_at).toDateString() === new Date().toDateString()
+                ).length,
+                passRate: Math.round(metrics.passRate),
+                avgDuration: formatDuration((metrics.avgDuration || 0) * 1000),
+                healedTests: 0,
+              }}
+            />
+          )}
 
-              {/* Project Selector */}
+          {/* Project Selector Bar */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-card border">
+            <div className="flex items-center gap-4">
               <div className="relative">
                 <select
                   value={currentProjectId || ''}
@@ -246,89 +270,19 @@ export default function DashboardPage() {
                 </select>
                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               </div>
+              <span className="text-sm text-muted-foreground">
+                {currentProject ? currentProject.name : 'Select a project'}
+              </span>
             </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetchStats()}
-                disabled={isLoading}
-              >
-                <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
-                Refresh
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <div className="p-6 space-y-6">
-          {/* Metric Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {isLoading ? (
-              <>
-                <MetricCardSkeleton />
-                <MetricCardSkeleton />
-                <MetricCardSkeleton />
-                <MetricCardSkeleton />
-              </>
-            ) : (
-              <>
-                <MetricCard
-                  title="Total Tests"
-                  value={metrics.totalTests}
-                  icon={<TestTube className="h-6 w-6" />}
-                  color="info"
-                />
-                <MetricCard
-                  title="Pass Rate"
-                  value={`${metrics.passRate.toFixed(1)}%`}
-                  icon={<TrendingUp className="h-6 w-6" />}
-                  color="success"
-                  trend={
-                    stats?.dailyStats && stats.dailyStats.length > 1
-                      ? {
-                          value: Math.round(
-                            ((stats.dailyStats[stats.dailyStats.length - 1]?.passed || 0) /
-                              Math.max(
-                                (stats.dailyStats[stats.dailyStats.length - 1]?.passed || 0) +
-                                  (stats.dailyStats[stats.dailyStats.length - 1]?.failed || 0),
-                                1
-                              ) -
-                              (stats.dailyStats[0]?.passed || 0) /
-                                Math.max(
-                                  (stats.dailyStats[0]?.passed || 0) +
-                                    (stats.dailyStats[0]?.failed || 0),
-                                  1
-                                )) *
-                              100
-                          ),
-                          direction:
-                            (stats.dailyStats[stats.dailyStats.length - 1]?.passed || 0) >=
-                            (stats.dailyStats[0]?.passed || 0)
-                              ? 'up'
-                              : 'down',
-                          period: `vs ${selectedPeriod}d ago`,
-                        }
-                      : undefined
-                  }
-                />
-                <MetricCard
-                  title="Avg Duration"
-                  value={formatDuration((metrics.avgDuration || 0) * 1000)}
-                  icon={<Clock className="h-6 w-6" />}
-                  color="default"
-                />
-                <MetricCard
-                  title="Flaky Tests"
-                  value={metrics.flakyTests}
-                  icon={<AlertTriangle className="h-6 w-6" />}
-                  color={metrics.flakyTests > 0 ? 'warning' : 'default'}
-                />
-              </>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchStats()}
+              disabled={isLoading}
+            >
+              <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
+              Refresh
+            </Button>
           </div>
 
           {/* Main Grid */}

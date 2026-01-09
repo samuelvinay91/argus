@@ -19,6 +19,9 @@ import {
   Search,
   Loader2,
   AlertCircle,
+  RefreshCw,
+  Trash2,
+  Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -42,6 +45,15 @@ interface Organization {
   member_count: number;
 }
 
+interface PendingInvitation {
+  id: string;
+  email: string;
+  role: 'owner' | 'admin' | 'member' | 'viewer';
+  invited_at: string;
+  expires_at: string;
+  inviter_email?: string;
+}
+
 const ROLE_CONFIG = {
   owner: { label: 'Owner', icon: Crown, color: 'text-amber-500' },
   admin: { label: 'Admin', icon: Shield, color: 'text-blue-500' },
@@ -52,8 +64,10 @@ const ROLE_CONFIG = {
 export default function TeamPage() {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'member' | 'viewer'>('member');
@@ -61,6 +75,7 @@ export default function TeamPage() {
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [invitationActionLoading, setInvitationActionLoading] = useState<string | null>(null);
 
   const fetchOrganization = useCallback(async () => {
     try {
@@ -86,15 +101,31 @@ export default function TeamPage() {
     }
   }, []);
 
+  const fetchPendingInvitations = useCallback(async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/v1/invitations/organizations/${DEFAULT_ORG_ID}/invitations`);
+      if (response.ok) {
+        const data = await response.json();
+        // Filter to only show pending invitations
+        const pending = (data.invitations || data || []).filter(
+          (inv: PendingInvitation & { status?: string }) => inv.status === 'pending' || !inv.status
+        );
+        setPendingInvitations(pending);
+      }
+    } catch (err) {
+      console.error('Failed to fetch pending invitations:', err);
+    }
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       setError(null);
-      await Promise.all([fetchOrganization(), fetchMembers()]);
+      await Promise.all([fetchOrganization(), fetchMembers(), fetchPendingInvitations()]);
       setLoading(false);
     };
     loadData();
-  }, [fetchOrganization, fetchMembers]);
+  }, [fetchOrganization, fetchMembers, fetchPendingInvitations]);
 
   const filteredMembers = members.filter(m =>
     m.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -121,6 +152,9 @@ export default function TeamPage() {
         setMembers([...members, newMember]);
         setInviteEmail('');
         setShowInviteModal(false);
+        // Refresh pending invitations to show the new invitation
+        await fetchPendingInvitations();
+        setSuccessMessage(`Invitation sent to ${inviteEmail}`);
       } else {
         const data = await response.json();
         setError(data.detail || 'Failed to send invitation');
@@ -178,6 +212,62 @@ export default function TeamPage() {
     }
   };
 
+  const handleResendInvitation = async (invitation: PendingInvitation) => {
+    setInvitationActionLoading(invitation.id);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      // Resend by creating a new invitation with the same email and role
+      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}/members/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: invitation.email,
+          role: invitation.role,
+        }),
+      });
+
+      if (response.ok) {
+        setSuccessMessage(`Invitation resent to ${invitation.email}`);
+        // Refresh the invitations list
+        await fetchPendingInvitations();
+      } else {
+        const data = await response.json();
+        setError(data.detail || 'Failed to resend invitation');
+      }
+    } catch (err) {
+      setError('Failed to connect to server');
+    } finally {
+      setInvitationActionLoading(null);
+    }
+  };
+
+  const handleRevokeInvitation = async (invitationId: string) => {
+    setInvitationActionLoading(invitationId);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/v1/invitations/organizations/${DEFAULT_ORG_ID}/invitations/${invitationId}`,
+        { method: 'DELETE' }
+      );
+
+      if (response.ok) {
+        setPendingInvitations(pendingInvitations.filter(inv => inv.id !== invitationId));
+        setSuccessMessage('Invitation revoked successfully');
+      } else {
+        const data = await response.json();
+        setError(data.detail || 'Failed to revoke invitation');
+      }
+    } catch (err) {
+      setError('Failed to connect to server');
+    } finally {
+      setInvitationActionLoading(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen">
@@ -229,6 +319,21 @@ export default function TeamPage() {
             </Card>
           )}
 
+          {/* Success Alert */}
+          {successMessage && (
+            <Card className="border-emerald-500/50 bg-emerald-500/5">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 text-emerald-500">
+                  <CheckCircle className="h-5 w-5" />
+                  <span>{successMessage}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setSuccessMessage(null)} className="ml-auto">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Organization Info */}
           <Card>
             <CardHeader>
@@ -273,6 +378,117 @@ export default function TeamPage() {
               </div>
             ))}
           </div>
+
+          {/* Pending Invitations */}
+          {pendingInvitations.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Mail className="h-5 w-5 text-amber-500" />
+                      Pending Invitations
+                    </CardTitle>
+                    <CardDescription>
+                      {pendingInvitations.length} invitation{pendingInvitations.length !== 1 ? 's' : ''} awaiting response
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={fetchPendingInvitations}
+                    className="text-muted-foreground"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="divide-y">
+                  {pendingInvitations.map((invitation) => {
+                    const roleConfig = ROLE_CONFIG[invitation.role];
+                    const isExpired = new Date(invitation.expires_at) < new Date();
+                    const expiresIn = new Date(invitation.expires_at);
+
+                    return (
+                      <div
+                        key={invitation.id}
+                        className="flex items-center justify-between py-4"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 font-medium">
+                            <Mail className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{invitation.email}</span>
+                              {isExpired && (
+                                <span className="px-2 py-0.5 text-xs rounded-full bg-red-500/10 text-red-500">
+                                  Expired
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <roleConfig.icon className={cn("h-3.5 w-3.5", roleConfig.color)} />
+                              <span>{roleConfig.label}</span>
+                              <span>&middot;</span>
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                Invited {new Date(invitation.invited_at).toLocaleDateString()}
+                              </span>
+                              {!isExpired && (
+                                <>
+                                  <span>&middot;</span>
+                                  <span className="text-amber-500">
+                                    Expires {expiresIn.toLocaleDateString()}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleResendInvitation(invitation)}
+                            disabled={invitationActionLoading === invitation.id}
+                          >
+                            {invitationActionLoading === invitation.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Send className="h-3.5 w-3.5 mr-1.5" />
+                                Resend
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRevokeInvitation(invitation.id)}
+                            disabled={invitationActionLoading === invitation.id}
+                            className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                          >
+                            {invitationActionLoading === invitation.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                                Revoke
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Members List */}
           <Card>

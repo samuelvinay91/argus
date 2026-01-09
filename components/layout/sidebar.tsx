@@ -33,10 +33,12 @@ import {
   Bell,
   AlertTriangle,
   Activity,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
 import { Button } from '@/components/ui/button';
+import { OrganizationSwitcher } from '@/components/layout/org-switcher';
 import { Search } from 'lucide-react';
 
 // Sidebar context for global state
@@ -87,6 +89,7 @@ const analysisNavigation = [
 ];
 
 const enterpriseNavigation = [
+  { name: 'Organizations', href: '/organizations', icon: Building2, description: 'Manage orgs' },
   { name: 'Team', href: '/team', icon: Users, description: 'Manage team' },
   { name: 'API Keys', href: '/api-keys', icon: Key, description: 'API access' },
   { name: 'Audit Logs', href: '/audit', icon: ScrollText, description: 'Activity logs' },
@@ -152,6 +155,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <span className="font-bold text-lg tracking-tight">Argus</span>
       </div>
+
+      {/* Organization Switcher */}
+      <OrganizationSwitcher />
 
       {/* Search Button */}
       <div className="px-3 py-3 border-b border-border">

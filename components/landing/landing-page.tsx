@@ -36,6 +36,8 @@ import {
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { AuthButtons } from './auth-buttons';
+import { StatsSection } from './StatsSection';
+import { IntegrationLogos } from './IntegrationLogos';
 
 // IDE Integrations
 const ideIntegrations = [
@@ -389,51 +391,14 @@ export function LandingPage() {
             </button>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            {stats.map((stat, i) => (
-              <div
-                key={i}
-                className="card-elevated p-6 text-center hover-lift"
-              >
-                <div className="text-3xl font-bold text-primary mb-1">{stat.value}</div>
-                <div className="text-sm font-medium text-foreground mb-1">{stat.label}</div>
-                <div className="text-xs text-muted-foreground">{stat.desc}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* IDE Integrations */}
-      <section className="py-16 px-6 lg:px-8 border-y border-border/50">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-center text-sm text-muted-foreground mb-8">
-            Seamlessly integrates with your favorite AI-powered editors
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
-            {ideIntegrations.map((ide, i) => (
-              <div
-                key={i}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  ide.highlight
-                    ? 'bg-primary/10 border border-primary/30'
-                    : 'hover:bg-muted'
-                }`}
-              >
-                <Code2 className={`w-5 h-5 ${ide.highlight ? 'text-primary' : 'text-muted-foreground'}`} />
-                <div>
-                  <span className={`font-medium ${ide.highlight ? 'text-primary' : ''}`}>{ide.name}</span>
-                  <span className="text-xs text-muted-foreground ml-2">{ide.desc}</span>
-                </div>
-                {ide.highlight && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary text-primary-foreground ml-1">NEW</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Stats Section - New animated component */}
+      <StatsSection />
+
+      {/* Integration Logos Carousel */}
+      <IntegrationLogos title="Seamlessly integrates with your favorite AI-powered editors and tools" />
 
       {/* Social Proof - Trusted By */}
       <section className="py-12 px-6 lg:px-8 bg-muted/20">

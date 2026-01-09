@@ -7,6 +7,15 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  // Allow external images from CDNs
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.simpleicons.org',
+      },
+    ],
+  },
   // Exclude heavy files from serverless function traces (must be at root level)
   outputFileTracingExcludes: {
     '*': [

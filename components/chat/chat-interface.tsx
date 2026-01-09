@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat, Message } from 'ai/react';
-import { useRef, useEffect, useState, useCallback, memo } from 'react';
+import { useRef, useEffect, useState, useCallback, memo, useMemo } from 'react';
 import {
   Send,
   Loader2,
@@ -22,11 +22,14 @@ import {
   Check,
   RefreshCw,
   Wand2,
+  Zap,
+  ArrowRight,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -39,12 +42,387 @@ interface ChatInterfaceProps {
   onMessagesChange?: (messages: Message[]) => void;
 }
 
+// AI Status types
+type AIStatus = 'ready' | 'thinking' | 'typing';
+
 const SUGGESTIONS = [
   { icon: TestTube, text: 'Create a login test', fullText: 'Create a login test for email test@example.com', color: 'text-green-500' },
   { icon: Eye, text: 'Discover elements', fullText: 'Discover all interactive elements on https://demo.vercel.store', color: 'text-blue-500' },
   { icon: Compass, text: 'Run e-commerce test', fullText: 'Run a test: Go to demo.vercel.store, click on a product, add to cart', color: 'text-purple-500' },
   { icon: Sparkles, text: 'Extract product data', fullText: 'Extract all product names from https://demo.vercel.store', color: 'text-orange-500' },
 ];
+
+// Contextual quick suggestions based on conversation context
+const CONTEXTUAL_SUGGESTIONS = {
+  empty: [
+    { text: 'Run a quick test', icon: Zap },
+    { text: 'Analyze my app', icon: Search },
+    { text: 'Check accessibility', icon: Eye },
+    { text: 'Find bugs', icon: Wand2 },
+  ],
+  afterTest: [
+    { text: 'Run again', icon: RefreshCw },
+    { text: 'Fix errors', icon: Wand2 },
+    { text: 'Export results', icon: ArrowRight },
+    { text: 'Add more tests', icon: TestTube },
+  ],
+  afterError: [
+    { text: 'Retry with fixes', icon: RefreshCw },
+    { text: 'Explain error', icon: Search },
+    { text: 'Skip this step', icon: ArrowRight },
+    { text: 'Try alternative', icon: Wand2 },
+  ],
+};
+
+// ============================================================================
+// AI AVATAR COMPONENT
+// ============================================================================
+interface AIAvatarProps {
+  status: AIStatus;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const AIAvatar = memo(function AIAvatar({ status, size = 'md', className }: AIAvatarProps) {
+  const sizeClasses = {
+    sm: 'w-6 h-6',
+    md: 'w-8 h-8',
+    lg: 'w-10 h-10',
+  };
+
+  const iconSizes = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6',
+  };
+
+  return (
+    <div className={cn('relative flex-shrink-0', className)}>
+      {/* Outer pulse ring for thinking state */}
+      <AnimatePresence>
+        {status === 'thinking' && (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1.4, opacity: 0 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: 'easeOut',
+            }}
+            className={cn(
+              'absolute inset-0 rounded-full bg-primary/30',
+              sizeClasses[size]
+            )}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Main avatar container */}
+      <motion.div
+        animate={
+          status === 'thinking'
+            ? { scale: [1, 1.05, 1] }
+            : status === 'typing'
+            ? { rotate: [0, 5, -5, 0] }
+            : { scale: 1 }
+        }
+        transition={{
+          duration: status === 'thinking' ? 1.5 : 0.5,
+          repeat: status !== 'ready' ? Infinity : 0,
+          ease: 'easeInOut',
+        }}
+        className={cn(
+          'rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center',
+          sizeClasses[size]
+        )}
+      >
+        <Bot className={cn('text-primary', iconSizes[size])} />
+      </motion.div>
+
+      {/* Status indicator dot */}
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        className={cn(
+          'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background',
+          status === 'ready' && 'bg-green-500',
+          status === 'thinking' && 'bg-amber-500',
+          status === 'typing' && 'bg-blue-500'
+        )}
+      >
+        {status !== 'ready' && (
+          <motion.div
+            className="w-full h-full rounded-full bg-inherit"
+            animate={{ opacity: [1, 0.4, 1] }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+          />
+        )}
+      </motion.div>
+    </div>
+  );
+});
+
+// ============================================================================
+// TYPING INDICATOR COMPONENT
+// ============================================================================
+interface TypingIndicatorProps {
+  className?: string;
+}
+
+const TypingIndicator = memo(function TypingIndicator({ className }: TypingIndicatorProps) {
+  const dotVariants: Variants = {
+    initial: { y: 0 },
+    animate: { y: -6 },
+  };
+
+  return (
+    <div className={cn('flex items-center gap-1 px-2 py-1', className)}>
+      {[0, 1, 2].map((index) => (
+        <motion.div
+          key={index}
+          variants={dotVariants}
+          initial="initial"
+          animate="animate"
+          transition={{
+            duration: 0.4,
+            repeat: Infinity,
+            repeatType: 'reverse',
+            delay: index * 0.15,
+            ease: 'easeInOut',
+          }}
+          className="w-2 h-2 rounded-full bg-primary/60"
+        />
+      ))}
+    </div>
+  );
+});
+
+// ============================================================================
+// STREAMING TEXT WITH CURSOR
+// ============================================================================
+interface StreamingTextProps {
+  text: string;
+  isStreaming?: boolean;
+  className?: string;
+}
+
+const StreamingText = memo(function StreamingText({ text, isStreaming, className }: StreamingTextProps) {
+  return (
+    <span className={cn('inline', className)}>
+      {text}
+      {isStreaming && (
+        <motion.span
+          className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle"
+          animate={{ opacity: [1, 0] }}
+          transition={{
+            duration: 0.5,
+            repeat: Infinity,
+            repeatType: 'reverse',
+          }}
+        />
+      )}
+    </span>
+  );
+});
+
+// ============================================================================
+// QUICK SUGGESTIONS CHIPS
+// ============================================================================
+interface QuickSuggestionsProps {
+  suggestions: Array<{ text: string; icon: typeof Zap }>;
+  onSelect: (text: string) => void;
+  className?: string;
+}
+
+const QuickSuggestions = memo(function QuickSuggestions({
+  suggestions,
+  onSelect,
+  className,
+}: QuickSuggestionsProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={cn('flex flex-wrap gap-2', className)}
+    >
+      {suggestions.map((suggestion, index) => (
+        <motion.button
+          key={suggestion.text}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: index * 0.05 }}
+          whileHover={{ scale: 1.05, y: -2 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => onSelect(suggestion.text)}
+          className={cn(
+            'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium',
+            'bg-primary/10 text-primary hover:bg-primary/20',
+            'border border-primary/20 hover:border-primary/40',
+            'transition-colors duration-200'
+          )}
+        >
+          <suggestion.icon className="w-3 h-3" />
+          {suggestion.text}
+        </motion.button>
+      ))}
+    </motion.div>
+  );
+});
+
+// ============================================================================
+// INLINE AI SUGGESTION CARD
+// ============================================================================
+interface AISuggestionCardProps {
+  title: string;
+  description: string;
+  onAccept: () => void;
+  onDismiss: () => void;
+  className?: string;
+}
+
+const AISuggestionCard = memo(function AISuggestionCard({
+  title,
+  description,
+  onAccept,
+  onDismiss,
+  className,
+}: AISuggestionCardProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+      className={cn(
+        'relative overflow-hidden rounded-lg border',
+        'bg-gradient-to-br from-primary/5 via-primary/10 to-purple-500/5',
+        'border-primary/20',
+        className
+      )}
+    >
+      {/* Shimmer effect */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+        animate={{ x: ['-100%', '100%'] }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+      />
+
+      <div className="relative p-3 space-y-2">
+        <div className="flex items-start gap-2">
+          <div className="p-1.5 rounded-md bg-primary/10">
+            <Sparkles className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-medium text-foreground">{title}</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          <Button
+            size="sm"
+            onClick={onAccept}
+            className="h-7 text-xs px-3 bg-primary hover:bg-primary/90"
+          >
+            <Check className="w-3 h-3 mr-1" />
+            Accept
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onDismiss}
+            className="h-7 text-xs px-3 text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-3 h-3 mr-1" />
+            Dismiss
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
+// ============================================================================
+// MESSAGE BUBBLE COMPONENTS
+// ============================================================================
+interface MessageBubbleProps {
+  isUser: boolean;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const MessageBubble = memo(function MessageBubble({ isUser, children, className }: MessageBubbleProps) {
+  if (isUser) {
+    return (
+      <Card className={cn(
+        'max-w-[90%] sm:max-w-[85%]',
+        'bg-primary text-primary-foreground',
+        className
+      )}>
+        <CardContent className="p-2 sm:p-3">
+          {children}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // AI message with glass effect
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={cn(
+        'max-w-[90%] sm:max-w-[85%] relative overflow-hidden rounded-lg',
+        className
+      )}
+    >
+      {/* Glass effect background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-card/80 via-card/90 to-card/80 backdrop-blur-sm border border-white/10 rounded-lg" />
+
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 rounded-lg" />
+
+      {/* Content */}
+      <div className="relative p-2 sm:p-3">
+        {children}
+      </div>
+    </motion.div>
+  );
+});
+
+// ============================================================================
+// STAGGERED MESSAGE ANIMATIONS
+// ============================================================================
+const messageContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const messageItemVariants: Variants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.3,
+      ease: 'easeOut',
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    transition: {
+      duration: 0.2,
+    },
+  },
+};
 
 // Memoized Markdown renderer component for chat messages
 const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { content: string }) {
@@ -440,7 +818,7 @@ function ResultDisplay({ result }: { result: unknown }) {
               </p>
               {errorDetails?.suggestedAction && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  💡 {errorDetails.suggestedAction}
+                  {errorDetails.suggestedAction}
                 </p>
               )}
               {errorDetails?.isRetryable && !hasHealingSuggestions && (
@@ -605,9 +983,9 @@ function ResultDisplay({ result }: { result: unknown }) {
       <div className="space-y-2">
         <div className="text-xs">
           {data.success ? (
-            <span className="text-green-500">✓ {String(data.message)}</span>
+            <span className="text-green-500">{String(data.message)}</span>
           ) : (
-            <span className="text-red-500">✗ {String(data.message)}</span>
+            <span className="text-red-500">{String(data.message)}</span>
           )}
         </div>
         <ScreenshotGallery screenshots={screenshots} label="Action Screenshot" />
@@ -627,14 +1005,14 @@ function ResultDisplay({ result }: { result: unknown }) {
 }
 
 // Message content renderer
-function MessageContent({ message }: { message: Message }) {
+function MessageContent({ message, isStreaming }: { message: Message; isStreaming?: boolean }) {
   // Handle tool invocations (new AI SDK format)
   if (message.toolInvocations && message.toolInvocations.length > 0) {
     return (
       <div>
         {message.content && (
           <div className="max-w-none mb-3">
-            <MarkdownRenderer content={message.content} />
+            <StreamingText text={message.content} isStreaming={isStreaming && !message.toolInvocations.some(t => t.state === 'result')} />
           </div>
         )}
         {message.toolInvocations.map((tool, index) => (
@@ -650,10 +1028,14 @@ function MessageContent({ message }: { message: Message }) {
     );
   }
 
-  // Regular text content - use markdown renderer
+  // Regular text content - use markdown renderer with streaming effect
   return (
     <div className="max-w-none">
-      <MarkdownRenderer content={message.content} />
+      {isStreaming ? (
+        <StreamingText text={message.content} isStreaming={true} />
+      ) : (
+        <MarkdownRenderer content={message.content} />
+      )}
     </div>
   );
 }
@@ -662,6 +1044,8 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   // Track last saved message count to prevent duplicate saves
   const lastSavedCountRef = useRef(0);
   const [error, setError] = useState<string | null>(null);
+  const [showSuggestionCard, setShowSuggestionCard] = useState(false);
+  const [suggestionCardData, setSuggestionCardData] = useState<{ title: string; description: string } | null>(null);
 
   // Store conversationId in ref to avoid stale closure issues
   const conversationIdRef = useRef(conversationId);
@@ -711,6 +1095,31 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     },
   });
 
+  // Determine AI status based on loading state and messages
+  const aiStatus: AIStatus = useMemo(() => {
+    if (!isLoading) return 'ready';
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role === 'assistant' && lastMessage.content) {
+      return 'typing';
+    }
+    return 'thinking';
+  }, [isLoading, messages]);
+
+  // Get contextual suggestions based on conversation state
+  const contextualSuggestions = useMemo(() => {
+    if (messages.length === 0) return CONTEXTUAL_SUGGESTIONS.empty;
+    const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
+    if (lastAssistantMessage?.toolInvocations?.some(t =>
+      t.state === 'result' && typeof t.result === 'object' && t.result && 'error' in t.result
+    )) {
+      return CONTEXTUAL_SUGGESTIONS.afterError;
+    }
+    if (lastAssistantMessage?.toolInvocations?.some(t => t.state === 'result')) {
+      return CONTEXTUAL_SUGGESTIONS.afterTest;
+    }
+    return CONTEXTUAL_SUGGESTIONS.empty;
+  }, [messages]);
+
   // Persist user message immediately when they submit (before AI responds)
   const handleSubmitWithPersist = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -749,15 +1158,42 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  // Smooth scroll to bottom with animation
+  const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
     }
-  }, [messages]);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   const handleSuggestionClick = (text: string) => {
     setInput(text);
     inputRef.current?.focus();
+  };
+
+  const handleQuickSuggestionSelect = (text: string) => {
+    setInput(text);
+    inputRef.current?.focus();
+  };
+
+  const handleAcceptSuggestion = () => {
+    if (suggestionCardData) {
+      setInput(suggestionCardData.description);
+      setShowSuggestionCard(false);
+      setSuggestionCardData(null);
+      inputRef.current?.focus();
+    }
+  };
+
+  const handleDismissSuggestion = () => {
+    setShowSuggestionCard(false);
+    setSuggestionCardData(null);
   };
 
   return (
@@ -765,15 +1201,17 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
       {/* Chat Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-3 sm:space-y-4 p-2 sm:p-4"
+        className="flex-1 overflow-y-auto space-y-3 sm:space-y-4 p-2 sm:p-4 scroll-smooth"
       >
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full space-y-4 sm:space-y-8 px-2">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center h-full space-y-4 sm:space-y-8 px-2"
+          >
             <div className="text-center space-y-2">
               <div className="flex justify-center">
-                <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20">
-                  <Bot className="w-8 h-8 sm:w-12 sm:h-12 text-primary" />
-                </div>
+                <AIAvatar status="ready" size="lg" />
               </div>
               <h2 className="text-xl sm:text-2xl font-bold">Hey Argus</h2>
               <p className="text-sm sm:text-base text-muted-foreground max-w-md">
@@ -782,13 +1220,18 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
             </div>
 
             {/* Suggestions - 2x2 grid on mobile, 2 columns on desktop */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 max-w-2xl w-full">
+            <motion.div
+              variants={messageContainerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-2 gap-2 sm:gap-3 max-w-2xl w-full"
+            >
               {SUGGESTIONS.map((suggestion, index) => (
                 <motion.button
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  variants={messageItemVariants}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleSuggestionClick(suggestion.fullText)}
                   className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg border bg-card hover:bg-accent transition-colors text-center sm:text-left group"
                 >
@@ -801,78 +1244,97 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                   <span className="text-xs sm:text-sm leading-tight">{suggestion.text}</span>
                 </motion.button>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         ) : (
-          <AnimatePresence>
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className={cn(
-                  'flex gap-3',
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                )}
-              >
-                {message.role === 'assistant' && (
-                  <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
-                    <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  </div>
-                )}
-                <Card className={cn(
-                  'max-w-[90%] sm:max-w-[85%]',
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-card'
-                )}>
-                  <CardContent className="p-2 sm:p-3">
-                    {message.role === 'user' ? (
-                      <div className="max-w-none text-primary-foreground [&_p]:text-primary-foreground [&_a]:text-primary-foreground [&_code]:bg-primary-foreground/20">
-                        <MarkdownRenderer content={message.content} />
-                      </div>
-                    ) : (
-                      <MessageContent message={message} />
+          <motion.div
+            variants={messageContainerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <AnimatePresence mode="popLayout">
+              {messages.map((message, index) => {
+                const isLastMessage = index === messages.length - 1;
+                const isStreamingThisMessage = isLoading && isLastMessage && message.role === 'assistant';
+
+                return (
+                  <motion.div
+                    key={message.id}
+                    variants={messageItemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    layout
+                    className={cn(
+                      'flex gap-3 mb-3 sm:mb-4',
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
                     )}
-                  </CardContent>
-                </Card>
-                {message.role === 'user' && (
-                  <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-secondary flex items-center justify-center">
-                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                  >
+                    {message.role === 'assistant' && (
+                      <AIAvatar
+                        status={isStreamingThisMessage ? 'typing' : 'ready'}
+                        size="sm"
+                      />
+                    )}
+                    <MessageBubble isUser={message.role === 'user'}>
+                      {message.role === 'user' ? (
+                        <div className="max-w-none text-primary-foreground [&_p]:text-primary-foreground [&_a]:text-primary-foreground [&_code]:bg-primary-foreground/20">
+                          <MarkdownRenderer content={message.content} />
+                        </div>
+                      ) : (
+                        <MessageContent message={message} isStreaming={isStreamingThisMessage} />
+                      )}
+                    </MessageBubble>
+                    {message.role === 'user' && (
+                      <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-secondary flex items-center justify-center">
+                        <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
         )}
 
-        {/* Loading indicator */}
+        {/* Typing indicator when AI is thinking (no content yet) */}
         {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
             className="flex gap-2 sm:gap-3"
           >
-            <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
-              <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-            </div>
-            <Card className="bg-card">
-              <CardContent className="p-2 sm:p-3">
-                <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="hidden sm:inline">Processing your request...</span>
-                  <span className="sm:hidden">Processing...</span>
-                </div>
-              </CardContent>
-            </Card>
+            <AIAvatar status="thinking" size="sm" />
+            <MessageBubble isUser={false}>
+              <TypingIndicator />
+            </MessageBubble>
           </motion.div>
         )}
+
+        {/* Inline AI Suggestion Card */}
+        <AnimatePresence>
+          {showSuggestionCard && suggestionCardData && (
+            <motion.div className="flex gap-3 justify-start">
+              <AIAvatar status="ready" size="sm" />
+              <AISuggestionCard
+                title={suggestionCardData.title}
+                description={suggestionCardData.description}
+                onAccept={handleAcceptSuggestion}
+                onDismiss={handleDismissSuggestion}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="mx-4 mb-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mb-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center justify-between"
+        >
           <span>{error}</span>
           <Button
             variant="ghost"
@@ -882,6 +1344,16 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
           >
             <XCircle className="h-4 w-4" />
           </Button>
+        </motion.div>
+      )}
+
+      {/* Quick Suggestions Chips - show when there are messages and not loading */}
+      {messages.length > 0 && !isLoading && (
+        <div className="px-4 pb-2">
+          <QuickSuggestions
+            suggestions={contextualSuggestions}
+            onSelect={handleQuickSuggestionSelect}
+          />
         </div>
       )}
 

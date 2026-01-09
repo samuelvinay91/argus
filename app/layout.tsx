@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ClerkProvider, SignedIn } from '@clerk/nextjs';
-import { dark } from '@clerk/themes';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Providers } from '@/lib/providers';
 import { SidebarProvider, MobileSidebar, MobileHeader } from '@/components/layout/sidebar';
@@ -65,17 +64,16 @@ export default function RootLayout({
   return (
     <ClerkProvider
       appearance={{
-        baseTheme: dark,
         variables: {
           colorPrimary: '#14b8a6',
-          colorBackground: '#0c1222',
-          colorText: '#f1f5f9',
-          colorTextSecondary: '#94a3b8',
-          colorInputBackground: '#162032',
-          colorInputText: '#f1f5f9',
+          colorBackground: '#000000',
+          colorText: '#ededed',
+          colorTextSecondary: '#888888',
+          colorInputBackground: '#111111',
+          colorInputText: '#ededed',
         },
         elements: {
-          card: 'bg-card border border-border',
+          card: 'bg-[#0a0a0a] border border-[#222] shadow-2xl',
           formButtonPrimary: 'bg-primary hover:opacity-90',
           footerActionLink: 'text-primary hover:text-primary/80',
         },
@@ -83,9 +81,12 @@ export default function RootLayout({
     >
       <html lang="en" className="dark">
         <body className={inter.className}>
+          <a href="#main-content" className="skip-link">
+            Skip to main content
+          </a>
           <Providers>
             <SidebarProvider>
-              <div className="min-h-screen bg-background">
+              <div id="main-content" className="min-h-screen bg-background">
                 <MobileHeader />
                 <MobileSidebar />
                 {children}

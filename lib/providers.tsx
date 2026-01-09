@@ -1,7 +1,63 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
+
+// ============================================================================
+// Reduced Motion Provider
+// ============================================================================
+// Provides a context for components to check if user prefers reduced motion.
+// This respects the prefers-reduced-motion media query and can be used to
+// disable or simplify animations throughout the application.
+
+interface ReducedMotionContextValue {
+  prefersReducedMotion: boolean;
+}
+
+const ReducedMotionContext = createContext<ReducedMotionContextValue>({
+  prefersReducedMotion: false,
+});
+
+export function useReducedMotion(): boolean {
+  const context = useContext(ReducedMotionContext);
+  return context.prefersReducedMotion;
+}
+
+function ReducedMotionProvider({ children }: { children: ReactNode }) {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    // Check if window is available (client-side only)
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    // Set initial value
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    // Listen for changes
+    const handleChange = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  return (
+    <ReducedMotionContext.Provider value={{ prefersReducedMotion }}>
+      {children}
+    </ReducedMotionContext.Provider>
+  );
+}
+
+// ============================================================================
+// Main Providers Component
+// ============================================================================
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -20,7 +76,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <ReducedMotionProvider>{children}</ReducedMotionProvider>
     </QueryClientProvider>
   );
 }
