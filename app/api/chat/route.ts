@@ -117,7 +117,12 @@ export async function POST(req: Request) {
     // Check if Python backend is available
     const backendAvailable = await isBackendAvailable();
 
-    if (backendAvailable) {
+    // TODO: Re-enable Python backend routing once SSE format is compatible with Vercel AI SDK
+    // Currently the Python backend uses sse_starlette format which doesn't match AI SDK's expected format
+    // For now, use direct Claude API with tools which has better browser automation support
+    const usePythonBackend = false; // Temporarily disabled
+
+    if (backendAvailable && usePythonBackend) {
       // Route through Python LangGraph orchestrator for full capabilities
       console.log('Routing chat through Python LangGraph orchestrator');
 
