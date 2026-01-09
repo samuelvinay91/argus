@@ -63,7 +63,13 @@ export function useAuthApi() {
     options?: RequestInit
   ): Promise<ApiResponse<T>> => {
     try {
-      const token = await getToken();
+      // Get token with template for backend, fallback to default
+      let token: string | null = null;
+      try {
+        token = await getToken({ template: 'argus-backend' });
+      } catch {
+        token = await getToken();
+      }
       const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}${endpoint}`;
 
       const response = await fetch(url, {
@@ -101,7 +107,13 @@ export function useAuthApi() {
     body?: unknown,
     onMessage?: (event: string, data: unknown) => void
   ): Promise<void> => {
-    const token = await getToken();
+    // Get token with template for backend, fallback to default
+    let token: string | null = null;
+    try {
+      token = await getToken({ template: 'argus-backend' });
+    } catch {
+      token = await getToken();
+    }
     const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}${endpoint}`;
 
     const response = await fetch(url, {
