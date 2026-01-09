@@ -5,6 +5,7 @@ const isPublicRoute = createRouteMatcher([
   '/',
   '/legal(.*)',
   '/api/webhook(.*)',
+  '/api/chat(.*)',  // Chat API - auth handled by backend
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/manifest.json',
