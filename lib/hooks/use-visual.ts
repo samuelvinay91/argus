@@ -130,6 +130,27 @@ export function useVisualComparisons(projectId: string | null, limit = 20) {
   });
 }
 
+export function useVisualComparison(comparisonId: string | null) {
+  const supabase = getSupabaseClient();
+
+  return useQuery({
+    queryKey: ['visual-comparison', comparisonId],
+    queryFn: async () => {
+      if (!comparisonId) return null;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('visual_comparisons') as any)
+        .select('*')
+        .eq('id', comparisonId)
+        .single();
+
+      if (error) throw error;
+      return data as VisualComparison;
+    },
+    enabled: !!comparisonId,
+  });
+}
+
 export function useApproveComparison() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
@@ -158,8 +179,9 @@ export function useApproveComparison() {
       if (error) throw error;
       return { comparison: data as VisualComparison, projectId };
     },
-    onSuccess: ({ projectId }) => {
+    onSuccess: ({ comparison, projectId }) => {
       queryClient.invalidateQueries({ queryKey: ['visual-comparisons', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['visual-comparison', comparison.id] });
     },
   });
 }
@@ -325,6 +347,7 @@ export function useRunVisualTest() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['visual-baselines', data.comparison.project_id] });
       queryClient.invalidateQueries({ queryKey: ['visual-comparisons', data.comparison.project_id] });
+      queryClient.invalidateQueries({ queryKey: ['visual-comparison', data.comparison.id] });
     },
   });
 }
@@ -375,9 +398,10 @@ export function useUpdateBaseline() {
 
       return { comparison: updated as VisualComparison, projectId };
     },
-    onSuccess: ({ projectId }) => {
+    onSuccess: ({ comparison, projectId }) => {
       queryClient.invalidateQueries({ queryKey: ['visual-baselines', projectId] });
       queryClient.invalidateQueries({ queryKey: ['visual-comparisons', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['visual-comparison', comparison.id] });
     },
   });
 }

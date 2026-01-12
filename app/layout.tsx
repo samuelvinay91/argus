@@ -80,7 +80,7 @@ export default function RootLayout({
         },
       }}
     >
-      <html lang="en" className="dark">
+      <html lang="en" suppressHydrationWarning>
         <body className={inter.className}>
           <a href="#main-content" className="skip-link">
             Skip to main content

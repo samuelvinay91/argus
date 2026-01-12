@@ -225,9 +225,11 @@ export function StatusDot({ status }: { status: string }) {
 export function Badge({
   children,
   variant = 'default',
+  className,
 }: {
   children: React.ReactNode;
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'outline';
+  className?: string;
 }) {
   const variants: Record<string, string> = {
     default: 'bg-muted text-muted-foreground',
@@ -242,7 +244,8 @@ export function Badge({
     <span
       className={cn(
         'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-        variants[variant]
+        variants[variant],
+        className
       )}
     >
       {children}

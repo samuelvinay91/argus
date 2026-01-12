@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { UserButton } from '@clerk/nextjs';
 import {
   MessageSquare,
@@ -35,6 +36,9 @@ import {
   Activity,
   Building2,
   BookOpen,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
@@ -127,9 +131,71 @@ export function MobileMenuButton() {
   );
 }
 
+// Theme toggle component
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
+        <div className="h-8 w-8 rounded-md" />
+        <div className="h-8 w-8 rounded-md" />
+        <div className="h-8 w-8 rounded-md" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
+      <button
+        onClick={() => setTheme('light')}
+        className={cn(
+          'flex items-center justify-center h-8 w-8 rounded-md transition-colors',
+          theme === 'light'
+            ? 'bg-background text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+        title="Light mode"
+      >
+        <Sun className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => setTheme('dark')}
+        className={cn(
+          'flex items-center justify-center h-8 w-8 rounded-md transition-colors',
+          theme === 'dark'
+            ? 'bg-background text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+        title="Dark mode"
+      >
+        <Moon className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => setTheme('system')}
+        className={cn(
+          'flex items-center justify-center h-8 w-8 rounded-md transition-colors',
+          theme === 'system'
+            ? 'bg-background text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+        title="System preference"
+      >
+        <Monitor className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 // Sidebar content (shared between desktop and mobile)
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
 
   const handleClick = () => {
     onNavigate?.();
@@ -144,6 +210,22 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     });
     document.dispatchEvent(event);
   };
+
+  // Scroll to active menu item on mount and pathname change
+  useEffect(() => {
+    if (navRef.current) {
+      const activeLink = navRef.current.querySelector('[data-active="true"]');
+      if (activeLink) {
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+          activeLink.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+        });
+      }
+    }
+  }, [pathname]);
 
   return (
     <>
@@ -176,7 +258,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Main Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav ref={navRef} className="flex-1 overflow-y-auto px-3 py-4">
         {/* Core Section */}
         <div className="space-y-1">
           {coreNavigation.map((item) => {
@@ -186,6 +268,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 key={item.name}
                 href={item.href}
                 onClick={handleClick}
+                data-active={isActive}
                 className={cn(
                   'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                   isActive
@@ -216,6 +299,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   key={item.name}
                   href={item.href}
                   onClick={handleClick}
+                  data-active={isActive}
                   className={cn(
                     'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                     isActive
@@ -247,6 +331,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   key={item.name}
                   href={item.href}
                   onClick={handleClick}
+                  data-active={isActive}
                   className={cn(
                     'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                     isActive
@@ -278,6 +363,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   key={item.name}
                   href={item.href}
                   onClick={handleClick}
+                  data-active={isActive}
                   className={cn(
                     'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                     isActive
@@ -358,6 +444,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <p className="text-sm font-medium truncate">Account</p>
             <p className="text-xs text-muted-foreground truncate">Manage settings</p>
           </div>
+        </div>
+      </div>
+
+      {/* Theme Toggle */}
+      <div className="border-t border-border px-4 py-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">Theme</span>
+          <ThemeToggle />
         </div>
       </div>
 

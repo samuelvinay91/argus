@@ -343,7 +343,7 @@ Report any self-healing that occurred during tests.`,
           parameters: z.object({
             url: z.string().describe('URL to extract data from'),
             instruction: z.string().describe('What data to extract'),
-            schema: z.record(z.string()).optional().describe('Expected data schema'),
+            schema: z.record(z.string(), z.string()).optional().describe('Expected data schema'),
           }),
           execute: async ({ url, instruction, schema }) => {
             try {

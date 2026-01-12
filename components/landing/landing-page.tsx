@@ -35,9 +35,13 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { AuthButtons } from './auth-buttons';
 import { StatsSection } from './StatsSection';
 import { IntegrationLogos } from './IntegrationLogos';
+import { AnimatedMeshGradient } from './AnimatedMeshGradient';
+import { ProductShowcase } from './ProductShowcase';
+import { ScrollReveal, StaggerContainer, StaggerItem, TextReveal } from './ScrollReveal';
 
 // IDE Integrations
 const ideIntegrations = [
@@ -345,51 +349,58 @@ export function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-24 px-6 lg:px-8 relative overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[100px]" />
-          <div className="absolute top-1/2 right-10 w-[200px] h-[200px] bg-amber-500/5 rounded-full blur-[80px]" />
-          {/* Grid pattern */}
-          <div
-            className="absolute inset-0 opacity-[0.02]"
-            style={{
-              backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px),
-                               linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-              backgroundSize: '60px 60px',
-            }}
-          />
-        </div>
+      <section className="pt-32 pb-24 px-6 lg:px-8 relative overflow-hidden min-h-[90vh] flex items-center">
+        {/* Animated Mesh Gradient Background */}
+        <AnimatedMeshGradient intensity="normal" />
 
-        <div className="max-w-5xl mx-auto text-center relative">
+        <div className="max-w-5xl mx-auto text-center relative w-full">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
             <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-primary">Powered by Advanced AI Models</span>
-          </div>
+          </motion.div>
 
-          {/* Headline */}
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-[1.1]">
+          {/* Headline with text animation */}
+          <motion.h1
+            className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-[1.1]"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
             <span className="text-foreground">See Everything.</span>
             <br />
             <span className="gradient-text">Ship with Confidence.</span>
-          </h1>
+          </motion.h1>
 
           {/* Subheadline */}
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
+          <motion.p
+            className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
             The all-seeing quality intelligence platform. We deploy probes at every layer of your SDLC,
             correlating data and predicting issues before they reach production.
-          </p>
+          </motion.p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
+          <motion.div
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
             <AuthButtons variant="hero" />
             <button className="group w-full sm:w-auto btn-secondary px-8 py-4 text-base rounded-xl hover-lift">
               <Play className="w-5 h-5" />
               Watch Demo
             </button>
-          </div>
+          </motion.div>
 
         </div>
       </section>
@@ -399,6 +410,12 @@ export function LandingPage() {
 
       {/* Integration Logos Carousel */}
       <IntegrationLogos title="Seamlessly integrates with your favorite AI-powered editors and tools" />
+
+      {/* Product Showcase - Animated Dashboard Preview */}
+      <ProductShowcase
+        title="Experience the Future of Testing"
+        subtitle="Watch Argus automatically generate, execute, and heal tests in real-time"
+      />
 
       {/* Social Proof - Trusted By */}
       <section className="py-12 px-6 lg:px-8 bg-muted/20">
@@ -419,20 +436,20 @@ export function LandingPage() {
       {/* How It Works */}
       <section id="how-it-works" className="section-padding bg-muted/30">
         <div className="container-wide px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <ScrollReveal className="text-center mb-16">
             <h6 className="text-primary mb-3">HOW IT WORKS</h6>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">From Error to Test in Minutes</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Argus automates the entire testing workflow, from error detection to test generation
             </p>
-          </div>
+          </ScrollReveal>
 
-          <div className="grid md:grid-cols-4 gap-8">
+          <StaggerContainer className="grid md:grid-cols-4 gap-8" staggerDelay={0.15}>
             {steps.map((step, i) => (
-              <div key={i} className="relative">
-                <div className="card-elevated-hover p-8 h-full">
-                  <div className="text-5xl font-bold text-primary/20 mb-4">{step.num}</div>
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+              <StaggerItem key={i} className="relative">
+                <div className="card-elevated-hover p-8 h-full group">
+                  <div className="text-5xl font-bold text-primary/20 mb-4 group-hover:text-primary/30 transition-colors">{step.num}</div>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <step.icon className="w-6 h-6 text-primary" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
@@ -441,9 +458,9 @@ export function LandingPage() {
                 {i < 3 && (
                   <ChevronRight className="hidden md:block absolute top-1/2 -right-4 w-8 h-8 text-border -translate-y-1/2 z-10" />
                 )}
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         </div>
       </section>
 
@@ -486,31 +503,32 @@ export function LandingPage() {
       {/* Features */}
       <section id="features" className="section-padding bg-muted/30">
         <div className="container-wide px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <ScrollReveal className="text-center mb-16">
             <h6 className="text-primary mb-3">CAPABILITIES</h6>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Intelligence at Every Layer</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Everything you need to ship quality software faster
             </p>
-          </div>
+          </ScrollReveal>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" staggerDelay={0.1}>
             {features.map((feature, i) => (
-              <div
-                key={i}
-                className={`card-elevated-hover p-8 cursor-default transition-all duration-300 ${
-                  activeFeature === i ? 'border-primary/50 shadow-lg shadow-primary/5' : ''
-                }`}
-                onMouseEnter={() => setActiveFeature(i)}
-              >
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6`}>
-                  <feature.icon className="w-7 h-7 text-white" />
+              <StaggerItem key={i} animation="scale">
+                <div
+                  className={`card-elevated-hover p-8 cursor-default transition-all duration-300 h-full ${
+                    activeFeature === i ? 'border-primary/50 shadow-lg shadow-primary/5' : ''
+                  }`}
+                  onMouseEnter={() => setActiveFeature(i)}
+                >
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 transition-transform group-hover:scale-110`}>
+                    <feature.icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         </div>
       </section>
 
