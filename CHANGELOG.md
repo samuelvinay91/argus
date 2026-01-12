@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.2](https://github.com/RaphaEnterprises-AI/argus/compare/v1.1.1...v1.1.2) (2026-01-12)
+
+
+### Bug Fixes
+
+* **ci:** use PAT for release-please to trigger other workflows ([30c2b23](https://github.com/RaphaEnterprises-AI/argus/commit/30c2b2307dd91fe4153637e877a09e1ca8a8610d))
+* resolve landing page console errors ([267b4e5](https://github.com/RaphaEnterprises-AI/argus/commit/267b4e50bbe7eaa210d64abfa86304c312f34fa9))
+* standardize package description casing ([f3aa4e6](https://github.com/RaphaEnterprises-AI/argus/commit/f3aa4e669791c6b442422a36bd2a5004fdd2bbaa))
+
 ## [1.1.1](https://github.com/RaphaEnterprises-AI/argus/compare/v1.1.0...v1.1.1) (2026-01-12)
 
 ### Bug Fixes
