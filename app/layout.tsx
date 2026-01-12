@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ClerkProvider, SignedIn } from '@clerk/nextjs';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -16,7 +16,6 @@ export const metadata: Metadata = {
   description: 'Hey Argus - Your AI testing companion. Generate tests from production errors, predict bugs before they ship, and ship quality software faster.',
   keywords: ['e2e testing', 'ai testing', 'automated testing', 'qa automation', 'argus', 'test generation', 'self-healing tests'],
   manifest: '/manifest.json',
-  themeColor: '#6366F1',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -48,12 +47,14 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#6366F1',
 };
 
 export default function RootLayout({
