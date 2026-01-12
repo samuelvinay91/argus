@@ -14,27 +14,27 @@ interface IntegrationLogosProps {
   speed?: 'slow' | 'normal' | 'fast';
 }
 
-// Using Simple Icons CDN for logos with white color (hex format: ffffff)
-// Note: Some icons may not exist in SimpleIcons (e.g., Playwright) - handled by onError
+// Using Devicon CDN - comprehensive tech icon library with all major brands
+// https://devicon.dev/
 const defaultLogos: Logo[] = [
   // CI/CD
-  { name: 'GitHub', src: 'https://cdn.simpleicons.org/github/ffffff', category: 'ci-cd' },
-  { name: 'GitLab', src: 'https://cdn.simpleicons.org/gitlab/ffffff', category: 'ci-cd' },
-  { name: 'Jenkins', src: 'https://cdn.simpleicons.org/jenkins/ffffff', category: 'ci-cd' },
-  { name: 'CircleCI', src: 'https://cdn.simpleicons.org/circleci/ffffff', category: 'ci-cd' },
+  { name: 'GitHub', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg', category: 'ci-cd' },
+  { name: 'GitLab', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/gitlab/gitlab-original.svg', category: 'ci-cd' },
+  { name: 'Jenkins', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/jenkins/jenkins-original.svg', category: 'ci-cd' },
+  { name: 'CircleCI', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/circleci/circleci-plain.svg', category: 'ci-cd' },
   // Frameworks
-  { name: 'Selenium', src: 'https://cdn.simpleicons.org/selenium/ffffff', category: 'framework' },
-  { name: 'Cypress', src: 'https://cdn.simpleicons.org/cypress/ffffff', category: 'framework' },
-  { name: 'Puppeteer', src: 'https://cdn.simpleicons.org/puppeteer/ffffff', category: 'framework' },
-  { name: 'Jest', src: 'https://cdn.simpleicons.org/jest/ffffff', category: 'framework' },
+  { name: 'Selenium', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/selenium/selenium-original.svg', category: 'framework' },
+  { name: 'Cypress', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cypressio/cypressio-original.svg', category: 'framework' },
+  { name: 'Puppeteer', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/puppeteer/puppeteer-original.svg', category: 'framework' },
+  { name: 'Jest', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/jest/jest-plain.svg', category: 'framework' },
   // Cloud
-  { name: 'Docker', src: 'https://cdn.simpleicons.org/docker/ffffff', category: 'cloud' },
-  { name: 'Kubernetes', src: 'https://cdn.simpleicons.org/kubernetes/ffffff', category: 'cloud' },
-  { name: 'Google Cloud', src: 'https://cdn.simpleicons.org/googlecloud/ffffff', category: 'cloud' },
+  { name: 'AWS', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original-wordmark.svg', category: 'cloud' },
+  { name: 'Azure', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg', category: 'cloud' },
+  { name: 'Google Cloud', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg', category: 'cloud' },
   // Monitoring
-  { name: 'Slack', src: 'https://cdn.simpleicons.org/slack', category: 'monitoring' },
-  { name: 'Sentry', src: 'https://cdn.simpleicons.org/sentry/ffffff', category: 'monitoring' },
-  { name: 'Datadog', src: 'https://cdn.simpleicons.org/datadog/ffffff', category: 'monitoring' },
+  { name: 'Slack', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/slack/slack-original.svg', category: 'monitoring' },
+  { name: 'Sentry', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sentry/sentry-original.svg', category: 'monitoring' },
+  { name: 'Datadog', src: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/datadog/datadog-original.svg', category: 'monitoring' },
 ];
 
 const speedMap = {
@@ -93,6 +93,10 @@ export function IntegrationLogos({
                     className={`w-10 h-10 object-contain transition-opacity duration-300 ${
                       loadedLogos.has(logo.name) ? 'opacity-100' : 'opacity-0'
                     }`}
+                    style={{
+                      // Invert dark icons (GitHub, CircleCI) to white for dark backgrounds
+                      filter: ['GitHub', 'CircleCI'].includes(logo.name) ? 'invert(1)' : undefined,
+                    }}
                     onLoad={() => handleImageLoad(logo.name)}
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
