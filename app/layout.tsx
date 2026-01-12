@@ -95,6 +95,28 @@ export default function RootLayout({
           alertText: 'text-[#ededed]',
           headerTitle: 'text-[#ededed]',
           headerSubtitle: 'text-[#a1a1aa]',
+          // User button dropdown menu styling
+          userButtonPopoverCard: 'bg-[#0a0a0a] border border-[#27272a]',
+          userButtonPopoverActionButton:
+            'text-[#ededed] hover:bg-[#27272a] transition-colors',
+          userButtonPopoverActionButtonText: 'text-[#ededed]',
+          userButtonPopoverActionButtonIcon: 'text-[#a1a1aa]',
+          userButtonPopoverFooter: 'border-t border-[#27272a]',
+          // User profile and account pages
+          userPreviewMainIdentifier: 'text-[#ededed]',
+          userPreviewSecondaryIdentifier: 'text-[#a1a1aa]',
+          menuButton: 'text-[#ededed] hover:bg-[#27272a]',
+          menuItem: 'text-[#ededed] hover:bg-[#27272a]',
+          menuList: 'bg-[#0a0a0a] border border-[#27272a]',
+          navbar: 'bg-[#0a0a0a] border-b border-[#27272a]',
+          navbarButton: 'text-[#ededed] hover:bg-[#27272a]',
+          profileSection: 'border-b border-[#27272a]',
+          profileSectionTitle: 'text-[#a1a1aa]',
+          profileSectionContent: 'text-[#ededed]',
+          accordionTriggerButton: 'text-[#ededed] hover:bg-[#27272a]',
+          accordionContent: 'text-[#ededed]',
+          breadcrumbs: 'text-[#a1a1aa]',
+          breadcrumbsItem: 'text-[#ededed]',
         },
       }}
     >
