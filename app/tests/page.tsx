@@ -332,8 +332,7 @@ export default function TestsPage() {
       <Sidebar />
       <main className="flex-1 lg:ml-64">
         {/* Header */}
-        <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex h-14 items-center gap-4 px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
             {/* Project Selector */}
             <select
               value={currentProject || ''}
@@ -447,7 +446,6 @@ export default function TestsPage() {
               <Plus className="h-4 w-4 mr-2" />
               New Test
             </Button>
-          </div>
         </header>
 
         <div className="flex">
