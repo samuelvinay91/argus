@@ -14,26 +14,27 @@ interface IntegrationLogosProps {
   speed?: 'slow' | 'normal' | 'fast';
 }
 
-// Using Simple Icons CDN for logos with white color for dark theme
+// Using Simple Icons CDN for logos with white color (hex format: ffffff)
+// Note: Some icons may not exist in SimpleIcons (e.g., Playwright) - handled by onError
 const defaultLogos: Logo[] = [
   // CI/CD
-  { name: 'GitHub', src: 'https://cdn.simpleicons.org/github/white', category: 'ci-cd' },
-  { name: 'GitLab', src: 'https://cdn.simpleicons.org/gitlab/white', category: 'ci-cd' },
-  { name: 'Jenkins', src: 'https://cdn.simpleicons.org/jenkins/white', category: 'ci-cd' },
-  { name: 'CircleCI', src: 'https://cdn.simpleicons.org/circleci/white', category: 'ci-cd' },
+  { name: 'GitHub', src: 'https://cdn.simpleicons.org/github/ffffff', category: 'ci-cd' },
+  { name: 'GitLab', src: 'https://cdn.simpleicons.org/gitlab/ffffff', category: 'ci-cd' },
+  { name: 'Jenkins', src: 'https://cdn.simpleicons.org/jenkins/ffffff', category: 'ci-cd' },
+  { name: 'CircleCI', src: 'https://cdn.simpleicons.org/circleci/ffffff', category: 'ci-cd' },
   // Frameworks
-  { name: 'Selenium', src: 'https://cdn.simpleicons.org/selenium/white', category: 'framework' },
-  { name: 'Cypress', src: 'https://cdn.simpleicons.org/cypress/white', category: 'framework' },
-  { name: 'Playwright', src: 'https://cdn.simpleicons.org/playwright/white', category: 'framework' },
-  { name: 'Jest', src: 'https://cdn.simpleicons.org/jest/white', category: 'framework' },
+  { name: 'Selenium', src: 'https://cdn.simpleicons.org/selenium/ffffff', category: 'framework' },
+  { name: 'Cypress', src: 'https://cdn.simpleicons.org/cypress/ffffff', category: 'framework' },
+  { name: 'Puppeteer', src: 'https://cdn.simpleicons.org/puppeteer/ffffff', category: 'framework' },
+  { name: 'Jest', src: 'https://cdn.simpleicons.org/jest/ffffff', category: 'framework' },
   // Cloud
-  { name: 'AWS', src: 'https://cdn.simpleicons.org/amazonaws/white', category: 'cloud' },
-  { name: 'Azure', src: 'https://cdn.simpleicons.org/microsoftazure/white', category: 'cloud' },
-  { name: 'Google Cloud', src: 'https://cdn.simpleicons.org/googlecloud/white', category: 'cloud' },
+  { name: 'AWS', src: 'https://cdn.simpleicons.org/amazonwebservices/ffffff', category: 'cloud' },
+  { name: 'Azure', src: 'https://cdn.simpleicons.org/microsoftazure/ffffff', category: 'cloud' },
+  { name: 'Google Cloud', src: 'https://cdn.simpleicons.org/googlecloud/ffffff', category: 'cloud' },
   // Monitoring
-  { name: 'Slack', src: 'https://cdn.simpleicons.org/slack/white', category: 'monitoring' },
-  { name: 'Sentry', src: 'https://cdn.simpleicons.org/sentry/white', category: 'monitoring' },
-  { name: 'Datadog', src: 'https://cdn.simpleicons.org/datadog/white', category: 'monitoring' },
+  { name: 'Slack', src: 'https://cdn.simpleicons.org/slack/ffffff', category: 'monitoring' },
+  { name: 'Sentry', src: 'https://cdn.simpleicons.org/sentry/ffffff', category: 'monitoring' },
+  { name: 'Datadog', src: 'https://cdn.simpleicons.org/datadog/ffffff', category: 'monitoring' },
 ];
 
 const speedMap = {
