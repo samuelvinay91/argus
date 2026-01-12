@@ -27,9 +27,9 @@ const defaultLogos: Logo[] = [
   { name: 'Cypress', src: 'https://cdn.simpleicons.org/cypress/ffffff', category: 'framework' },
   { name: 'Puppeteer', src: 'https://cdn.simpleicons.org/puppeteer/ffffff', category: 'framework' },
   { name: 'Jest', src: 'https://cdn.simpleicons.org/jest/ffffff', category: 'framework' },
-  // Cloud - Some icons don't support custom colors due to brand guidelines
-  { name: 'AWS', src: 'https://cdn.simpleicons.org/amazonaws', category: 'cloud' },
-  { name: 'Azure', src: 'https://cdn.simpleicons.org/microsoftazure', category: 'cloud' },
+  // Cloud
+  { name: 'Docker', src: 'https://cdn.simpleicons.org/docker/ffffff', category: 'cloud' },
+  { name: 'Kubernetes', src: 'https://cdn.simpleicons.org/kubernetes/ffffff', category: 'cloud' },
   { name: 'Google Cloud', src: 'https://cdn.simpleicons.org/googlecloud/ffffff', category: 'cloud' },
   // Monitoring
   { name: 'Slack', src: 'https://cdn.simpleicons.org/slack', category: 'monitoring' },
