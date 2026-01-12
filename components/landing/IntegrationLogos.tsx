@@ -27,12 +27,12 @@ const defaultLogos: Logo[] = [
   { name: 'Cypress', src: 'https://cdn.simpleicons.org/cypress/ffffff', category: 'framework' },
   { name: 'Puppeteer', src: 'https://cdn.simpleicons.org/puppeteer/ffffff', category: 'framework' },
   { name: 'Jest', src: 'https://cdn.simpleicons.org/jest/ffffff', category: 'framework' },
-  // Cloud
-  { name: 'AWS', src: 'https://cdn.simpleicons.org/amazonwebservices/ffffff', category: 'cloud' },
-  { name: 'Azure', src: 'https://cdn.simpleicons.org/microsoftazure/ffffff', category: 'cloud' },
+  // Cloud - Some icons don't support custom colors due to brand guidelines
+  { name: 'AWS', src: 'https://cdn.simpleicons.org/amazonaws', category: 'cloud' },
+  { name: 'Azure', src: 'https://cdn.simpleicons.org/microsoftazure', category: 'cloud' },
   { name: 'Google Cloud', src: 'https://cdn.simpleicons.org/googlecloud/ffffff', category: 'cloud' },
   // Monitoring
-  { name: 'Slack', src: 'https://cdn.simpleicons.org/slack/ffffff', category: 'monitoring' },
+  { name: 'Slack', src: 'https://cdn.simpleicons.org/slack', category: 'monitoring' },
   { name: 'Sentry', src: 'https://cdn.simpleicons.org/sentry/ffffff', category: 'monitoring' },
   { name: 'Datadog', src: 'https://cdn.simpleicons.org/datadog/ffffff', category: 'monitoring' },
 ];
