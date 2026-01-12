@@ -1,6 +1,16 @@
 # Changelog
 
-## [1.1.0](https://github.com/samuelvinay91/e2e-testing-agent/compare/argus-dashboard-v1.0.0...argus-dashboard-v1.1.0) (2025-01-12)
+## [1.1.1](https://github.com/RaphaEnterprises-AI/argus/compare/v1.1.0...v1.1.1) (2026-01-12)
+
+### Bug Fixes
+
+* **Clerk Login Form**: Improve button visibility in dark theme
+  * Use explicit hex colors instead of CSS variables for Clerk components
+  * Add white text color to primary buttons for better contrast
+  * Style social login buttons with proper dark theme colors
+  * Add consistent styling for inputs, labels, and dividers
+
+## [1.1.0](https://github.com/RaphaEnterprises-AI/argus/compare/v1.0.0...v1.1.0) (2026-01-12)
 
 ### Features
 
