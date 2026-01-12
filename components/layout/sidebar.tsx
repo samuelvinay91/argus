@@ -34,6 +34,7 @@ import {
   AlertTriangle,
   Activity,
   Building2,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
@@ -92,6 +93,7 @@ const enterpriseNavigation = [
   { name: 'Organizations', href: '/organizations', icon: Building2, description: 'Manage orgs' },
   { name: 'Team', href: '/team', icon: Users, description: 'Manage team' },
   { name: 'API Keys', href: '/api-keys', icon: Key, description: 'API access' },
+  { name: 'API Docs', href: '/api-docs', icon: BookOpen, description: 'API explorer' },
   { name: 'Audit Logs', href: '/audit', icon: ScrollText, description: 'Activity logs' },
   { name: 'Notifications', href: '/notifications', icon: Bell, description: 'Alert channels' },
   { name: 'Activity', href: '/activity', icon: Activity, description: 'Live activity' },
