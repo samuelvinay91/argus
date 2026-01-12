@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 import { Building, ChevronDown, Plus, Settings, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -54,14 +55,21 @@ function OrgAvatar({ org, size = 'md' }: { org: Organization; size?: 'sm' | 'md'
 
 export function OrganizationSwitcher() {
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch organizations on mount
+  // Fetch organizations on mount - only when authenticated
   useEffect(() => {
+    // Wait for Clerk to load and confirm user is signed in
+    if (!isLoaded || !isSignedIn) {
+      setLoading(false);
+      return;
+    }
+
     async function fetchOrganizations() {
       try {
         const response = await fetch('/api/v1/users/me/organizations', {
@@ -94,7 +102,7 @@ export function OrganizationSwitcher() {
     }
 
     fetchOrganizations();
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -138,7 +146,12 @@ export function OrganizationSwitcher() {
     router.push('/settings');
   };
 
-  if (loading) {
+  // Don't render anything if user is not signed in
+  if (isLoaded && !isSignedIn) {
+    return null;
+  }
+
+  if (loading || !isLoaded) {
     return (
       <div className="px-3 py-3 border-b border-border">
         <div className="flex items-center gap-3 h-11 px-3 rounded-lg bg-muted/50 animate-pulse">
