@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   '/legal(.*)',
   '/api/webhook(.*)',
   '/api/chat(.*)',  // Chat API - auth handled by backend
+  '/api/v1(.*)',    // Backend API - auth handled by Railway backend (accepts Clerk JWT or API key)
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/manifest.json',
