@@ -93,7 +93,7 @@ export default function ProjectDetailPage() {
       <Sidebar />
       <main className="flex-1 lg:ml-64">
         {/* Header */}
-        <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-sm">
           <div className="px-6 py-4">
             <div className="flex items-center gap-4 mb-4">
               <Button

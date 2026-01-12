@@ -152,7 +152,7 @@ export default function OrchestratorSessionPage() {
       )}
     >
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => router.back()}>
