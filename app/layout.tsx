@@ -67,16 +67,34 @@ export default function RootLayout({
       appearance={{
         variables: {
           colorPrimary: '#14b8a6',
-          colorBackground: '#000000',
+          colorBackground: '#0a0a0a',
           colorText: '#ededed',
-          colorTextSecondary: '#888888',
-          colorInputBackground: '#111111',
+          colorTextSecondary: '#a1a1aa',
+          colorInputBackground: '#18181b',
           colorInputText: '#ededed',
+          colorDanger: '#ef4444',
         },
         elements: {
-          card: 'bg-[#0a0a0a] border border-[#222] shadow-2xl',
-          formButtonPrimary: 'bg-primary hover:opacity-90',
-          footerActionLink: 'text-primary hover:text-primary/80',
+          card: 'bg-[#0a0a0a] border border-[#27272a] shadow-2xl',
+          formButtonPrimary:
+            'bg-[#14b8a6] text-white font-medium hover:bg-[#0d9488] transition-colors',
+          formButtonReset:
+            'bg-transparent text-[#a1a1aa] hover:text-white transition-colors',
+          footerActionLink: 'text-[#14b8a6] hover:text-[#2dd4bf]',
+          identityPreviewText: 'text-[#ededed]',
+          identityPreviewEditButton: 'text-[#14b8a6] hover:text-[#2dd4bf]',
+          formFieldInput:
+            'bg-[#18181b] border-[#27272a] text-[#ededed] focus:border-[#14b8a6] focus:ring-[#14b8a6]',
+          formFieldLabel: 'text-[#a1a1aa]',
+          dividerLine: 'bg-[#27272a]',
+          dividerText: 'text-[#71717a]',
+          socialButtonsBlockButton:
+            'bg-[#18181b] border-[#27272a] text-[#ededed] hover:bg-[#27272a] transition-colors',
+          socialButtonsBlockButtonText: 'text-[#ededed] font-medium',
+          otpCodeFieldInput: 'bg-[#18181b] border-[#27272a] text-[#ededed]',
+          alertText: 'text-[#ededed]',
+          headerTitle: 'text-[#ededed]',
+          headerSubtitle: 'text-[#a1a1aa]',
         },
       }}
     >
