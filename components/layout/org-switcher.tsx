@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
-import { Building, ChevronDown, Plus, Settings, Check } from 'lucide-react';
+import { ChevronDown, Plus, Settings, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Organization {
@@ -55,12 +55,50 @@ function OrgAvatar({ org, size = 'md' }: { org: Organization; size?: 'sm' | 'md'
 
 export function OrganizationSwitcher() {
   const router = useRouter();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded, getToken } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Memoize fetchOrganizations to include in useEffect dependencies
+  const fetchOrganizations = useCallback(async () => {
+    try {
+      // Get JWT token for authentication
+      const token = await getToken();
+
+      const response = await fetch('/api/v1/users/me/organizations', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch organizations');
+      }
+
+      const data = await response.json();
+      const orgs: Organization[] = data.organizations || data || [];
+      setOrganizations(orgs);
+
+      // Get current org from localStorage or default to first
+      const savedOrgId = localStorage.getItem(CURRENT_ORG_KEY);
+      const savedOrg = orgs.find((o) => o.id === savedOrgId);
+
+      if (savedOrg) {
+        setCurrentOrg(savedOrg);
+      } else if (orgs.length > 0) {
+        setCurrentOrg(orgs[0]);
+        localStorage.setItem(CURRENT_ORG_KEY, orgs[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
 
   // Fetch organizations on mount - only when authenticated
   useEffect(() => {
@@ -70,39 +108,8 @@ export function OrganizationSwitcher() {
       return;
     }
 
-    async function fetchOrganizations() {
-      try {
-        const response = await fetch('/api/v1/users/me/organizations', {
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch organizations');
-        }
-
-        const data = await response.json();
-        const orgs: Organization[] = data.organizations || data || [];
-        setOrganizations(orgs);
-
-        // Get current org from localStorage or default to first
-        const savedOrgId = localStorage.getItem(CURRENT_ORG_KEY);
-        const savedOrg = orgs.find((o) => o.id === savedOrgId);
-
-        if (savedOrg) {
-          setCurrentOrg(savedOrg);
-        } else if (orgs.length > 0) {
-          setCurrentOrg(orgs[0]);
-          localStorage.setItem(CURRENT_ORG_KEY, orgs[0].id);
-        }
-      } catch (error) {
-        console.error('Error fetching organizations:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchOrganizations();
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, fetchOrganizations]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
