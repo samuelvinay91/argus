@@ -20,6 +20,16 @@ const isApiRoute = createRouteMatcher([
   '/api/(.*)',
 ]);
 
+// Check if request is an RSC prefetch (these should not redirect, causes CORS issues)
+const isRscRequest = (request: Request) => {
+  const url = new URL(request.url);
+  return (
+    url.searchParams.has('_rsc') ||
+    request.headers.get('RSC') === '1' ||
+    request.headers.get('Next-Router-Prefetch') === '1'
+  );
+};
+
 export default clerkMiddleware(async (auth, request) => {
   // Skip auth check for public routes
   if (isPublicRoute(request)) {
@@ -36,7 +46,19 @@ export default clerkMiddleware(async (auth, request) => {
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
-    // For page routes, redirect to sign-in
+
+    // For RSC prefetch requests, return 401 to trigger client-side navigation
+    // This avoids CORS issues when Clerk tries to redirect prefetch requests
+    if (isRscRequest(request)) {
+      return new Response(null, {
+        status: 401,
+        headers: {
+          'x-middleware-rewrite': new URL('/sign-in', request.url).toString(),
+        }
+      });
+    }
+
+    // For regular page routes, redirect to sign-in
     return redirectToSignIn({ returnBackUrl: request.url });
   }
 });
