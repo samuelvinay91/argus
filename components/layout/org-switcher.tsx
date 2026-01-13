@@ -68,10 +68,19 @@ export function OrganizationSwitcher() {
       // Get JWT token for authentication
       const token = await getToken();
 
+      // Debug: Log token status
+      console.log('[OrgSwitcher] Token status:', token ? `Present (${token.substring(0, 20)}...)` : 'NULL');
+
+      if (!token) {
+        console.warn('[OrgSwitcher] No token available, skipping fetch');
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/v1/users/me/organizations', {
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
       });
 

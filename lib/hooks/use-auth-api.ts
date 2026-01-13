@@ -60,6 +60,16 @@ export function useAuthApi() {
     try {
       // Use default Clerk token for backend authentication
       const token = await getToken();
+
+      // Debug: Log token and request info
+      console.log('[useAuthApi] fetchJson:', {
+        endpoint,
+        hasToken: !!token,
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'NULL',
+        isLoaded,
+        isSignedIn,
+      });
+
       const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}${endpoint}`;
 
       const response = await fetch(url, {
