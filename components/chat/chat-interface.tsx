@@ -1,7 +1,8 @@
 'use client';
 
 import { useChat, Message } from 'ai/react';
-import { useRef, useEffect, useState, useCallback, memo, useMemo } from 'react';
+import { useRef, useEffect, useState, useCallback, memo, useMemo, Suspense, lazy } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Send,
   Loader2,
@@ -32,9 +33,20 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { CompactExecutionProgress } from './live-execution-progress';
+
+// Lazy load heavy syntax highlighter - only loads when code blocks are rendered
+// This significantly reduces initial bundle size (SyntaxHighlighter is ~150kB)
+const SyntaxHighlighter = dynamic(
+  () => import('react-syntax-highlighter').then(mod => mod.Prism),
+  {
+    ssr: false,
+    loading: () => <div className="animate-pulse bg-muted rounded h-20" />
+  }
+);
+
+// Lazy load the theme
+const getOneDarkStyle = () => import('react-syntax-highlighter/dist/esm/styles/prism/one-dark').then(mod => mod.default);
 
 interface ChatInterfaceProps {
   conversationId?: string;
@@ -199,7 +211,7 @@ const TypingIndicator = memo(function TypingIndicator({ className }: TypingIndic
 });
 
 // ============================================================================
-// STREAMING TEXT WITH CURSOR
+// STREAMING TEXT WITH TYPEWRITER EFFECT (ChatGPT/Claude-like)
 // ============================================================================
 interface StreamingTextProps {
   text: string;
@@ -208,10 +220,62 @@ interface StreamingTextProps {
 }
 
 const StreamingText = memo(function StreamingText({ text, isStreaming, className }: StreamingTextProps) {
+  // Track displayed text for smooth typewriter effect
+  const [displayedText, setDisplayedText] = useState('');
+  const [isAnimating, setIsAnimating] = useState(false);
+  const targetTextRef = useRef(text);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Characters to reveal per animation frame (adjust for speed)
+  // Higher = faster, Lower = more typewriter-like
+  const CHARS_PER_FRAME = 3;
+
+  useEffect(() => {
+    targetTextRef.current = text;
+
+    // If new text is longer than displayed, animate the difference
+    if (text.length > displayedText.length) {
+      setIsAnimating(true);
+
+      const animate = () => {
+        setDisplayedText(prev => {
+          const target = targetTextRef.current;
+          if (prev.length >= target.length) {
+            setIsAnimating(false);
+            return target;
+          }
+
+          // Reveal characters progressively
+          const nextLength = Math.min(prev.length + CHARS_PER_FRAME, target.length);
+          return target.slice(0, nextLength);
+        });
+
+        // Continue animation if needed
+        if (displayedText.length < targetTextRef.current.length) {
+          animationFrameRef.current = requestAnimationFrame(animate);
+        }
+      };
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    } else if (text.length < displayedText.length) {
+      // Text was shortened (e.g., edit), update immediately
+      setDisplayedText(text);
+    }
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [text, displayedText.length]);
+
+  // Show cursor when streaming or animating
+  const showCursor = isStreaming || isAnimating;
+
   return (
     <span className={cn('inline', className)}>
-      {text}
-      {isStreaming && (
+      {displayedText}
+      {showCursor && (
         <motion.span
           className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle"
           animate={{ opacity: [1, 0] }}
@@ -424,6 +488,43 @@ const messageItemVariants: Variants = {
   },
 };
 
+// Lazy-loaded code block component that loads syntax highlighter on demand
+const LazyCodeBlock = memo(function LazyCodeBlock({
+  language,
+  code,
+}: {
+  language: string;
+  code: string;
+}) {
+  const [style, setStyle] = useState<Record<string, React.CSSProperties> | null>(null);
+
+  useEffect(() => {
+    // Lazy load the theme when code block is first rendered
+    getOneDarkStyle().then(setStyle);
+  }, []);
+
+  if (!style) {
+    // Show loading placeholder while theme loads
+    return (
+      <div className="rounded-lg bg-[#282c34] p-4 my-2">
+        <pre className="text-sm text-gray-300 font-mono overflow-x-auto">{code}</pre>
+      </div>
+    );
+  }
+
+  return (
+    <SyntaxHighlighter
+      style={style}
+      language={language}
+      PreTag="div"
+      className="rounded-lg text-sm !my-2"
+      customStyle={{ margin: 0, padding: '1rem' }}
+    >
+      {code}
+    </SyntaxHighlighter>
+  );
+});
+
 // Memoized Markdown renderer component for chat messages
 const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { content: string }) {
   return (
@@ -445,17 +546,8 @@ const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { content: 
             );
           }
 
-          return (
-            <SyntaxHighlighter
-              style={oneDark}
-              language={match ? match[1] : 'text'}
-              PreTag="div"
-              className="rounded-lg text-sm !my-2"
-              customStyle={{ margin: 0, padding: '1rem' }}
-            >
-              {codeContent}
-            </SyntaxHighlighter>
-          );
+          // Use lazy-loaded code block for syntax highlighting
+          return <LazyCodeBlock language={match ? match[1] : 'text'} code={codeContent} />;
         },
         p({ children }) {
           return <p className="mb-2 last:mb-0">{children}</p>;

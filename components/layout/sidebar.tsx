@@ -199,15 +199,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const navRef = useRef<HTMLElement>(null);
   const { signOut } = useClerk();
 
-  // Handle sign out with full page reload to ensure cookies are cleared
+  // Handle sign out - Clerk's signOut handles the redirect automatically
   const handleSignOut = async () => {
     try {
+      // signOut({ redirectUrl: '/' }) redirects after clearing session
+      // No need for additional window.location.href which causes double refresh
       await signOut({ redirectUrl: '/' });
-      // Force a full page reload after sign out to clear any cached state
-      window.location.href = '/';
     } catch (error) {
       console.error('Sign out error:', error);
-      // Fallback: force redirect anyway
+      // Fallback: force redirect only on error
       window.location.href = '/';
     }
   };
@@ -606,15 +606,15 @@ function MobileThemeToggle() {
 export function MobileHeader() {
   const { signOut } = useClerk();
 
-  // Handle sign out with full page reload to ensure cookies are cleared
+  // Handle sign out - Clerk's signOut handles the redirect automatically
   const handleSignOut = async () => {
     try {
+      // signOut({ redirectUrl: '/' }) redirects after clearing session
+      // No need for additional window.location.href which causes double refresh
       await signOut({ redirectUrl: '/' });
-      // Force a full page reload after sign out to clear any cached state
-      window.location.href = '/';
     } catch (error) {
       console.error('Sign out error:', error);
-      // Fallback: force redirect anyway
+      // Fallback: force redirect only on error
       window.location.href = '/';
     }
   };
