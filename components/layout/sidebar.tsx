@@ -15,10 +15,7 @@ import {
   Github,
   Zap,
   Brain,
-  Globe,
   Shield,
-  AlertCircle,
-  FileText,
   HelpCircle,
   ExternalLink,
   Wrench,
@@ -30,9 +27,7 @@ import {
   X,
   LayoutDashboard,
   Calendar,
-  Table2,
   Bell,
-  AlertTriangle,
   Activity,
   Building2,
   BookOpen,
@@ -40,12 +35,15 @@ import {
   Moon,
   Monitor,
   LogOut,
+  ChevronDown,
+  Sparkles,
+  Search,
+  HeartPulse,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
 import { Button } from '@/components/ui/button';
 import { OrganizationSwitcher } from '@/components/layout/org-switcher';
-import { Search } from 'lucide-react';
 
 // Sidebar context for global state
 const SidebarContext = createContext<{
@@ -70,49 +68,40 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-const coreNavigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, description: 'Overview' },
-  { name: 'Projects', href: '/projects', icon: FolderKanban, description: 'Manage apps' },
-  { name: 'Chat', href: '/', icon: MessageSquare, description: 'AI Assistant' },
+// ═══════════════════════════════════════════════════════════════════════════
+// NAVIGATION STRUCTURE - Clean & Organized
+// ═══════════════════════════════════════════════════════════════════════════
+
+const mainNavigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Chat', href: '/', icon: MessageSquare, badge: 'AI' },
+  { name: 'Projects', href: '/projects', icon: FolderKanban },
 ];
 
 const testingNavigation = [
-  { name: 'Test Runner', href: '/tests', icon: TestTube, description: 'Execute tests' },
-  { name: 'Discovery', href: '/discovery', icon: Compass, description: 'Find testable surfaces' },
-  { name: 'Visual AI', href: '/visual', icon: Eye, description: 'Visual regression' },
-  { name: 'Schedules', href: '/schedules', icon: Calendar, description: 'Scheduled runs' },
-  { name: 'Parameterized', href: '/parameterized', icon: Table2, description: 'Data-driven' },
+  { name: 'Test Runner', href: '/tests', icon: TestTube },
+  { name: 'Discovery', href: '/discovery', icon: Compass },
+  { name: 'Visual AI', href: '/visual', icon: Eye },
+  { name: 'Schedules', href: '/schedules', icon: Calendar },
 ];
 
-const analysisNavigation = [
-  { name: 'Quality Audit', href: '/quality', icon: Shield, description: 'Code health' },
-  { name: 'AI Insights', href: '/insights', icon: Brain, description: 'Pattern analysis' },
-  { name: 'Global Testing', href: '/global', icon: Globe, description: 'Cross-browser' },
-  { name: 'Intelligence', href: '/intelligence', icon: AlertCircle, description: 'Quality score' },
-  { name: 'Flaky Tests', href: '/flaky', icon: AlertTriangle, description: 'Flaky detection' },
-  { name: 'Self-Healing', href: '/healing', icon: Wrench, description: 'Auto-fix config' },
-  { name: 'Reports', href: '/reports', icon: BarChart3, description: 'Analytics' },
+const insightsNavigation = [
+  { name: 'Quality Score', href: '/quality', icon: Shield },
+  { name: 'AI Insights', href: '/insights', icon: Brain },
+  { name: 'Test Health', href: '/flaky', icon: HeartPulse },
+  { name: 'Reports', href: '/reports', icon: BarChart3 },
 ];
 
-const enterpriseNavigation = [
-  { name: 'Organizations', href: '/organizations', icon: Building2, description: 'Manage orgs' },
-  { name: 'Team', href: '/team', icon: Users, description: 'Manage team' },
-  { name: 'API Keys', href: '/api-keys', icon: Key, description: 'API access' },
-  { name: 'API Docs', href: '/api-docs', icon: BookOpen, description: 'API explorer' },
-  { name: 'Audit Logs', href: '/audit', icon: ScrollText, description: 'Activity logs' },
-  { name: 'Notifications', href: '/notifications', icon: Bell, description: 'Alert channels' },
-  { name: 'Activity', href: '/activity', icon: Activity, description: 'Live activity' },
+const workspaceNavigation = [
+  { name: 'Team', href: '/team', icon: Users },
+  { name: 'Organizations', href: '/organizations', icon: Building2 },
+  { name: 'API Keys', href: '/api-keys', icon: Key },
+  { name: 'Activity', href: '/activity', icon: Activity },
 ];
 
 const bottomNavigation = [
   { name: 'Integrations', href: '/integrations', icon: Zap },
   { name: 'Settings', href: '/settings', icon: Settings },
-];
-
-const legalLinks = [
-  { name: 'Legal', href: '/legal' },
-  { name: 'Privacy', href: '/legal/privacy' },
-  { name: 'Terms', href: '/legal/terms' },
 ];
 
 // Mobile menu button component
@@ -132,7 +121,7 @@ export function MobileMenuButton() {
   );
 }
 
-// Theme toggle component
+// Theme toggle component - compact pill design
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -142,53 +131,128 @@ function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return (
-      <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
-        <div className="h-8 w-8 rounded-md" />
-        <div className="h-8 w-8 rounded-md" />
-        <div className="h-8 w-8 rounded-md" />
-      </div>
-    );
+    return <div className="h-8 w-24 rounded-full bg-muted animate-pulse" />;
   }
 
   return (
-    <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
-      <button
-        onClick={() => setTheme('light')}
+    <div className="flex items-center gap-0.5 p-1 rounded-full bg-muted/60 border border-border/50">
+      {[
+        { value: 'light', icon: Sun, label: 'Light' },
+        { value: 'dark', icon: Moon, label: 'Dark' },
+        { value: 'system', icon: Monitor, label: 'System' },
+      ].map(({ value, icon: Icon, label }) => (
+        <button
+          key={value}
+          onClick={() => setTheme(value)}
+          className={cn(
+            'flex items-center justify-center h-6 w-6 rounded-full transition-all duration-200',
+            theme === value
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+          title={label}
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Navigation item component
+function NavItem({
+  item,
+  isActive,
+  onClick,
+}: {
+  item: { name: string; href: string; icon: React.ElementType; badge?: string };
+  isActive: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      data-active={isActive}
+      className={cn(
+        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+        isActive
+          ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
+          : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+      )}
+    >
+      <item.icon
         className={cn(
-          'flex items-center justify-center h-8 w-8 rounded-md transition-colors',
-          theme === 'light'
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
+          'h-[18px] w-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110',
+          isActive ? 'text-primary-foreground' : ''
         )}
-        title="Light mode"
-      >
-        <Sun className="h-4 w-4" />
-      </button>
+      />
+      <span className="truncate">{item.name}</span>
+      {item.badge && (
+        <span
+          className={cn(
+            'ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+            isActive
+              ? 'bg-primary-foreground/20 text-primary-foreground'
+              : 'bg-primary/10 text-primary'
+          )}
+        >
+          {item.badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+// Section header component
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-2 px-3 mb-2">
+      <span className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-wider">
+        {title}
+      </span>
+      <div className="flex-1 h-px bg-border/50" />
+    </div>
+  );
+}
+
+// Collapsible section component
+function CollapsibleSection({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="space-y-1">
       <button
-        onClick={() => setTheme('dark')}
-        className={cn(
-          'flex items-center justify-center h-8 w-8 rounded-md transition-colors',
-          theme === 'dark'
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
-        )}
-        title="Dark mode"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-3 py-1 w-full text-left group"
       >
-        <Moon className="h-4 w-4" />
+        <span className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-wider group-hover:text-muted-foreground transition-colors">
+          {title}
+        </span>
+        <div className="flex-1 h-px bg-border/50" />
+        <ChevronDown
+          className={cn(
+            'h-3.5 w-3.5 text-muted-foreground/50 transition-transform duration-200',
+            isOpen ? 'rotate-180' : ''
+          )}
+        />
       </button>
-      <button
-        onClick={() => setTheme('system')}
+      <div
         className={cn(
-          'flex items-center justify-center h-8 w-8 rounded-md transition-colors',
-          theme === 'system'
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
+          'space-y-0.5 overflow-hidden transition-all duration-200',
+          isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         )}
-        title="System preference"
       >
-        <Monitor className="h-4 w-4" />
-      </button>
+        {children}
+      </div>
     </div>
   );
 }
@@ -199,15 +263,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const navRef = useRef<HTMLElement>(null);
   const { signOut } = useClerk();
 
-  // Handle sign out - Clerk's signOut handles the redirect automatically
   const handleSignOut = async () => {
     try {
-      // signOut({ redirectUrl: '/' }) redirects after clearing session
-      // No need for additional window.location.href which causes double refresh
       await signOut({ redirectUrl: '/' });
     } catch (error) {
       console.error('Sign out error:', error);
-      // Fallback: force redirect only on error
       window.location.href = '/';
     }
   };
@@ -217,7 +277,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   const openCommandPalette = () => {
-    // Dispatch keyboard event to open command palette
     const event = new KeyboardEvent('keydown', {
       key: 'k',
       metaKey: true,
@@ -226,17 +285,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     document.dispatchEvent(event);
   };
 
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    if (href === '/projects') return pathname.startsWith('/projects');
+    return pathname === href || pathname.startsWith(href + '/');
+  };
+
   // Scroll to active menu item on mount and pathname change
   useEffect(() => {
     if (navRef.current) {
       const activeLink = navRef.current.querySelector('[data-active="true"]');
       if (activeLink) {
-        // Use requestAnimationFrame to ensure DOM is ready
         requestAnimationFrame(() => {
-          activeLink.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-          });
+          activeLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
       }
     }
@@ -245,225 +306,163 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-border px-6">
+      <div className="flex h-16 items-center gap-3 px-5">
         <div className="relative">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-lg shadow-primary/25">
             <Eye className="h-5 w-5 text-white" />
           </div>
-          <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-card" />
+          <div className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border-2 border-card"></span>
+          </div>
         </div>
-        <span className="font-bold text-lg tracking-tight">Argus</span>
+        <div>
+          <span className="font-bold text-lg tracking-tight">Argus</span>
+          <p className="text-[10px] text-muted-foreground -mt-0.5">AI Testing Platform</p>
+        </div>
       </div>
 
       {/* Organization Switcher */}
-      <OrganizationSwitcher />
+      <div className="px-3 pb-2">
+        <OrganizationSwitcher />
+      </div>
 
       {/* Search Button */}
-      <div className="px-3 py-3 border-b border-border">
+      <div className="px-3 pb-4">
         <button
           onClick={openCommandPalette}
-          className="flex w-full items-center gap-2 h-9 px-3 text-sm text-muted-foreground rounded-md border bg-muted/50 hover:bg-muted transition-colors"
+          className="flex w-full items-center gap-2 h-9 px-3 text-sm text-muted-foreground rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-border transition-all duration-200"
         >
           <Search className="h-4 w-4" />
-          <span className="flex-1 text-left">Search...</span>
-          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+          <span className="flex-1 text-left text-xs">Quick search...</span>
+          <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-0.5 rounded-md border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
             <span className="text-xs">⌘</span>K
           </kbd>
         </button>
       </div>
 
       {/* Main Navigation */}
-      <nav ref={navRef} className="flex-1 overflow-y-auto px-3 py-4">
-        {/* Core Section */}
-        <div className="space-y-1">
-          {coreNavigation.map((item) => {
-            const isActive = pathname === item.href || (item.href === '/projects' && pathname.startsWith('/projects'));
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={handleClick}
-                data-active={isActive}
-                className={cn(
-                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                )}
-              >
-                <item.icon className={cn(
-                  'h-5 w-5 flex-shrink-0 transition-colors',
-                  isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                )} />
-                <span className="truncate">{item.name}</span>
-              </Link>
-            );
-          })}
+      <nav ref={navRef} className="flex-1 overflow-y-auto px-3 space-y-6">
+        {/* Main Section */}
+        <div className="space-y-0.5">
+          {mainNavigation.map((item) => (
+            <NavItem
+              key={item.name}
+              item={item}
+              isActive={isActive(item.href)}
+              onClick={handleClick}
+            />
+          ))}
         </div>
 
         {/* Testing Section */}
-        <div className="mt-6 pt-4 border-t border-border">
-          <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Testing
-          </p>
-          <div className="space-y-1">
-            {testingNavigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={handleClick}
-                  data-active={isActive}
-                  className={cn(
-                    'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  )}
-                >
-                  <item.icon className={cn(
-                    'h-5 w-5 flex-shrink-0 transition-colors',
-                    isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                  )} />
-                  <span className="truncate">{item.name}</span>
-                </Link>
-              );
-            })}
+        <div className="space-y-1">
+          <SectionHeader title="Testing" />
+          <div className="space-y-0.5">
+            {testingNavigation.map((item) => (
+              <NavItem
+                key={item.name}
+                item={item}
+                isActive={isActive(item.href)}
+                onClick={handleClick}
+              />
+            ))}
           </div>
         </div>
 
-        {/* Analysis Section */}
-        <div className="mt-6 pt-4 border-t border-border">
-          <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Analysis
-          </p>
-          <div className="space-y-1">
-            {analysisNavigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={handleClick}
-                  data-active={isActive}
-                  className={cn(
-                    'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  )}
-                >
-                  <item.icon className={cn(
-                    'h-5 w-5 flex-shrink-0 transition-colors',
-                    isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                  )} />
-                  <span className="truncate">{item.name}</span>
-                </Link>
-              );
-            })}
+        {/* Insights Section */}
+        <div className="space-y-1">
+          <SectionHeader title="Insights" />
+          <div className="space-y-0.5">
+            {insightsNavigation.map((item) => (
+              <NavItem
+                key={item.name}
+                item={item}
+                isActive={isActive(item.href)}
+                onClick={handleClick}
+              />
+            ))}
           </div>
         </div>
 
-        {/* Enterprise Section */}
-        <div className="mt-6 pt-4 border-t border-border">
-          <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Enterprise
-          </p>
-          <div className="space-y-1">
-            {enterpriseNavigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={handleClick}
-                  data-active={isActive}
-                  className={cn(
-                    'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  )}
-                >
-                  <item.icon className={cn(
-                    'h-5 w-5 flex-shrink-0 transition-colors',
-                    isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                  )} />
-                  <span className="truncate">{item.name}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+        {/* Workspace Section - Collapsible */}
+        <CollapsibleSection title="Workspace" defaultOpen={false}>
+          {workspaceNavigation.map((item) => (
+            <NavItem
+              key={item.name}
+              item={item}
+              isActive={isActive(item.href)}
+              onClick={handleClick}
+            />
+          ))}
+        </CollapsibleSection>
       </nav>
 
       {/* Bottom Section */}
-      <div className="border-t border-border px-3 py-4 space-y-1">
-        {bottomNavigation.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={handleClick}
-              className={cn(
-                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <item.icon className="h-5 w-5 flex-shrink-0" />
-              {item.name}
-            </Link>
-          );
-        })}
+      <div className="border-t border-border/50 px-3 py-3 space-y-0.5">
+        {bottomNavigation.map((item) => (
+          <NavItem
+            key={item.name}
+            item={item}
+            isActive={isActive(item.href)}
+            onClick={handleClick}
+          />
+        ))}
 
-        {/* External Links */}
-        <a
-          href="https://docs.heyargus.ai"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
-        >
-          <HelpCircle className="h-5 w-5 flex-shrink-0" />
-          <span>Docs</span>
-          <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
-        </a>
-
-        <a
-          href="https://github.com/heyargus"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
-        >
-          <Github className="h-5 w-5 flex-shrink-0" />
-          <span>GitHub</span>
-          <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
-        </a>
+        {/* External Links - Compact */}
+        <div className="flex items-center gap-1 px-1 pt-2">
+          <a
+            href="https://docs.heyargus.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+            title="Documentation"
+          >
+            <BookOpen className="h-4 w-4" />
+          </a>
+          <a
+            href="https://github.com/heyargus"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+            title="GitHub"
+          >
+            <Github className="h-4 w-4" />
+          </a>
+          <a
+            href="https://heyargus.ai/help"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+            title="Help & Support"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </a>
+          <div className="flex-1" />
+          <ThemeToggle />
+        </div>
       </div>
 
-      {/* User Profile */}
-      <div className="border-t border-border px-4 py-4">
+      {/* User Profile - Compact */}
+      <div className="border-t border-border/50 px-4 py-3">
         <div className="flex items-center gap-3">
           <UserButton
             appearance={{
               elements: {
-                avatarBox: "h-9 w-9 rounded-lg",
+                avatarBox: 'h-9 w-9 rounded-xl',
               },
             }}
             afterSignOutUrl="/"
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">Account</p>
-            <p className="text-xs text-muted-foreground truncate">Manage settings</p>
+            <p className="text-[10px] text-muted-foreground truncate">Manage profile</p>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleSignOut}
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-lg"
             title="Sign out"
           >
             <LogOut className="h-4 w-4" />
@@ -471,29 +470,18 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      {/* Theme Toggle */}
-      <div className="border-t border-border px-4 py-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">Theme</span>
-          <ThemeToggle />
+      {/* Version Footer */}
+      <div className="px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60">
+          <Link href="/legal" onClick={handleClick} className="hover:text-muted-foreground">
+            Legal
+          </Link>
+          <span>·</span>
+          <Link href="/legal/privacy" onClick={handleClick} className="hover:text-muted-foreground">
+            Privacy
+          </Link>
         </div>
-      </div>
-
-      {/* Footer Links */}
-      <div className="border-t border-border px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {legalLinks.map((link, i) => (
-              <span key={link.name} className="flex items-center gap-3">
-                <Link href={link.href} onClick={handleClick} className="hover:text-foreground transition-colors">
-                  {link.name}
-                </Link>
-                {i < legalLinks.length - 1 && <span className="text-border">·</span>}
-              </span>
-            ))}
-          </div>
-          <VersionBadge variant="minimal" />
-        </div>
+        <VersionBadge variant="minimal" />
       </div>
     </>
   );
@@ -502,7 +490,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 // Desktop sidebar (always visible on lg+)
 export function Sidebar() {
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-card flex-col">
+    <aside className="hidden lg:flex fixed left-0 top-0 z-40 h-screen w-64 border-r border-border/50 bg-card/95 backdrop-blur-sm flex-col">
       <SidebarContent />
     </aside>
   );
@@ -544,7 +532,7 @@ export function MobileSidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-50 h-screen w-72 border-r border-border bg-card flex flex-col lg:hidden transform transition-transform duration-300 ease-in-out',
+          'fixed left-0 top-0 z-50 h-screen w-72 border-r border-border/50 bg-card flex flex-col lg:hidden transform transition-transform duration-300 ease-in-out',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -552,7 +540,7 @@ export function MobileSidebar() {
         <Button
           variant="ghost"
           size="sm"
-          className="absolute top-4 right-4 h-8 w-8 p-0"
+          className="absolute top-4 right-4 h-8 w-8 p-0 rounded-lg"
           onClick={() => setIsOpen(false)}
         >
           <X className="h-5 w-5" />
@@ -593,7 +581,7 @@ function MobileThemeToggle() {
     <Button
       variant="ghost"
       size="sm"
-      className="h-8 w-8 p-0"
+      className="h-8 w-8 p-0 rounded-lg"
       onClick={cycleTheme}
       title={`Theme: ${theme}`}
     >
@@ -606,38 +594,34 @@ function MobileThemeToggle() {
 export function MobileHeader() {
   const { signOut } = useClerk();
 
-  // Handle sign out - Clerk's signOut handles the redirect automatically
   const handleSignOut = async () => {
     try {
-      // signOut({ redirectUrl: '/' }) redirects after clearing session
-      // No need for additional window.location.href which causes double refresh
       await signOut({ redirectUrl: '/' });
     } catch (error) {
       console.error('Sign out error:', error);
-      // Fallback: force redirect only on error
       window.location.href = '/';
     }
   };
 
   return (
-    <div className="flex lg:hidden items-center justify-between h-16 px-4 border-b border-border bg-card sticky top-0 z-30">
+    <div className="flex lg:hidden items-center justify-between h-16 px-4 border-b border-border/50 bg-card/95 backdrop-blur-sm sticky top-0 z-30">
       <div className="flex items-center gap-3">
         <MobileMenuButton />
         <div className="flex items-center gap-2">
           <div className="relative">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary shadow-md shadow-primary/20">
               <Eye className="h-4 w-4 text-white" />
             </div>
           </div>
           <span className="font-bold text-lg tracking-tight">Argus</span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <MobileThemeToggle />
         <UserButton
           appearance={{
             elements: {
-              avatarBox: "h-8 w-8 rounded-lg",
+              avatarBox: 'h-8 w-8 rounded-lg',
             },
           }}
           afterSignOutUrl="/"
@@ -646,7 +630,7 @@ export function MobileHeader() {
           variant="ghost"
           size="sm"
           onClick={handleSignOut}
-          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-lg"
           title="Sign out"
         >
           <LogOut className="h-4 w-4" />
