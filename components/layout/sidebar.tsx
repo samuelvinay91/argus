@@ -4,7 +4,7 @@ import { useState, useEffect, createContext, useContext, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { UserButton } from '@clerk/nextjs';
+import { UserButton, useClerk } from '@clerk/nextjs';
 import {
   MessageSquare,
   TestTube,
@@ -39,6 +39,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
@@ -196,6 +197,20 @@ function ThemeToggle() {
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
+  const { signOut } = useClerk();
+
+  // Handle sign out with full page reload to ensure cookies are cleared
+  const handleSignOut = async () => {
+    try {
+      await signOut({ redirectUrl: '/' });
+      // Force a full page reload after sign out to clear any cached state
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Fallback: force redirect anyway
+      window.location.href = '/';
+    }
+  };
 
   const handleClick = () => {
     onNavigate?.();
@@ -444,6 +459,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <p className="text-sm font-medium truncate">Account</p>
             <p className="text-xs text-muted-foreground truncate">Manage settings</p>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSignOut}
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
@@ -580,6 +604,21 @@ function MobileThemeToggle() {
 
 // Mobile header with menu button
 export function MobileHeader() {
+  const { signOut } = useClerk();
+
+  // Handle sign out with full page reload to ensure cookies are cleared
+  const handleSignOut = async () => {
+    try {
+      await signOut({ redirectUrl: '/' });
+      // Force a full page reload after sign out to clear any cached state
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Fallback: force redirect anyway
+      window.location.href = '/';
+    }
+  };
+
   return (
     <div className="flex lg:hidden items-center justify-between h-16 px-4 border-b border-border bg-card sticky top-0 z-30">
       <div className="flex items-center gap-3">
@@ -603,6 +642,15 @@ export function MobileHeader() {
           }}
           afterSignOutUrl="/"
         />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSignOut}
+          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+          title="Sign out"
+        >
+          <LogOut className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
