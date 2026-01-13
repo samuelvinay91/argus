@@ -46,14 +46,9 @@ export function useAuthApi() {
   // Create authenticated client
   const api = useMemo(() => {
     return createAuthenticatedClient(async () => {
-      try {
-        // Get token from Clerk with custom template for backend
-        const token = await getToken({ template: 'argus-backend' });
-        return token;
-      } catch {
-        // Fall back to default token if template doesn't exist
-        return getToken();
-      }
+      // Use default Clerk token for backend authentication
+      // The default token contains user_id and org_id which is all we need
+      return getToken();
     });
   }, [getToken]);
 
@@ -63,13 +58,8 @@ export function useAuthApi() {
     options?: RequestInit
   ): Promise<ApiResponse<T>> => {
     try {
-      // Get token with template for backend, fallback to default
-      let token: string | null = null;
-      try {
-        token = await getToken({ template: 'argus-backend' });
-      } catch {
-        token = await getToken();
-      }
+      // Use default Clerk token for backend authentication
+      const token = await getToken();
       const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}${endpoint}`;
 
       const response = await fetch(url, {
@@ -107,13 +97,8 @@ export function useAuthApi() {
     body?: unknown,
     onMessage?: (event: string, data: unknown) => void
   ): Promise<void> => {
-    // Get token with template for backend, fallback to default
-    let token: string | null = null;
-    try {
-      token = await getToken({ template: 'argus-backend' });
-    } catch {
-      token = await getToken();
-    }
+    // Use default Clerk token for backend authentication
+    const token = await getToken();
     const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}${endpoint}`;
 
     const response = await fetch(url, {
