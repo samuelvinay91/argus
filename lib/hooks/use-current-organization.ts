@@ -137,13 +137,8 @@ export function useCurrentOrganization(): UseCurrentOrganizationReturn {
         return null;
       }
 
-      // Get auth token
-      let token: string | null = null;
-      try {
-        token = await getToken({ template: 'argus-backend' });
-      } catch {
-        token = await getToken();
-      }
+      // Get auth token (using default Clerk token)
+      const token = await getToken();
 
       const response = await fetch(
         `${BACKEND_URL}/api/v1/organizations/${organizationId}`,
@@ -195,8 +190,7 @@ export function useCurrentOrganization(): UseCurrentOrganizationReturn {
 
       // Optionally update server-side preference
       if (updateServer) {
-        getToken({ template: 'argus-backend' })
-          .catch(() => getToken())
+        getToken()
           .then((token) => {
             if (token) {
               fetch(`${BACKEND_URL}/api/v1/users/me/organizations/${orgId}/switch`, {
