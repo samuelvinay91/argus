@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,13 +30,19 @@ import {
   Clock,
   Monitor,
   Loader2,
+  Plus,
+  Copy,
+  RotateCw,
+  ExternalLink,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
 import { APP_VERSION } from '@/lib/version';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-const DEFAULT_ORG_ID = 'default';
+import { useUserProfile } from '@/lib/hooks/use-user-profile';
+import { useUserSettings } from '@/lib/hooks/use-user-settings';
+import { useCurrentOrganization } from '@/lib/hooks/use-current-organization';
+import { useApiKeys, useCreateApiKey, useRevokeApiKey } from '@/lib/hooks/use-api-keys';
 
 interface SettingSection {
   id: string;
@@ -46,37 +53,22 @@ interface SettingSection {
 const sections: SettingSection[] = [
   { id: 'profile', name: 'Profile', icon: User },
   { id: 'organization', name: 'Organization', icon: Building },
-  { id: 'api', name: 'API Configuration', icon: Key },
+  { id: 'api', name: 'API Keys', icon: Key },
   { id: 'notifications', name: 'Notifications', icon: Bell },
-  { id: 'defaults', name: 'Defaults', icon: Settings },
+  { id: 'defaults', name: 'Test Defaults', icon: Settings },
   { id: 'security', name: 'Security', icon: Shield },
   { id: 'about', name: 'About', icon: Info },
 ];
 
-interface TeamMember {
-  id: string;
-  email: string;
-  role: 'owner' | 'admin' | 'member' | 'viewer';
-  status: 'active' | 'pending';
-  invited_at?: string;
-  accepted_at?: string;
-}
-
-interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  plan: string;
-  member_count: number;
-}
-
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button
-      onClick={() => onChange(!checked)}
+      onClick={() => !disabled && onChange(!checked)}
+      disabled={disabled}
       className={cn(
         'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-        checked ? 'bg-primary' : 'bg-muted'
+        checked ? 'bg-primary' : 'bg-muted',
+        disabled && 'opacity-50 cursor-not-allowed'
       )}
     >
       <span
@@ -89,123 +81,191 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   );
 }
 
-export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState('profile');
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [teamLoading, setTeamLoading] = useState(true);
-  const [orgData, setOrgData] = useState<Organization | null>(null);
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center py-8">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
 
-  // Profile state
-  const [profile, setProfile] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    avatarUrl: '',
-    bio: 'QA Engineer passionate about automated testing',
+function ErrorMessage({ message }: { message: string }) {
+  return (
+    <div className="flex items-center gap-2 p-4 rounded-lg bg-red-500/10 text-red-500">
+      <AlertCircle className="h-5 w-5" />
+      <span>{message}</span>
+    </div>
+  );
+}
+
+export default function SettingsPage() {
+  const router = useRouter();
+  const [activeSection, setActiveSection] = useState('profile');
+  const [showNewKeySecret, setShowNewKeySecret] = useState<string | null>(null);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [showCreateKey, setShowCreateKey] = useState(false);
+
+  // Use real hooks for data
+  const {
+    profile,
+    loading: profileLoading,
+    error: profileError,
+    updateProfile,
+    isUpdating: profileUpdating,
+    updateSuccess: profileSaved
+  } = useUserProfile();
+
+  const {
+    settings,
+    isLoading: settingsLoading,
+    error: settingsErrorObj,
+    updateNotificationPreferences,
+    updateTestDefaults,
+    isUpdating: isUpdatingSettings,
+    notificationsMutation,
+    testDefaultsMutation
+  } = useUserSettings();
+
+  const settingsError = settingsErrorObj?.message || null;
+  const isUpdatingNotifications = notificationsMutation.isPending;
+  const isUpdatingTestDefaults = testDefaultsMutation.isPending;
+  const notificationsUpdateSuccess = notificationsMutation.isSuccess;
+  const testDefaultsUpdateSuccess = testDefaultsMutation.isSuccess;
+
+  const {
+    organization,
+    loading: orgLoading,
+    error: orgError
+  } = useCurrentOrganization();
+
+  const {
+    data: apiKeys,
+    isLoading: keysLoading,
+    error: keysError
+  } = useApiKeys();
+
+  const { mutateAsync: createApiKey, isPending: isCreatingKey } = useCreateApiKey();
+  const { mutate: revokeApiKey, isPending: isRevokingKey } = useRevokeApiKey();
+
+  // Local state for form edits (before saving)
+  const [localProfile, setLocalProfile] = useState({
+    display_name: '',
+    email: '',
+    bio: '',
     timezone: 'America/New_York',
     language: 'en',
   });
 
-  // Organization state
-  const [organization, setOrganization] = useState({
-    name: 'Acme Corporation',
-    slug: 'acme-corp',
-    plan: 'pro',
-    billing_email: 'billing@heyargus.com',
-    membersCount: 0,
-    maxMembers: 25,
+  const [localNotifications, setLocalNotifications] = useState({
+    email_notifications: true,
+    slack_notifications: false,
+    in_app_notifications: true,
+    test_failure_alerts: true,
+    daily_digest: true,
+    weekly_report: false,
+    alert_threshold: 80,
   });
 
-  // Fetch organization data from API
-  const fetchOrganization = useCallback(async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}`);
-      if (response.ok) {
-        const data = await response.json();
-        setOrgData(data);
-        setOrganization(prev => ({
-          ...prev,
-          name: data.name || prev.name,
-          slug: data.slug || prev.slug,
-          plan: data.plan || prev.plan,
-          membersCount: data.member_count || 0,
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to fetch organization:', err);
-    }
-  }, []);
+  const [localTestDefaults, setLocalTestDefaults] = useState({
+    default_browser: 'chromium' as 'chromium' | 'firefox' | 'webkit',
+    default_timeout: 30000,
+    parallel_execution: true,
+    retry_failed_tests: true,
+    max_retries: 3,
+    screenshot_on_failure: true,
+    video_recording: false,
+  });
 
-  // Fetch team members from API
-  const fetchMembers = useCallback(async () => {
-    try {
-      setTeamLoading(true);
-      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}/members`);
-      if (response.ok) {
-        const data = await response.json();
-        setTeamMembers(data.members || []);
-        setOrganization(prev => ({
-          ...prev,
-          membersCount: (data.members || []).length,
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to fetch members:', err);
-    } finally {
-      setTeamLoading(false);
+  // Sync local state with fetched data
+  useEffect(() => {
+    if (profile) {
+      setLocalProfile({
+        display_name: profile.display_name || '',
+        email: profile.email || '',
+        bio: profile.bio || '',
+        timezone: profile.timezone || 'America/New_York',
+        language: profile.language || 'en',
+      });
     }
-  }, []);
+  }, [profile]);
 
   useEffect(() => {
-    fetchOrganization();
-    fetchMembers();
-  }, [fetchOrganization, fetchMembers]);
+    if (settings?.notifications) {
+      setLocalNotifications({
+        email_notifications: settings.notifications.email_notifications ?? true,
+        slack_notifications: settings.notifications.slack_notifications ?? false,
+        in_app_notifications: settings.notifications.in_app_notifications ?? true,
+        test_failure_alerts: settings.notifications.test_failure_alerts ?? true,
+        daily_digest: settings.notifications.daily_digest ?? true,
+        weekly_report: settings.notifications.weekly_report ?? false,
+        alert_threshold: settings.notifications.alert_threshold ?? 80,
+      });
+    }
+  }, [settings?.notifications]);
 
-  // Settings state
-  const [settings, setSettings] = useState({
-    anthropicApiKey: '',
-    backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000',
-    defaultModel: 'claude-sonnet-4-5',
-    maxIterations: 50,
-    screenshotResolution: '1920x1080',
-    costLimit: 10.0,
-    slackEnabled: true,
-    emailEnabled: false,
-    slackWebhook: '',
-    emailRecipients: '',
-    slackChannel: '#testing-alerts',
-    notifyOnSuccess: true,
-    notifyOnFailure: true,
-    notifyOnHealing: false,
-    dailyDigest: true,
-    autoRetry: true,
-    retryCount: 3,
-    parallelTests: 4,
-    headlessMode: true,
-    saveScreenshots: true,
-    twoFactorEnabled: false,
-    sessionTimeout: 30,
-    defaultTimeout: 30000,
-    defaultViewport: '1920x1080',
-    defaultBaseUrl: 'http://localhost:3000',
-    defaultBrowser: 'chromium',
-  });
+  useEffect(() => {
+    if (settings?.test_defaults) {
+      setLocalTestDefaults({
+        default_browser: settings.test_defaults.default_browser || 'chromium',
+        default_timeout: settings.test_defaults.default_timeout || 30000,
+        parallel_execution: settings.test_defaults.parallel_execution ?? true,
+        retry_failed_tests: settings.test_defaults.retry_failed_tests ?? true,
+        max_retries: settings.test_defaults.max_retries || 3,
+        screenshot_on_failure: settings.test_defaults.screenshot_on_failure ?? true,
+        video_recording: settings.test_defaults.video_recording ?? false,
+      });
+    }
+  }, [settings?.test_defaults]);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSaveProfile = async () => {
+    await updateProfile({
+      display_name: localProfile.display_name,
+      bio: localProfile.bio,
+      timezone: localProfile.timezone,
+      language: localProfile.language,
+    });
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'owner': return 'bg-purple-500/10 text-purple-500';
-      case 'admin': return 'bg-blue-500/10 text-blue-500';
-      case 'member': return 'bg-green-500/10 text-green-500';
-      case 'viewer': return 'bg-gray-500/10 text-gray-500';
+  const handleSaveNotifications = async () => {
+    await updateNotificationPreferences(localNotifications);
+  };
+
+  const handleSaveTestDefaults = async () => {
+    await updateTestDefaults(localTestDefaults);
+  };
+
+  const handleCreateApiKey = async () => {
+    if (!newKeyName.trim()) return;
+    try {
+      const result = await createApiKey({
+        name: newKeyName,
+        scopes: ['read', 'write'],
+      });
+      if (result?.key) {
+        setShowNewKeySecret(result.key);
+        setNewKeyName('');
+        setShowCreateKey(false);
+      }
+    } catch (err) {
+      console.error('Failed to create API key:', err);
+    }
+  };
+
+  const handleCopyKey = (key: string) => {
+    navigator.clipboard.writeText(key);
+  };
+
+  const getPlanBadgeColor = (plan: string) => {
+    switch (plan?.toLowerCase()) {
+      case 'enterprise': return 'bg-purple-500/10 text-purple-500';
+      case 'pro': return 'bg-blue-500/10 text-blue-500';
+      case 'team': return 'bg-green-500/10 text-green-500';
       default: return 'bg-gray-500/10 text-gray-500';
     }
   };
+
+  const isSaving = profileUpdating || isUpdatingNotifications || isUpdatingTestDefaults;
+  const showSavedMessage = profileSaved || notificationsUpdateSuccess || testDefaultsUpdateSuccess;
 
   return (
     <div className="flex min-h-screen">
@@ -216,22 +276,69 @@ export default function SettingsPage() {
           <div className="flex-1">
             <h1 className="text-xl font-semibold">Settings</h1>
             <p className="text-sm text-muted-foreground">
-              Configure Argus - your AI testing companion
+              Configure your profile and preferences
             </p>
           </div>
-          <Button onClick={handleSave}>
-            {saved ? (
-              <>
-                <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                Saved!
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </>
-            )}
-          </Button>
+          {activeSection === 'profile' && (
+            <Button onClick={handleSaveProfile} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : showSavedMessage ? (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Profile
+                </>
+              )}
+            </Button>
+          )}
+          {activeSection === 'notifications' && (
+            <Button onClick={handleSaveNotifications} disabled={isUpdatingNotifications}>
+              {isUpdatingNotifications ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : notificationsUpdateSuccess ? (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Notifications
+                </>
+              )}
+            </Button>
+          )}
+          {activeSection === 'defaults' && (
+            <Button onClick={handleSaveTestDefaults} disabled={isUpdatingTestDefaults}>
+              {isUpdatingTestDefaults ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : testDefaultsUpdateSuccess ? (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Defaults
+                </>
+              )}
+            </Button>
+          )}
         </header>
 
         <div className="p-6">
@@ -260,274 +367,235 @@ export default function SettingsPage() {
               {/* Profile Section */}
               {activeSection === 'profile' && (
                 <>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <User className="h-5 w-5" />
-                        Profile Information
-                      </CardTitle>
-                      <CardDescription>
-                        Manage your personal information and preferences
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Avatar */}
-                      <div className="flex items-center gap-6">
-                        <div className="relative">
-                          <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                            {profile.name.split(' ').map(n => n[0]).join('')}
+                  {profileLoading ? (
+                    <LoadingSpinner />
+                  ) : profileError ? (
+                    <ErrorMessage message={profileError} />
+                  ) : (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <User className="h-5 w-5" />
+                          Profile Information
+                        </CardTitle>
+                        <CardDescription>
+                          Manage your personal information and preferences
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {/* Avatar */}
+                        <div className="flex items-center gap-6">
+                          <div className="relative">
+                            {profile?.avatar_url ? (
+                              <img
+                                src={profile.avatar_url}
+                                alt="Avatar"
+                                className="h-24 w-24 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                                {localProfile.display_name?.split(' ').map(n => n[0]).join('') || '?'}
+                              </div>
+                            )}
+                            <button className="absolute bottom-0 right-0 p-2 rounded-full bg-background border shadow-sm hover:bg-muted transition-colors">
+                              <Camera className="h-4 w-4" />
+                            </button>
                           </div>
-                          <button className="absolute bottom-0 right-0 p-2 rounded-full bg-background border shadow-sm hover:bg-muted transition-colors">
-                            <Camera className="h-4 w-4" />
-                          </button>
+                          <div>
+                            <h3 className="font-medium">{localProfile.display_name || 'Your Name'}</h3>
+                            <p className="text-sm text-muted-foreground">{localProfile.email}</p>
+                            <Button variant="outline" size="sm" className="mt-2">
+                              Upload Photo
+                            </Button>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-medium">{profile.name}</h3>
-                          <p className="text-sm text-muted-foreground">{profile.email}</p>
-                          <Button variant="outline" size="sm" className="mt-2">
-                            Upload Photo
-                          </Button>
-                        </div>
-                      </div>
 
-                      {/* Name and Email */}
-                      <div className="grid grid-cols-2 gap-4">
+                        {/* Name and Email */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Display Name</label>
+                            <Input
+                              value={localProfile.display_name}
+                              onChange={(e) => setLocalProfile({ ...localProfile, display_name: e.target.value })}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Email Address</label>
+                            <Input
+                              type="email"
+                              value={localProfile.email}
+                              disabled
+                              className="mt-1 bg-muted"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Email is managed by your authentication provider
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Bio */}
                         <div>
-                          <label className="text-sm font-medium">Full Name</label>
-                          <Input
-                            value={profile.name}
-                            onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                          <label className="text-sm font-medium">Bio</label>
+                          <Textarea
+                            value={localProfile.bio}
+                            onChange={(e) => setLocalProfile({ ...localProfile, bio: e.target.value })}
+                            placeholder="Tell us about yourself..."
                             className="mt-1"
+                            rows={3}
                           />
                         </div>
-                        <div>
-                          <label className="text-sm font-medium">Email Address</label>
-                          <Input
-                            type="email"
-                            value={profile.email}
-                            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                            className="mt-1"
-                          />
-                        </div>
-                      </div>
 
-                      {/* Bio */}
-                      <div>
-                        <label className="text-sm font-medium">Bio</label>
-                        <Textarea
-                          value={profile.bio}
-                          onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                          placeholder="Tell us about yourself..."
-                          className="mt-1"
-                          rows={3}
-                        />
-                      </div>
-
-                      {/* Timezone and Language */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium">Timezone</label>
-                          <select
-                            value={profile.timezone}
-                            onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}
-                            className="mt-1 w-full px-3 py-2 rounded-md border bg-background"
-                          >
-                            <option value="America/New_York">Eastern Time (ET)</option>
-                            <option value="America/Chicago">Central Time (CT)</option>
-                            <option value="America/Denver">Mountain Time (MT)</option>
-                            <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                            <option value="Europe/London">London (GMT)</option>
-                            <option value="Europe/Paris">Paris (CET)</option>
-                            <option value="Asia/Tokyo">Tokyo (JST)</option>
-                            <option value="Asia/Singapore">Singapore (SGT)</option>
-                          </select>
+                        {/* Timezone and Language */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Timezone</label>
+                            <select
+                              value={localProfile.timezone}
+                              onChange={(e) => setLocalProfile({ ...localProfile, timezone: e.target.value })}
+                              className="mt-1 w-full px-3 py-2 rounded-md border bg-background"
+                            >
+                              <option value="America/New_York">Eastern Time (ET)</option>
+                              <option value="America/Chicago">Central Time (CT)</option>
+                              <option value="America/Denver">Mountain Time (MT)</option>
+                              <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                              <option value="Europe/London">London (GMT)</option>
+                              <option value="Europe/Paris">Paris (CET)</option>
+                              <option value="Asia/Tokyo">Tokyo (JST)</option>
+                              <option value="Asia/Singapore">Singapore (SGT)</option>
+                              <option value="Asia/Kolkata">India (IST)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Language</label>
+                            <select
+                              value={localProfile.language}
+                              onChange={(e) => setLocalProfile({ ...localProfile, language: e.target.value })}
+                              className="mt-1 w-full px-3 py-2 rounded-md border bg-background"
+                            >
+                              <option value="en">English</option>
+                              <option value="es">Spanish</option>
+                              <option value="fr">French</option>
+                              <option value="de">German</option>
+                              <option value="ja">Japanese</option>
+                              <option value="zh">Chinese</option>
+                            </select>
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-sm font-medium">Language</label>
-                          <select
-                            value={profile.language}
-                            onChange={(e) => setProfile({ ...profile, language: e.target.value })}
-                            className="mt-1 w-full px-3 py-2 rounded-md border bg-background"
-                          >
-                            <option value="en">English</option>
-                            <option value="es">Spanish</option>
-                            <option value="fr">French</option>
-                            <option value="de">German</option>
-                            <option value="ja">Japanese</option>
-                            <option value="zh">Chinese</option>
-                          </select>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  )}
                 </>
               )}
 
               {/* Organization Section */}
               {activeSection === 'organization' && (
                 <>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Building className="h-5 w-5" />
-                        Organization Details
-                      </CardTitle>
-                      <CardDescription>
-                        Manage your organization settings and billing
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Org Name and Slug */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium">Organization Name</label>
-                          <Input
-                            value={organization.name}
-                            onChange={(e) => setOrganization({ ...organization, name: e.target.value })}
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Slug</label>
-                          <Input
-                            value={organization.slug}
-                            onChange={(e) => setOrganization({ ...organization, slug: e.target.value })}
-                            className="mt-1"
-                          />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Used in URLs: app.heyargus.ai/{organization.slug}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Plan */}
-                      <div className="p-4 rounded-lg border bg-gradient-to-r from-primary/5 to-purple-500/5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-primary/10">
-                              <Crown className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                              <div className="font-medium">Pro Plan</div>
-                              <div className="text-sm text-muted-foreground">$99/month</div>
-                            </div>
+                  {orgLoading ? (
+                    <LoadingSpinner />
+                  ) : orgError ? (
+                    <ErrorMessage message={orgError} />
+                  ) : organization ? (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Building className="h-5 w-5" />
+                          Organization Details
+                        </CardTitle>
+                        <CardDescription>
+                          View and manage your organization
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {/* Org Info */}
+                        <div className="flex items-center gap-4">
+                          <div className="h-16 w-16 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-xl font-bold">
+                            {organization.name?.substring(0, 2).toUpperCase() || 'ORG'}
                           </div>
-                          <Button variant="outline">
+                          <div>
+                            <h3 className="text-lg font-semibold">{organization.name}</h3>
+                            <p className="text-sm text-muted-foreground">/{organization.slug}</p>
+                            <span className={cn('mt-1 inline-block px-2 py-0.5 rounded-full text-xs font-medium', getPlanBadgeColor(organization.plan))}>
+                              {organization.plan?.toUpperCase() || 'FREE'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Plan Info */}
+                        <div className="p-4 rounded-lg border bg-gradient-to-r from-primary/5 to-purple-500/5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-primary/10">
+                                <Crown className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <div className="font-medium">{organization.plan?.toUpperCase() || 'Free'} Plan</div>
+                                <div className="text-sm text-muted-foreground">
+                                  Organization: {organization.slug}
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              onClick={() => router.push(`/organizations/${organization.id}/settings`)}
+                            >
+                              <Settings className="h-4 w-4 mr-2" />
+                              Manage Organization
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <Button
+                            variant="outline"
+                            className="justify-start"
+                            onClick={() => router.push(`/organizations/${organization.id}/settings`)}
+                          >
+                            <Users className="h-4 w-4 mr-2" />
+                            Manage Team Members
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="justify-start"
+                            onClick={() => router.push(`/organizations/${organization.id}/settings`)}
+                          >
                             <CreditCard className="h-4 w-4 mr-2" />
-                            Manage Billing
+                            Billing & Usage
                           </Button>
                         </div>
-                        <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <div className="text-muted-foreground">Team Members</div>
-                            <div className="font-medium">{organization.membersCount} / {organization.maxMembers}</div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground">Test Runs</div>
-                            <div className="font-medium">Unlimited</div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground">Retention</div>
-                            <div className="font-medium">90 days</div>
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* Billing Email */}
-                      <div>
-                        <label className="text-sm font-medium">Billing Email</label>
-                        <Input
-                          type="email"
-                          value={organization.billing_email}
-                          onChange={(e) => setOrganization({ ...organization, billing_email: e.target.value })}
-                          className="mt-1"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Invoices will be sent to this email
+                        <div className="pt-4 border-t">
+                          <Button
+                            variant="link"
+                            className="p-0 text-primary"
+                            onClick={() => router.push('/organizations')}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            View All Organizations
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card>
+                      <CardContent className="py-8 text-center">
+                        <Building className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                        <h3 className="font-medium mb-2">No Organization Selected</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Create or join an organization to get started
                         </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Team Members */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
-                        Team Members
-                      </CardTitle>
-                      <CardDescription>
-                        Manage your team members and their roles
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="text-sm text-muted-foreground">
-                          {teamMembers.length} members
-                        </div>
-                        <Button size="sm">
-                          <UserPlus className="h-4 w-4 mr-2" />
-                          Invite Member
+                        <Button onClick={() => router.push('/organizations/new')}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Organization
                         </Button>
-                      </div>
-                      {teamLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        </div>
-                      ) : teamMembers.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <Users className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                          <p>No team members found</p>
-                          <p className="text-sm">Invite members to collaborate on testing</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {teamMembers.map((member) => (
-                            <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                              <div className="flex items-center gap-3">
-                                <div className={cn(
-                                  "h-10 w-10 rounded-full flex items-center justify-center text-white font-medium",
-                                  member.status === 'pending' ? 'bg-muted text-muted-foreground' : 'bg-gradient-to-br from-primary/60 to-purple-600/60'
-                                )}>
-                                  {member.email[0].toUpperCase()}
-                                </div>
-                                <div>
-                                  <div className="font-medium flex items-center gap-2">
-                                    {member.email}
-                                    {member.status === 'pending' && (
-                                      <span className="px-2 py-0.5 text-xs rounded-full bg-amber-500/10 text-amber-500">
-                                        Pending
-                                      </span>
-                                    )}
-                                  </div>
-                                  {member.invited_at && (
-                                    <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      Invited {new Date(member.invited_at).toLocaleDateString()}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getRoleBadgeColor(member.role))}>
-                                  {member.role}
-                                </span>
-                                {member.role !== 'owner' && (
-                                  <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  )}
                 </>
               )}
 
-              {/* API Configuration */}
+              {/* API Keys Section */}
               {activeSection === 'api' && (
                 <>
                   <Card>
@@ -537,104 +605,118 @@ export default function SettingsPage() {
                         API Keys
                       </CardTitle>
                       <CardDescription>
-                        Configure your API credentials for Claude and backend services
+                        Manage API keys for programmatic access to Argus
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium">Anthropic API Key</label>
-                        <div className="flex gap-2 mt-1">
-                          <div className="relative flex-1">
-                            <Input
-                              type={showApiKey ? 'text' : 'password'}
-                              value={settings.anthropicApiKey}
-                              onChange={(e) =>
-                                setSettings({ ...settings, anthropicApiKey: e.target.value })
-                              }
-                              placeholder="sk-ant-..."
-                            />
+                      {/* New Key Created Alert */}
+                      {showNewKeySecret && (
+                        <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            <span className="font-medium text-green-500">API Key Created!</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Copy this key now. You won&apos;t be able to see it again.
+                          </p>
+                          <div className="flex gap-2">
+                            <code className="flex-1 p-2 bg-muted rounded text-sm font-mono break-all">
+                              {showNewKeySecret}
+                            </code>
+                            <Button size="sm" variant="outline" onClick={() => handleCopyKey(showNewKeySecret)}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
                           </div>
                           <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setShowApiKey(!showApiKey)}
+                            size="sm"
+                            variant="ghost"
+                            className="mt-2"
+                            onClick={() => setShowNewKeySecret(null)}
                           >
-                            {showApiKey ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
+                            Dismiss
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Your API key is encrypted and stored securely
-                        </p>
-                      </div>
+                      )}
 
-                      <div>
-                        <label className="text-sm font-medium">Backend URL</label>
-                        <Input
-                          value={settings.backendUrl}
-                          onChange={(e) =>
-                            setSettings({ ...settings, backendUrl: e.target.value })
-                          }
-                          className="mt-1"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Cpu className="h-5 w-5" />
-                        Model Configuration
-                      </CardTitle>
-                      <CardDescription>
-                        Configure AI model settings and limits
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium">Default Model</label>
-                        <select
-                          value={settings.defaultModel}
-                          onChange={(e) =>
-                            setSettings({ ...settings, defaultModel: e.target.value })
-                          }
-                          className="mt-1 w-full px-3 py-2 rounded-md border bg-background"
-                        >
-                          <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
-                          <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
-                          <option value="claude-opus-4-5">Claude Opus 4.5</option>
-                        </select>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium">Max Iterations</label>
-                          <Input
-                            type="number"
-                            value={settings.maxIterations}
-                            onChange={(e) =>
-                              setSettings({ ...settings, maxIterations: parseInt(e.target.value) })
-                            }
-                            className="mt-1"
-                          />
+                      {/* Create New Key */}
+                      {showCreateKey ? (
+                        <div className="p-4 rounded-lg border">
+                          <h4 className="font-medium mb-3">Create New API Key</h4>
+                          <div className="flex gap-2">
+                            <Input
+                              value={newKeyName}
+                              onChange={(e) => setNewKeyName(e.target.value)}
+                              placeholder="Key name (e.g., CI/CD Pipeline)"
+                              className="flex-1"
+                            />
+                            <Button onClick={handleCreateApiKey} disabled={isCreatingKey || !newKeyName.trim()}>
+                              {isCreatingKey ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                'Create'
+                              )}
+                            </Button>
+                            <Button variant="outline" onClick={() => setShowCreateKey(false)}>
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-sm font-medium">Cost Limit (USD)</label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={settings.costLimit}
-                            onChange={(e) =>
-                              setSettings({ ...settings, costLimit: parseFloat(e.target.value) })
-                            }
-                            className="mt-1"
-                          />
+                      ) : (
+                        <Button onClick={() => setShowCreateKey(true)}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create New API Key
+                        </Button>
+                      )}
+
+                      {/* Existing Keys */}
+                      {keysLoading ? (
+                        <LoadingSpinner />
+                      ) : keysError ? (
+                        <ErrorMessage message="Failed to load API keys" />
+                      ) : apiKeys && apiKeys.length > 0 ? (
+                        <div className="space-y-3">
+                          {apiKeys.map((key) => (
+                            <div key={key.id} className="flex items-center justify-between p-3 rounded-lg border">
+                              <div>
+                                <div className="font-medium">{key.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {key.key_prefix}••••••• · Created {new Date(key.created_at).toLocaleDateString()}
+                                </div>
+                                {key.last_used_at && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Last used: {new Date(key.last_used_at).toLocaleDateString()}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  'px-2 py-0.5 rounded-full text-xs',
+                                  key.is_active ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
+                                )}>
+                                  {key.is_active ? 'Active' : 'Revoked'}
+                                </span>
+                                {key.is_active && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:text-red-600"
+                                    onClick={() => revokeApiKey(key.id)}
+                                    disabled={isRevokingKey}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Key className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                          <p>No API keys created yet</p>
+                          <p className="text-sm">Create an API key to access Argus programmatically</p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </>
@@ -643,305 +725,244 @@ export default function SettingsPage() {
               {/* Notifications */}
               {activeSection === 'notifications' && (
                 <>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Bell className="h-5 w-5" />
-                        Notification Settings
-                      </CardTitle>
-                      <CardDescription>
-                        Configure how you receive test results and alerts
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Slack */}
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">Slack Notifications</div>
-                            <div className="text-sm text-muted-foreground">
-                              Receive test results in Slack
-                            </div>
-                          </div>
-                          <Toggle
-                            checked={settings.slackEnabled}
-                            onChange={(v) => setSettings({ ...settings, slackEnabled: v })}
-                          />
-                        </div>
-
-                        {settings.slackEnabled && (
-                          <div className="pl-4 border-l-2 border-primary/20 space-y-4">
-                            <div>
-                              <label className="text-sm font-medium">Webhook URL</label>
-                              <Input
-                                value={settings.slackWebhook}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, slackWebhook: e.target.value })
-                                }
-                                placeholder="https://hooks.slack.com/services/..."
-                                className="mt-1"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium">Channel</label>
-                              <Input
-                                value={settings.slackChannel}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, slackChannel: e.target.value })
-                                }
-                                placeholder="#testing-alerts"
-                                className="mt-1"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Email */}
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">Email Notifications</div>
-                            <div className="text-sm text-muted-foreground">
-                              Receive test results via email
-                            </div>
-                          </div>
-                          <Toggle
-                            checked={settings.emailEnabled}
-                            onChange={(v) => setSettings({ ...settings, emailEnabled: v })}
-                          />
-                        </div>
-
-                        {settings.emailEnabled && (
-                          <div className="pl-4 border-l-2 border-primary/20">
-                            <label className="text-sm font-medium">Recipients</label>
-                            <Input
-                              value={settings.emailRecipients}
-                              onChange={(e) =>
-                                setSettings({ ...settings, emailRecipients: e.target.value })
-                              }
-                              placeholder="team@example.com, alerts@example.com"
-                              className="mt-1"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Separate multiple emails with commas
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Notification Events */}
-                      <div className="pt-4 border-t">
-                        <h4 className="font-medium mb-4">Notification Events</h4>
+                  {settingsLoading ? (
+                    <LoadingSpinner />
+                  ) : settingsError ? (
+                    <ErrorMessage message={settingsError} />
+                  ) : (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Bell className="h-5 w-5" />
+                          Notification Settings
+                        </CardTitle>
+                        <CardDescription>
+                          Configure how you receive test results and alerts
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {/* Notification Channels */}
                         <div className="space-y-4">
+                          <h4 className="font-medium">Notification Channels</h4>
+
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="font-medium">Test Success</div>
-                              <div className="text-sm text-muted-foreground">Notify when tests pass</div>
+                              <div className="font-medium">Email Notifications</div>
+                              <div className="text-sm text-muted-foreground">
+                                Receive notifications via email
+                              </div>
                             </div>
                             <Toggle
-                              checked={settings.notifyOnSuccess}
-                              onChange={(v) => setSettings({ ...settings, notifyOnSuccess: v })}
+                              checked={localNotifications.email_notifications}
+                              onChange={(v) => setLocalNotifications({ ...localNotifications, email_notifications: v })}
                             />
                           </div>
+
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="font-medium">Test Failure</div>
-                              <div className="text-sm text-muted-foreground">Notify when tests fail</div>
+                              <div className="font-medium">Slack Notifications</div>
+                              <div className="text-sm text-muted-foreground">
+                                Receive notifications in Slack
+                              </div>
                             </div>
                             <Toggle
-                              checked={settings.notifyOnFailure}
-                              onChange={(v) => setSettings({ ...settings, notifyOnFailure: v })}
+                              checked={localNotifications.slack_notifications}
+                              onChange={(v) => setLocalNotifications({ ...localNotifications, slack_notifications: v })}
                             />
                           </div>
+
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="font-medium">Self-Healing Events</div>
-                              <div className="text-sm text-muted-foreground">Notify when tests are auto-healed</div>
+                              <div className="font-medium">In-App Notifications</div>
+                              <div className="text-sm text-muted-foreground">
+                                Show notifications in the dashboard
+                              </div>
                             </div>
                             <Toggle
-                              checked={settings.notifyOnHealing}
-                              onChange={(v) => setSettings({ ...settings, notifyOnHealing: v })}
+                              checked={localNotifications.in_app_notifications}
+                              onChange={(v) => setLocalNotifications({ ...localNotifications, in_app_notifications: v })}
                             />
                           </div>
+                        </div>
+
+                        {/* Notification Events */}
+                        <div className="pt-4 border-t space-y-4">
+                          <h4 className="font-medium">Notification Events</h4>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">Test Failure Alerts</div>
+                              <div className="text-sm text-muted-foreground">Notify immediately when tests fail</div>
+                            </div>
+                            <Toggle
+                              checked={localNotifications.test_failure_alerts}
+                              onChange={(v) => setLocalNotifications({ ...localNotifications, test_failure_alerts: v })}
+                            />
+                          </div>
+
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="font-medium">Daily Digest</div>
-                              <div className="text-sm text-muted-foreground">Receive daily summary</div>
+                              <div className="text-sm text-muted-foreground">Receive daily test summary</div>
                             </div>
                             <Toggle
-                              checked={settings.dailyDigest}
-                              onChange={(v) => setSettings({ ...settings, dailyDigest: v })}
+                              checked={localNotifications.daily_digest}
+                              onChange={(v) => setLocalNotifications({ ...localNotifications, daily_digest: v })}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">Weekly Report</div>
+                              <div className="text-sm text-muted-foreground">Receive weekly analytics report</div>
+                            </div>
+                            <Toggle
+                              checked={localNotifications.weekly_report}
+                              onChange={(v) => setLocalNotifications({ ...localNotifications, weekly_report: v })}
                             />
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+
+                        {/* Alert Threshold */}
+                        <div className="pt-4 border-t">
+                          <label className="text-sm font-medium">Alert Threshold (%)</label>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Notify when pass rate drops below this percentage
+                          </p>
+                          <Input
+                            type="number"
+                            value={localNotifications.alert_threshold}
+                            onChange={(e) => setLocalNotifications({ ...localNotifications, alert_threshold: parseInt(e.target.value) || 80 })}
+                            min="0"
+                            max="100"
+                            className="w-24"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </>
               )}
 
-              {/* Defaults */}
+              {/* Test Defaults */}
               {activeSection === 'defaults' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="h-5 w-5" />
-                      Default Test Settings
-                    </CardTitle>
-                    <CardDescription>
-                      Configure default values for test execution
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
-                          Default Timeout (ms)
-                        </label>
-                        <Input
-                          type="number"
-                          value={settings.defaultTimeout}
-                          onChange={(e) =>
-                            setSettings({ ...settings, defaultTimeout: parseInt(e.target.value) })
-                          }
-                          className="mt-1"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Maximum time to wait for page elements
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium flex items-center gap-2">
-                          <Monitor className="h-4 w-4" />
-                          Default Viewport
-                        </label>
-                        <select
-                          value={settings.defaultViewport}
-                          onChange={(e) =>
-                            setSettings({ ...settings, defaultViewport: e.target.value })
-                          }
-                          className="mt-1 w-full px-3 py-2 rounded-md border bg-background"
-                        >
-                          <option value="1280x720">1280x720 (720p)</option>
-                          <option value="1920x1080">1920x1080 (1080p)</option>
-                          <option value="2560x1440">2560x1440 (1440p)</option>
-                          <option value="375x812">375x812 (iPhone)</option>
-                          <option value="768x1024">768x1024 (iPad)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium flex items-center gap-2">
-                        <Globe className="h-4 w-4" />
-                        Default Base URL
-                      </label>
-                      <Input
-                        value={settings.defaultBaseUrl}
-                        onChange={(e) =>
-                          setSettings({ ...settings, defaultBaseUrl: e.target.value })
-                        }
-                        placeholder="http://localhost:3000"
-                        className="mt-1"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Base URL used when running tests locally
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Default Browser</label>
-                      <select
-                        value={settings.defaultBrowser}
-                        onChange={(e) =>
-                          setSettings({ ...settings, defaultBrowser: e.target.value })
-                        }
-                        className="mt-1 w-full px-3 py-2 rounded-md border bg-background"
-                      >
-                        <option value="chromium">Chromium</option>
-                        <option value="firefox">Firefox</option>
-                        <option value="webkit">WebKit (Safari)</option>
-                      </select>
-                    </div>
-
-                    <div className="pt-4 border-t space-y-4">
-                      <h4 className="font-medium">Execution Options</h4>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">Auto-Retry Failed Tests</div>
-                          <div className="text-sm text-muted-foreground">
-                            Automatically retry flaky tests
+                <>
+                  {settingsLoading ? (
+                    <LoadingSpinner />
+                  ) : settingsError ? (
+                    <ErrorMessage message={settingsError} />
+                  ) : (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Settings className="h-5 w-5" />
+                          Default Test Settings
+                        </CardTitle>
+                        <CardDescription>
+                          Configure default values for test execution
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              Default Timeout (ms)
+                            </label>
+                            <Input
+                              type="number"
+                              value={localTestDefaults.default_timeout}
+                              onChange={(e) => setLocalTestDefaults({ ...localTestDefaults, default_timeout: parseInt(e.target.value) || 30000 })}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Default Browser</label>
+                            <select
+                              value={localTestDefaults.default_browser}
+                              onChange={(e) => setLocalTestDefaults({ ...localTestDefaults, default_browser: e.target.value as 'chromium' | 'firefox' | 'webkit' })}
+                              className="mt-1 w-full px-3 py-2 rounded-md border bg-background"
+                            >
+                              <option value="chromium">Chromium</option>
+                              <option value="firefox">Firefox</option>
+                              <option value="webkit">WebKit (Safari)</option>
+                            </select>
                           </div>
                         </div>
-                        <Toggle
-                          checked={settings.autoRetry}
-                          onChange={(v) => setSettings({ ...settings, autoRetry: v })}
-                        />
-                      </div>
 
-                      {settings.autoRetry && (
-                        <div>
-                          <label className="text-sm font-medium">Retry Count</label>
-                          <Input
-                            type="number"
-                            value={settings.retryCount}
-                            onChange={(e) =>
-                              setSettings({ ...settings, retryCount: parseInt(e.target.value) })
-                            }
-                            min="1"
-                            max="5"
-                            className="mt-1 w-24"
-                          />
-                        </div>
-                      )}
+                        <div className="pt-4 border-t space-y-4">
+                          <h4 className="font-medium">Execution Options</h4>
 
-                      <div>
-                        <label className="text-sm font-medium">Parallel Test Execution</label>
-                        <Input
-                          type="number"
-                          value={settings.parallelTests}
-                          onChange={(e) =>
-                            setSettings({ ...settings, parallelTests: parseInt(e.target.value) })
-                          }
-                          min="1"
-                          max="10"
-                          className="mt-1 w-24"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Number of tests to run in parallel
-                        </p>
-                      </div>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">Parallel Execution</div>
+                              <div className="text-sm text-muted-foreground">
+                                Run tests in parallel for faster results
+                              </div>
+                            </div>
+                            <Toggle
+                              checked={localTestDefaults.parallel_execution}
+                              onChange={(v) => setLocalTestDefaults({ ...localTestDefaults, parallel_execution: v })}
+                            />
+                          </div>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">Headless Mode</div>
-                          <div className="text-sm text-muted-foreground">
-                            Run browser tests without UI
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">Retry Failed Tests</div>
+                              <div className="text-sm text-muted-foreground">
+                                Automatically retry flaky tests
+                              </div>
+                            </div>
+                            <Toggle
+                              checked={localTestDefaults.retry_failed_tests}
+                              onChange={(v) => setLocalTestDefaults({ ...localTestDefaults, retry_failed_tests: v })}
+                            />
+                          </div>
+
+                          {localTestDefaults.retry_failed_tests && (
+                            <div>
+                              <label className="text-sm font-medium">Max Retries</label>
+                              <Input
+                                type="number"
+                                value={localTestDefaults.max_retries}
+                                onChange={(e) => setLocalTestDefaults({ ...localTestDefaults, max_retries: parseInt(e.target.value) || 3 })}
+                                min="1"
+                                max="5"
+                                className="mt-1 w-24"
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">Screenshot on Failure</div>
+                              <div className="text-sm text-muted-foreground">
+                                Capture screenshots when tests fail
+                              </div>
+                            </div>
+                            <Toggle
+                              checked={localTestDefaults.screenshot_on_failure}
+                              onChange={(v) => setLocalTestDefaults({ ...localTestDefaults, screenshot_on_failure: v })}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">Video Recording</div>
+                              <div className="text-sm text-muted-foreground">
+                                Record video of test execution
+                              </div>
+                            </div>
+                            <Toggle
+                              checked={localTestDefaults.video_recording}
+                              onChange={(v) => setLocalTestDefaults({ ...localTestDefaults, video_recording: v })}
+                            />
                           </div>
                         </div>
-                        <Toggle
-                          checked={settings.headlessMode}
-                          onChange={(v) => setSettings({ ...settings, headlessMode: v })}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">Save Screenshots</div>
-                          <div className="text-sm text-muted-foreground">
-                            Save screenshots for all test steps
-                          </div>
-                        </div>
-                        <Toggle
-                          checked={settings.saveScreenshots}
-                          onChange={(v) => setSettings({ ...settings, saveScreenshots: v })}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
               )}
 
               {/* Security */}
@@ -953,51 +974,40 @@ export default function SettingsPage() {
                       Security Settings
                     </CardTitle>
                     <CardDescription>
-                      Configure security and access controls
+                      Security is managed by Clerk authentication
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">Two-Factor Authentication</div>
-                        <div className="text-sm text-muted-foreground">
-                          Require 2FA for dashboard access
+                    <div className="p-4 rounded-lg bg-muted/50">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Shield className="h-8 w-8 text-primary" />
+                        <div>
+                          <h4 className="font-medium">Clerk Authentication</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Your account is secured by Clerk
+                          </p>
                         </div>
                       </div>
-                      <Toggle
-                        checked={settings.twoFactorEnabled}
-                        onChange={(v) => setSettings({ ...settings, twoFactorEnabled: v })}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Session Timeout (minutes)</label>
-                      <Input
-                        type="number"
-                        value={settings.sessionTimeout}
-                        onChange={(e) =>
-                          setSettings({ ...settings, sessionTimeout: parseInt(e.target.value) })
-                        }
-                        min="5"
-                        max="120"
-                        className="mt-1 w-24"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Auto-logout after inactivity
-                      </p>
-                    </div>
-
-                    <div className="pt-4 border-t">
-                      <h4 className="font-medium mb-3">Danger Zone</h4>
-                      <div className="space-y-3">
-                        <Button variant="outline" className="text-red-500 border-red-500/20 hover:bg-red-500/10">
-                          Clear All Test Data
-                        </Button>
-                        <Button variant="outline" className="text-red-500 border-red-500/20 hover:bg-red-500/10 ml-3">
-                          Revoke All API Keys
-                        </Button>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>Multi-factor authentication available</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>Social login (Google, GitHub)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>Session management</span>
+                        </div>
                       </div>
                     </div>
+
+                    <Button variant="outline" onClick={() => window.open('https://accounts.heyargus.ai/user', '_blank')}>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Manage Security in Clerk
+                    </Button>
                   </CardContent>
                 </Card>
               )}
@@ -1064,7 +1074,7 @@ export default function SettingsPage() {
                           Documentation
                         </a>
                         <a
-                          href="https://github.com/samuelvinay91/argus"
+                          href="https://github.com/heyargus/argus"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="block text-sm text-primary hover:underline"
