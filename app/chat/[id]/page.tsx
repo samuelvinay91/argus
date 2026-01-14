@@ -374,10 +374,6 @@ function ChatPageContent() {
                 Create and run tests using natural language
               </p>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="flex h-2 w-2 rounded-full bg-green-500" />
-              <span className="text-muted-foreground">Backend Connected</span>
-            </div>
           </header>
 
           <div className="flex-1 p-3 sm:p-4 lg:p-6 overflow-hidden">
@@ -393,6 +389,12 @@ function ChatPageContent() {
                 onMessagesChange={handleMessagesChange}
               />
             )}
+          </div>
+
+          {/* Backend Status - Fixed at bottom left */}
+          <div className="hidden lg:flex fixed bottom-4 left-[calc(16rem+1rem)] z-20 items-center gap-2 text-xs bg-background/80 backdrop-blur-sm border rounded-full px-3 py-1.5 shadow-sm">
+            <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-muted-foreground">Backend Connected</span>
           </div>
         </div>
       </main>
