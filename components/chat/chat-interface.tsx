@@ -1362,10 +1362,12 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
         return;
       }
 
-      // Persist messages when AI response completes
-      if (currentOnMessagesChange && messages.length > lastSavedCountRef.current) {
-        currentOnMessagesChange(messages);
-        lastSavedCountRef.current = messages.length;
+      // Persist the completed AI message directly using the fresh `message` parameter
+      // (not the stale `messages` array from closure which may be outdated)
+      if (currentOnMessagesChange && message) {
+        // Create an array with just this completed message for persistence
+        currentOnMessagesChange([message]);
+        lastSavedCountRef.current += 1;
       }
     },
   });

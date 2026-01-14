@@ -453,7 +453,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 avatarBox: 'h-9 w-9 rounded-xl',
               },
             }}
-            afterSignOutUrl="/"
+            signOutUrl="/"
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">Account</p>
@@ -625,7 +625,7 @@ export function MobileHeader() {
               avatarBox: 'h-8 w-8 rounded-lg',
             },
           }}
-          afterSignOutUrl="/"
+          signOutUrl="/"
         />
         <Button
           variant="ghost"
