@@ -1344,7 +1344,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     // Only pass ID if it's a valid UUID, otherwise let AI SDK generate one temporarily
     id: isValidConversationId ? conversationId : undefined,
     initialMessages,
-    maxSteps: 5, // Allow multi-step tool calls
+    maxSteps: 3, // Allow multi-step tool calls (reduced from 5 to prevent duplicate calls)
     onError: (err) => {
       console.error('Chat error:', err);
       setError(err.message || 'An error occurred while processing your request');

@@ -191,6 +191,12 @@ QUICK ACTIONS (Always Available):
 - Use extractData to scrape structured data
 - Use runAgent for autonomous task completion
 
+IMPORTANT RULES:
+- NEVER call the same tool multiple times with the same URL in a single response
+- Call discoverElements ONCE per URL - the result contains all available actions
+- If a tool call fails, report the error to the user instead of retrying
+- Each step should use a DIFFERENT action or URL
+
 Be helpful, concise, and proactive. Format test results clearly with pass/fail status.
 When showing test steps, use numbered lists. When showing code or selectors, use code blocks.
 Report any self-healing that occurred during tests.`,
