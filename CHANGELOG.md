@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.3.0](https://github.com/RaphaEnterprises-AI/argus/compare/v1.2.0...v1.3.0) (2026-01-14)
+
+
+### Features
+
+* **ui:** redesign sidebar with cleaner organization ([3bf95bd](https://github.com/RaphaEnterprises-AI/argus/commit/3bf95bd53ef1133afd175423781f5f8429d0eb5d))
+
+
+### Bug Fixes
+
+* add custom sign-in/sign-up pages to fix CORS errors ([5df1440](https://github.com/RaphaEnterprises-AI/argus/commit/5df1440c5a93cfa27e92584bacc3c1593c9d01eb))
+* add explicit sign-out button to resolve session clearing issue ([8bbdc4c](https://github.com/RaphaEnterprises-AI/argus/commit/8bbdc4ca1558c7622528959edacde05c25e76a8b))
+* add JWT auth token to org-switcher API calls ([53fff9f](https://github.com/RaphaEnterprises-AI/argus/commit/53fff9f766ba5ed5fd6972c06cf765a9abd66ae2))
+* **auth:** implement global API client with Clerk authentication ([074522e](https://github.com/RaphaEnterprises-AI/argus/commit/074522e2e01054021fbd1eea6269ce02563c3e71))
+* handle RSC prefetch requests to avoid CORS errors after sign-out ([3eaea08](https://github.com/RaphaEnterprises-AI/argus/commit/3eaea08d9bd6b235e5160b9af50778d8b3c8eb3c))
+* prevent chat pane overflow during message streaming ([48e0655](https://github.com/RaphaEnterprises-AI/argus/commit/48e06555d102a3715ab5f973ab85c282f6c54a5e))
+* remove argus-backend template from organization hook ([161cb86](https://github.com/RaphaEnterprises-AI/argus/commit/161cb863e6720f408c618ac610501c35075b98ee))
+* remove non-existent Clerk JWT template to fix auth errors ([ad8c03c](https://github.com/RaphaEnterprises-AI/argus/commit/ad8c03cbd3915a3b583a4ee4d583e5e59c861e77))
+* render markdown during streaming to prevent flash ([1c7e38a](https://github.com/RaphaEnterprises-AI/argus/commit/1c7e38a9a396c81efde5874514fbed516cc87cbd))
+* **types:** resolve TypeScript errors in audit and team pages ([581aad3](https://github.com/RaphaEnterprises-AI/argus/commit/581aad35fecb80664bad38867e9d609f66a026ce))
+* use direct backend URL to bypass Vercel rewrites stripping auth headers ([36715f2](https://github.com/RaphaEnterprises-AI/argus/commit/36715f2a159dccd417c5c2131dc75e7bfc6791f7))
+
+
+### Performance Improvements
+
+* improve dashboard UX and bundle size ([2d178cd](https://github.com/RaphaEnterprises-AI/argus/commit/2d178cdc71818fb19b4ed3f9ad91a51b65d7b210))
+
 ## [1.2.0](https://github.com/RaphaEnterprises-AI/argus/compare/v1.1.2...v1.2.0) (2026-01-13)
 
 
