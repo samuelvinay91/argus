@@ -115,7 +115,10 @@ export default function TeamPage() {
     setError(null);
     setSuccessMessage(null);
     try {
-      await resendInvitation.mutateAsync({ email: invitation.email, role: invitation.role });
+      await resendInvitation.mutateAsync({
+        email: invitation.email,
+        role: invitation.role as 'admin' | 'member' | 'viewer'
+      });
       setSuccessMessage(`Invitation resent to ${invitation.email}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to resend invitation');

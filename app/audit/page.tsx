@@ -76,6 +76,12 @@ export default function AuditPage() {
 
   const logs = logsData?.logs || [];
   const totalPages = logsData?.total_pages || 1;
+  const safeStats = stats ?? {
+    total_events: 0,
+    events_last_24h: 0,
+    success_count: 0,
+    failure_count: 0,
+  };
   const loading = logsLoading || statsLoading;
 
   // Debounce search - reset page when search changes
@@ -214,7 +220,7 @@ export default function AuditPage() {
                     <Activity className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{stats.total_events}</p>
+                    <p className="text-2xl font-bold">{safeStats.total_events}</p>
                     <p className="text-sm text-muted-foreground">Total Events</p>
                   </div>
                 </div>
@@ -228,7 +234,7 @@ export default function AuditPage() {
                     <Calendar className="h-6 w-6 text-blue-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{stats.events_last_24h}</p>
+                    <p className="text-2xl font-bold">{safeStats.events_last_24h}</p>
                     <p className="text-sm text-muted-foreground">Last 24 Hours</p>
                   </div>
                 </div>
@@ -242,7 +248,7 @@ export default function AuditPage() {
                     <CheckCircle className="h-6 w-6 text-green-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{stats.success_count}</p>
+                    <p className="text-2xl font-bold">{safeStats.success_count}</p>
                     <p className="text-sm text-muted-foreground">Successful</p>
                   </div>
                 </div>
@@ -256,7 +262,7 @@ export default function AuditPage() {
                     <XCircle className="h-6 w-6 text-red-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{stats.failure_count}</p>
+                    <p className="text-2xl font-bold">{safeStats.failure_count}</p>
                     <p className="text-sm text-muted-foreground">Failed</p>
                   </div>
                 </div>
