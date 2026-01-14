@@ -34,6 +34,12 @@ import { motion, AnimatePresence, Variants } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CompactExecutionProgress } from './live-execution-progress';
+import {
+  SessionScreenshotsPanel,
+  ScreenshotsPanelToggle,
+  extractScreenshotsFromMessages,
+} from './session-screenshots-panel';
+import { SaveTestDialog } from '@/components/tests/save-test-dialog';
 
 // Lazy load heavy syntax highlighter - only loads when code blocks are rendered
 // This significantly reduces initial bundle size (SyntaxHighlighter is ~150kB)
@@ -636,11 +642,12 @@ const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { content: 
 });
 
 // Tool call display component
-function ToolCallDisplay({ toolName, args, result, isLoading }: {
+function ToolCallDisplay({ toolName, args, result, isLoading, onAction }: {
   toolName: string;
   args: Record<string, unknown>;
   result?: unknown;
   isLoading?: boolean;
+  onAction?: (action: string, data: unknown) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -648,6 +655,7 @@ function ToolCallDisplay({ toolName, args, result, isLoading }: {
   const toolIcons: Record<string, typeof Play> = {
     executeAction: Play,
     runTest: TestTube,
+    createTest: Sparkles,
     discoverElements: Search,
     extractData: Code,
     runAgent: Sparkles,
@@ -656,6 +664,7 @@ function ToolCallDisplay({ toolName, args, result, isLoading }: {
   const toolLabels: Record<string, string> = {
     executeAction: 'Executing Action',
     runTest: 'Running Test',
+    createTest: 'Creating Test',
     discoverElements: 'Discovering Elements',
     extractData: 'Extracting Data',
     runAgent: 'Running Agent',
@@ -739,7 +748,7 @@ function ToolCallDisplay({ toolName, args, result, isLoading }: {
                       )}
                     </Button>
                   </div>
-                  <ResultDisplay result={result} />
+                  <ResultDisplay result={result} onAction={onAction} />
                 </div>
               )}
 
@@ -861,8 +870,137 @@ const ERROR_CATEGORY_CONFIG: Record<string, { icon: typeof XCircle; color: strin
   unknown: { icon: XCircle, color: 'text-gray-500', bgColor: 'bg-gray-500/10' },
 };
 
+// Test Preview Card - shows generated test for user approval before running
+interface TestPreviewCardProps {
+  data: {
+    test: {
+      name: string;
+      description: string;
+      steps: Array<{ action: string; target?: string; value?: string; description?: string }>;
+      assertions: Array<{ type: string; expected: string; description?: string }>;
+    };
+    summary: {
+      name: string;
+      steps_count: number;
+      assertions_count: number;
+      estimated_duration: number;
+    };
+    steps_preview: Array<{ number: number; action: string; description: string }>;
+    app_url: string;
+  };
+  onRunTest?: () => void;
+  onEditTest?: () => void;
+  onSaveTest?: () => void;
+}
+
+function TestPreviewCard({ data, onRunTest, onEditTest, onSaveTest }: TestPreviewCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-purple-500/5 overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-primary/20 bg-primary/5">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-md bg-primary/20">
+            <TestTube className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-sm">{data.summary.name}</h4>
+            <p className="text-xs text-muted-foreground">
+              {data.summary.steps_count} steps • {data.summary.assertions_count} assertions • ~{data.summary.estimated_duration}s
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Steps Preview */}
+      <div className="px-4 py-3 space-y-2">
+        <div className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+          <span>Test Steps Preview</span>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-primary hover:underline text-[10px]"
+          >
+            {expanded ? 'Show less' : `Show all ${data.summary.steps_count} steps`}
+          </button>
+        </div>
+
+        <div className="space-y-1.5">
+          {(expanded ? data.test.steps : data.steps_preview.slice(0, 5)).map((step, index) => {
+            const stepData = 'number' in step ? step : { number: index + 1, action: step.action, description: step.description || `${step.action} ${step.target || ''}` };
+            return (
+              <div
+                key={index}
+                className="flex items-start gap-2 text-xs bg-background/50 rounded p-2"
+              >
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] flex items-center justify-center font-medium">
+                  {stepData.number}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-muted-foreground">{stepData.description}</span>
+                </div>
+              </div>
+            );
+          })}
+
+          {!expanded && data.summary.steps_count > 5 && (
+            <div className="text-xs text-muted-foreground text-center py-1">
+              +{data.summary.steps_count - 5} more steps...
+            </div>
+          )}
+        </div>
+
+        {/* Assertions */}
+        {data.test.assertions.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <div className="text-xs font-medium text-muted-foreground mb-1.5">Verifications</div>
+            <div className="space-y-1">
+              {data.test.assertions.slice(0, 3).map((assertion, index) => (
+                <div key={index} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CheckCircle className="h-3 w-3 text-green-500/70" />
+                  <span>{assertion.description || assertion.expected}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="px-4 py-3 border-t border-primary/20 bg-primary/5 flex items-center gap-2">
+        <Button
+          onClick={onRunTest}
+          size="sm"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
+        >
+          <Play className="h-3.5 w-3.5" />
+          Run Test
+        </Button>
+        <Button
+          onClick={onEditTest}
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+        >
+          <Code className="h-3.5 w-3.5" />
+          Edit Steps
+        </Button>
+        <Button
+          onClick={onSaveTest}
+          variant="ghost"
+          size="sm"
+          className="gap-1.5 text-muted-foreground"
+        >
+          <ArrowRight className="h-3.5 w-3.5" />
+          Save to Library
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // Result display component
-function ResultDisplay({ result }: { result: unknown }) {
+function ResultDisplay({ result, onAction }: { result: unknown; onAction?: (action: string, data: unknown) => void }) {
   if (!result || typeof result !== 'object') {
     return (
       <pre className="text-xs bg-background rounded p-2 overflow-x-auto max-w-full whitespace-pre-wrap break-all">
@@ -872,6 +1010,18 @@ function ResultDisplay({ result }: { result: unknown }) {
   }
 
   const data = result as Record<string, unknown>;
+
+  // Handle test preview - show interactive card with run/edit/save buttons
+  if (data._type === 'test_preview') {
+    return (
+      <TestPreviewCard
+        data={data as TestPreviewCardProps['data']}
+        onRunTest={() => onAction?.('run_test', data)}
+        onEditTest={() => onAction?.('edit_test', data)}
+        onSaveTest={() => onAction?.('save_test', data)}
+      />
+    );
+  }
 
   // Show live execution progress if there's an active session
   const sessionId = data.sessionId as string | undefined;
@@ -1108,7 +1258,7 @@ function ResultDisplay({ result }: { result: unknown }) {
 }
 
 // Message content renderer
-function MessageContent({ message, isStreaming }: { message: Message; isStreaming?: boolean }) {
+function MessageContent({ message, isStreaming, onAction }: { message: Message; isStreaming?: boolean; onAction?: (action: string, data: unknown) => void }) {
   // Handle tool invocations (new AI SDK format)
   if (message.toolInvocations && message.toolInvocations.length > 0) {
     const isStillStreaming = isStreaming && !message.toolInvocations.some(t => t.state === 'result');
@@ -1133,6 +1283,7 @@ function MessageContent({ message, isStreaming }: { message: Message; isStreamin
             args={tool.args as Record<string, unknown>}
             result={tool.state === 'result' ? tool.result : undefined}
             isLoading={tool.state === 'call'}
+            onAction={onAction}
           />
         ))}
       </div>
@@ -1161,6 +1312,15 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   const [error, setError] = useState<string | null>(null);
   const [showSuggestionCard, setShowSuggestionCard] = useState(false);
   const [suggestionCardData, setSuggestionCardData] = useState<{ title: string; description: string } | null>(null);
+  const [isScreenshotsPanelOpen, setIsScreenshotsPanelOpen] = useState(false);
+
+  // Save test dialog state
+  const [saveTestDialogOpen, setSaveTestDialogOpen] = useState(false);
+  const [saveTestData, setSaveTestData] = useState<{
+    test?: { name: string; description?: string; steps: Array<{ action: string; target?: string; value?: string; description?: string }>; assertions?: Array<{ type: string; expected: string; description?: string }> };
+    app_url?: string;
+    summary?: { name: string; steps_count: number; assertions_count: number };
+  } | null>(null);
 
   // Store conversationId in ref to avoid stale closure issues
   const conversationIdRef = useRef(conversationId);
@@ -1179,7 +1339,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   const isValidConversationId = conversationId &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationId);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setInput, stop } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setInput, stop, append } = useChat({
     api: '/api/chat',
     // Only pass ID if it's a valid UUID, otherwise let AI SDK generate one temporarily
     id: isValidConversationId ? conversationId : undefined,
@@ -1235,6 +1395,11 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     return CONTEXTUAL_SUGGESTIONS.empty;
   }, [messages]);
 
+  // Count screenshots in current session for the toggle button
+  const screenshotCount = useMemo(() => {
+    return extractScreenshotsFromMessages(messages).length;
+  }, [messages]);
+
   // Persist user message immediately when they submit (before AI responds)
   const handleSubmitWithPersist = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1266,6 +1431,34 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
       }, 100);
     }
   }, [handleSubmit, input, messages]);
+
+  // Handle actions from test preview cards (run, edit, save)
+  const handleTestPreviewAction = useCallback((action: string, data: unknown) => {
+    const testData = data as {
+      test?: { name: string; description?: string; steps: Array<{ action: string; target?: string; value?: string; description?: string }>; assertions?: Array<{ type: string; expected: string; description?: string }> };
+      app_url?: string;
+      summary?: { name: string; steps_count: number; assertions_count: number };
+    };
+
+    if (action === 'run_test' && testData?.test && testData?.app_url) {
+      // Send a message to trigger runTest with the test steps
+      const steps = testData.test.steps.map(s =>
+        `${s.action}${s.target ? ` on ${s.target}` : ''}${s.value ? ` with "${s.value}"` : ''}`
+      );
+      append({
+        role: 'user',
+        content: `Run the test "${testData.test.name}" on ${testData.app_url} with these steps:\n${steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`
+      });
+    } else if (action === 'edit_test') {
+      // Pre-fill input with edit request
+      setInput(`Edit the test "${testData?.test?.name || 'test'}": `);
+      inputRef.current?.focus();
+    } else if (action === 'save_test') {
+      // Open save test dialog
+      setSaveTestData(testData);
+      setSaveTestDialogOpen(true);
+    }
+  }, [append, setInput]);
 
   // Persist assistant messages when AI response completes (onFinish already handles this)
   // REMOVED: useEffect that was causing infinite re-renders
@@ -1312,12 +1505,25 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] lg:h-[calc(100vh-12rem)] min-w-0 w-full overflow-hidden">
-      {/* Chat Messages */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 space-y-3 sm:space-y-4 p-2 sm:p-4 scroll-smooth"
-      >
+    <div className="flex h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] lg:h-[calc(100vh-12rem)] min-w-0 w-full overflow-hidden">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Screenshots Toggle Button - Fixed position */}
+        {messages.length > 0 && (
+          <div className="absolute top-2 right-2 z-30 lg:top-4 lg:right-4">
+            <ScreenshotsPanelToggle
+              screenshotCount={screenshotCount}
+              isOpen={isScreenshotsPanelOpen}
+              onClick={() => setIsScreenshotsPanelOpen(!isScreenshotsPanelOpen)}
+            />
+          </div>
+        )}
+
+        {/* Chat Messages */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 space-y-3 sm:space-y-4 p-2 sm:p-4 scroll-smooth"
+        >
         {messages.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -1397,7 +1603,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                           <MarkdownRenderer content={message.content} />
                         </div>
                       ) : (
-                        <MessageContent message={message} isStreaming={isStreamingThisMessage} />
+                        <MessageContent message={message} isStreaming={isStreamingThisMessage} onAction={handleTestPreviewAction} />
                       )}
                     </MessageBubble>
                     {message.role === 'user' && (
@@ -1499,6 +1705,25 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
           Try: "Discover elements on https://demo.vercel.store" or "Run a login test"
         </p>
       </div>
+      </div>
+
+      {/* Screenshots Panel - Right Sidebar */}
+      <SessionScreenshotsPanel
+        messages={messages}
+        isOpen={isScreenshotsPanelOpen}
+        onClose={() => setIsScreenshotsPanelOpen(false)}
+      />
+
+      {/* Save Test Dialog */}
+      <SaveTestDialog
+        open={saveTestDialogOpen}
+        onOpenChange={setSaveTestDialogOpen}
+        testData={saveTestData}
+        onSaved={(testId) => {
+          console.log('Test saved with ID:', testId);
+          setSaveTestData(null);
+        }}
+      />
     </div>
   );
 }

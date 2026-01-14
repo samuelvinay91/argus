@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { ApiClientProvider } from '@/components/providers/api-client-provider';
 
 // ============================================================================
 // Reduced Motion Provider
@@ -83,7 +84,9 @@ export function Providers({ children }: { children: ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        <ReducedMotionProvider>{children}</ReducedMotionProvider>
+        <ApiClientProvider>
+          <ReducedMotionProvider>{children}</ReducedMotionProvider>
+        </ApiClientProvider>
       </NextThemesProvider>
     </QueryClientProvider>
   );

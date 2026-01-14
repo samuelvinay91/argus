@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth, SignInButton, SignUpButton } from '@clerk/nextjs';
@@ -21,19 +21,11 @@ import {
   Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-
-interface InvitationDetails {
-  id: string;
-  email: string;
-  role: 'owner' | 'admin' | 'member' | 'viewer';
-  organization_id: string;
-  organization_name: string;
-  inviter_email: string;
-  expires_at: string;
-  status: 'pending' | 'accepted' | 'expired' | 'revoked';
-}
+import {
+  useValidateInvitation,
+  useAcceptInvitation,
+  type InvitationDetails,
+} from '@/lib/hooks/use-invitations';
 
 type PageState =
   | 'loading'
@@ -55,76 +47,45 @@ const ROLE_CONFIG = {
 export default function InvitationAcceptPage() {
   const params = useParams();
   const router = useRouter();
-  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const token = params.token as string;
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [invitation, setInvitation] = useState<InvitationDetails | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const validateToken = useCallback(async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/invitations/validate/${token}`);
+  // Validate invitation using the hook (public endpoint)
+  const { data: validationResult, isLoading: validating, refetch: revalidate } = useValidateInvitation(token);
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
+  // Accept invitation using the authenticated hook
+  const acceptInvitation = useAcceptInvitation();
 
-        if (response.status === 404) {
-          setPageState('invalid');
-          setErrorMessage(data.detail || 'This invitation link is invalid or does not exist.');
-          return;
-        }
+  // Process validation result
+  useEffect(() => {
+    if (validating) {
+      setPageState('loading');
+      return;
+    }
 
-        if (response.status === 410 || data.detail?.toLowerCase().includes('expired')) {
-          setPageState('expired');
-          setErrorMessage(data.detail || 'This invitation has expired.');
-          return;
-        }
+    if (!validationResult) return;
 
-        setPageState('invalid');
-        setErrorMessage(data.detail || 'Unable to validate invitation.');
-        return;
-      }
-
-      const data = await response.json();
-      setInvitation(data);
-
-      // Check if invitation is already used or expired
-      if (data.status === 'accepted') {
-        setPageState('invalid');
-        setErrorMessage('This invitation has already been accepted.');
-        return;
-      }
-
-      if (data.status === 'expired' || data.status === 'revoked') {
-        setPageState('expired');
-        setErrorMessage('This invitation is no longer valid.');
-        return;
-      }
-
-      // Check expiration date
-      if (new Date(data.expires_at) < new Date()) {
-        setPageState('expired');
-        setErrorMessage('This invitation has expired.');
-        return;
-      }
-
-      // Valid invitation - check auth state
+    if (validationResult.valid) {
+      setInvitation(validationResult.invitation);
       if (isLoaded) {
         setPageState(isSignedIn ? 'valid-logged-in' : 'valid-not-logged-in');
       }
-    } catch (err) {
-      console.error('Failed to validate invitation:', err);
-      setPageState('error');
-      setErrorMessage('Unable to connect to the server. Please try again later.');
+    } else {
+      // Handle different error types
+      if (validationResult.error === 'invalid' || validationResult.error === 'accepted') {
+        setPageState('invalid');
+      } else if (validationResult.error === 'expired') {
+        setPageState('expired');
+      } else {
+        setPageState('error');
+      }
+      setErrorMessage(validationResult.message);
     }
-  }, [token, isLoaded, isSignedIn]);
-
-  useEffect(() => {
-    if (token) {
-      validateToken();
-    }
-  }, [token, validateToken]);
+  }, [validationResult, validating, isLoaded, isSignedIn]);
 
   // Update state when auth changes
   useEffect(() => {
@@ -140,20 +101,7 @@ export default function InvitationAcceptPage() {
     setErrorMessage('');
 
     try {
-      const authToken = await getToken();
-      const response = await fetch(`${BACKEND_URL}/api/v1/invitations/accept/${token}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.detail || 'Failed to accept invitation');
-      }
-
+      await acceptInvitation.mutateAsync(token);
       setPageState('success');
 
       // Redirect to dashboard after a short delay
@@ -357,7 +305,7 @@ export default function InvitationAcceptPage() {
                 <h2 className="text-xl font-semibold mb-2">Something Went Wrong</h2>
                 <p className="text-muted-foreground mb-6">{errorMessage}</p>
                 <div className="flex flex-col gap-2">
-                  <Button onClick={() => validateToken()} className="w-full">
+                  <Button onClick={() => revalidate()} className="w-full">
                     Try Again
                   </Button>
                   <Link href="/">

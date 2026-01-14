@@ -10,13 +10,10 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
+import { apiClient } from '@/lib/api-client';
 
 // LocalStorage key - must match org-switcher.tsx
 const CURRENT_ORG_KEY = 'argus_current_org_id';
-
-// Backend URL
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL || 'http://localhost:8000';
 
 /**
  * Organization interface matching the backend response
@@ -115,7 +112,7 @@ export interface SwitchOptions {
  * ```
  */
 export function useCurrentOrganization(): UseCurrentOrganizationReturn {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const queryClient = useQueryClient();
 
   // Get org ID from localStorage (client-side only)
@@ -137,33 +134,16 @@ export function useCurrentOrganization(): UseCurrentOrganizationReturn {
         return null;
       }
 
-      // Get auth token (using default Clerk token)
-      const token = await getToken();
-
-      const response = await fetch(
-        `${BACKEND_URL}/api/v1/organizations/${organizationId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          credentials: 'include',
-        }
-      );
-
-      if (!response.ok) {
+      try {
+        return await apiClient.get<Organization>(`/api/v1/organizations/${organizationId}`);
+      } catch (error) {
         // If org not found or unauthorized, clear the stored ID
-        if (response.status === 404 || response.status === 403) {
+        if (error instanceof Error && (error.message.includes('404') || error.message.includes('403'))) {
           clearCurrentOrgId();
           return null;
         }
-        const errorText = await response.text();
-        throw new Error(errorText || `Failed to fetch organization: ${response.status}`);
+        throw error;
       }
-
-      const data = await response.json();
-      return data as Organization;
     },
     enabled: isLoaded && isSignedIn && !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutes - org details rarely change
@@ -190,20 +170,9 @@ export function useCurrentOrganization(): UseCurrentOrganizationReturn {
 
       // Optionally update server-side preference
       if (updateServer) {
-        getToken()
-          .then((token) => {
-            if (token) {
-              fetch(`${BACKEND_URL}/api/v1/users/me/organizations/${orgId}/switch`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-              }).catch((err) => {
-                console.error('Failed to update server-side organization preference:', err);
-              });
-            }
-          });
+        apiClient.post(`/api/v1/users/me/organizations/${orgId}/switch`).catch((err) => {
+          console.error('Failed to update server-side organization preference:', err);
+        });
       }
 
       // Reload page to refresh all data with new org context
@@ -211,7 +180,7 @@ export function useCurrentOrganization(): UseCurrentOrganizationReturn {
         window.location.reload();
       }
     },
-    [getToken, queryClient]
+    [queryClient]
   );
 
   // Refetch function

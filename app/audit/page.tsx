@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,31 +28,15 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  useAuditLogs,
+  useAuditStats,
+  exportAuditLogs,
+  exportLogsToCSV,
+  type AuditLogEntry,
+} from '@/lib/hooks/use-audit';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 const DEFAULT_ORG_ID = 'default';
-
-interface AuditLogEntry {
-  id: string;
-  user_id: string;
-  user_email: string;
-  user_role: string;
-  action: string;
-  resource_type: string;
-  resource_id: string;
-  description: string;
-  metadata: Record<string, any>;
-  ip_address: string;
-  status: 'success' | 'failure' | 'pending';
-  created_at: string;
-}
-
-interface AuditStats {
-  total_events: number;
-  events_last_24h: number;
-  success_count: number;
-  failure_count: number;
-}
 
 const ACTION_ICONS: Record<string, typeof Activity> = {
   member: Users,
@@ -71,81 +55,50 @@ const STATUS_CONFIG = {
 };
 
 export default function AuditPage() {
-  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
-  const [stats, setStats] = useState<AuditStats>({
-    total_events: 0,
-    events_last_24h: 0,
-    success_count: 0,
-    failure_count: 0,
-  });
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [exporting, setExporting] = useState(false);
   const pageSize = 20;
 
-  const fetchLogs = useCallback(async () => {
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        page_size: String(pageSize),
-      });
-      if (selectedAction) params.append('action_filter', selectedAction);
-      if (selectedStatus) params.append('status_filter', selectedStatus);
-      if (searchQuery) params.append('search', searchQuery);
+  // Data fetching with authenticated hooks
+  const { data: logsData, isLoading: logsLoading } = useAuditLogs(DEFAULT_ORG_ID, {
+    page,
+    pageSize,
+    actionFilter: selectedAction,
+    statusFilter: selectedStatus,
+    search: debouncedSearch,
+  });
+  const { data: stats, isLoading: statsLoading } = useAuditStats(DEFAULT_ORG_ID);
 
-      const response = await fetch(
-        `${BACKEND_URL}/api/v1/audit/organizations/${DEFAULT_ORG_ID}/logs?${params}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setLogs(data.logs || []);
-        setTotalPages(data.total_pages || 1);
-      }
-    } catch (err) {
-      console.error('Failed to fetch audit logs:', err);
-    }
-  }, [page, selectedAction, selectedStatus, searchQuery]);
+  const logs = logsData?.logs || [];
+  const totalPages = logsData?.total_pages || 1;
+  const loading = logsLoading || statsLoading;
 
-  const fetchStats = useCallback(async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/audit/organizations/${DEFAULT_ORG_ID}/stats`);
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch audit stats:', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([fetchLogs(), fetchStats()]);
-      setLoading(false);
-    };
-    loadData();
-  }, [fetchLogs, fetchStats]);
-
-  // Debounce search
+  // Debounce search - reset page when search changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPage(1); // Reset to first page on search
-      fetchLogs();
+      setDebouncedSearch(searchQuery);
+      if (searchQuery !== debouncedSearch) {
+        setPage(1);
+      }
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, fetchLogs]);
+  }, [searchQuery, debouncedSearch]);
 
-  // Refresh when filters change
-  useEffect(() => {
+  // Reset page when filters change
+  const handleActionChange = (action: string | null) => {
+    setSelectedAction(action);
     setPage(1);
-    fetchLogs();
-  }, [selectedAction, selectedStatus, fetchLogs]);
+  };
+
+  const handleStatusChange = (status: string | null) => {
+    setSelectedStatus(status);
+    setPage(1);
+  };
 
   const formatTimeAgo = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -167,47 +120,31 @@ export default function AuditPage() {
     setError(null);
 
     try {
-      const params = new URLSearchParams();
-      if (selectedAction) params.append('action_filter', selectedAction);
-      if (selectedStatus) params.append('status_filter', selectedStatus);
-      if (searchQuery) params.append('search', searchQuery);
+      // Try authenticated API export
+      const result = await exportAuditLogs(DEFAULT_ORG_ID, {
+        actionFilter: selectedAction,
+        statusFilter: selectedStatus,
+        search: debouncedSearch,
+      });
 
-      const response = await fetch(
-        `${BACKEND_URL}/api/v1/audit/organizations/${DEFAULT_ORG_ID}/export?${params}`
-      );
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-      } else {
-        // Fallback to client-side export if API doesn't support export
-        const csv = [
-          ['Time', 'User', 'Action', 'Description', 'Status', 'IP Address'].join(','),
-          ...logs.map(log => [
-            new Date(log.created_at).toISOString(),
-            log.user_email,
-            log.action,
-            `"${log.description}"`,
-            log.status,
-            log.ip_address,
-          ].join(','))
-        ].join('\n');
-
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
+      // Create download link
+      const a = document.createElement('a');
+      a.href = result.url;
+      a.download = result.filename;
+      a.click();
+      URL.revokeObjectURL(result.url);
     } catch (err) {
-      setError('Failed to export audit logs');
+      // Fallback to client-side export if API doesn't support export
+      try {
+        const result = exportLogsToCSV(logs);
+        const a = document.createElement('a');
+        a.href = result.url;
+        a.download = result.filename;
+        a.click();
+        URL.revokeObjectURL(result.url);
+      } catch {
+        setError('Failed to export audit logs');
+      }
     } finally {
       setExporting(false);
     }
@@ -349,7 +286,7 @@ export default function AuditPage() {
                         key={action}
                         variant={selectedAction === action ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setSelectedAction(selectedAction === action ? null : action)}
+                        onClick={() => handleActionChange(selectedAction === action ? null : action)}
                       >
                         <Icon className="h-4 w-4 mr-1" />
                         {action.replace('_', ' ')}
@@ -364,7 +301,7 @@ export default function AuditPage() {
                       key={status}
                       variant={selectedStatus === status ? 'default' : 'outline'}
                       size="sm"
-                      onClick={() => setSelectedStatus(selectedStatus === status ? null : status)}
+                      onClick={() => handleStatusChange(selectedStatus === status ? null : status)}
                       className={cn(
                         selectedStatus === status && config.bg,
                         selectedStatus === status && config.color

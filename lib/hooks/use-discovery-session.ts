@@ -3,12 +3,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { apiClient, BACKEND_URL, getAuthToken } from '@/lib/api-client';
 import type {
   DiscoverySession,
   DiscoveredPage,
   DiscoveredFlow,
   Json,
 } from '@/lib/supabase/types';
+
+// ============================================
+// API Configuration
+// ============================================
+
+const API_BASE = '/api/v1/discovery';
 
 // ============================================
 // Types
@@ -161,32 +168,6 @@ export interface DiscoveryHistoryItem {
 }
 
 // ============================================
-// API Helper
-// ============================================
-
-const API_BASE = '/api/v1/discovery';
-
-async function fetchApi<T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `Request failed with status ${response.status}`);
-  }
-
-  return response.json();
-}
-
-// ============================================
 // Hooks
 // ============================================
 
@@ -198,10 +179,7 @@ export function useStartDiscoverySession() {
 
   return useMutation({
     mutationFn: async (params: StartDiscoveryParams): Promise<DiscoverySessionResponse> => {
-      return fetchApi<DiscoverySessionResponse>('/sessions', {
-        method: 'POST',
-        body: JSON.stringify(params),
-      });
+      return apiClient.post<DiscoverySessionResponse>(`${API_BASE}/sessions`, params);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['discovery-sessions', data.projectId] });
@@ -221,7 +199,7 @@ export function useDiscoverySession(sessionId: string | null) {
     queryKey: ['discovery-session', sessionId],
     queryFn: async (): Promise<DiscoverySessionResponse | null> => {
       if (!sessionId) return null;
-      return fetchApi<DiscoverySessionResponse>(`/sessions/${sessionId}`);
+      return apiClient.get<DiscoverySessionResponse>(`${API_BASE}/sessions/${sessionId}`);
     },
     enabled: !!sessionId,
     refetchInterval: (query) => {
@@ -247,10 +225,7 @@ export function useDiscoveredPages(sessionId: string | null) {
 
       // Try API first, fall back to direct Supabase query
       try {
-        const response = await fetch(`${API_BASE}/sessions/${sessionId}/pages`);
-        if (response.ok) {
-          return response.json();
-        }
+        return await apiClient.get<DiscoveredPage[]>(`${API_BASE}/sessions/${sessionId}/pages`);
       } catch {
         // Fall back to direct query
       }
@@ -284,10 +259,7 @@ export function useDiscoveredFlows(sessionId: string | null) {
 
       // Try API first, fall back to direct Supabase query
       try {
-        const response = await fetch(`${API_BASE}/sessions/${sessionId}/flows`);
-        if (response.ok) {
-          return response.json();
-        }
+        return await apiClient.get<DiscoveredFlow[]>(`${API_BASE}/sessions/${sessionId}/flows`);
       } catch {
         // Fall back to direct query
       }
@@ -325,14 +297,7 @@ export function useUpdateFlow() {
     }): Promise<DiscoveredFlow> => {
       // Try API first
       try {
-        const response = await fetch(`${API_BASE}/flows/${flowId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
-        });
-        if (response.ok) {
-          return response.json();
-        }
+        return await apiClient.put<DiscoveredFlow>(`${API_BASE}/flows/${flowId}`, updates);
       } catch {
         // Fall back to direct update
       }
@@ -367,9 +332,7 @@ export function useValidateFlow() {
 
   return useMutation({
     mutationFn: async (flowId: string): Promise<FlowValidationResult> => {
-      return fetchApi<FlowValidationResult>(`/flows/${flowId}/validate`, {
-        method: 'POST',
-      });
+      return apiClient.post<FlowValidationResult>(`${API_BASE}/flows/${flowId}/validate`);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['discovered-flows'] });
@@ -393,11 +356,9 @@ export function useGenerateTestFromFlow() {
 
   return useMutation({
     mutationFn: async (flowId: string): Promise<GeneratedTestResult> => {
-      return fetchApi<GeneratedTestResult>(`/flows/${flowId}/generate-test`, {
-        method: 'POST',
-      });
+      return apiClient.post<GeneratedTestResult>(`${API_BASE}/flows/${flowId}/generate-test`);
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discovered-flows'] });
       queryClient.invalidateQueries({ queryKey: ['tests'] });
     },
@@ -415,9 +376,7 @@ export function usePauseDiscovery() {
 
   return useMutation({
     mutationFn: async (sessionId: string): Promise<DiscoverySessionResponse> => {
-      return fetchApi<DiscoverySessionResponse>(`/sessions/${sessionId}/pause`, {
-        method: 'POST',
-      });
+      return apiClient.post<DiscoverySessionResponse>(`${API_BASE}/sessions/${sessionId}/pause`);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['discovery-session', data.id] });
@@ -437,9 +396,7 @@ export function useResumeDiscovery() {
 
   return useMutation({
     mutationFn: async (sessionId: string): Promise<DiscoverySessionResponse> => {
-      return fetchApi<DiscoverySessionResponse>(`/sessions/${sessionId}/resume`, {
-        method: 'POST',
-      });
+      return apiClient.post<DiscoverySessionResponse>(`${API_BASE}/sessions/${sessionId}/resume`);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['discovery-session', data.id] });
@@ -459,9 +416,7 @@ export function useCancelDiscovery() {
 
   return useMutation({
     mutationFn: async (sessionId: string): Promise<DiscoverySessionResponse> => {
-      return fetchApi<DiscoverySessionResponse>(`/sessions/${sessionId}/cancel`, {
-        method: 'POST',
-      });
+      return apiClient.post<DiscoverySessionResponse>(`${API_BASE}/sessions/${sessionId}/cancel`);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['discovery-session', data.id] });
@@ -487,12 +442,9 @@ export function useDiscoveryHistory(projectId: string | null, limit: number = 20
 
       // Try API first
       try {
-        const response = await fetch(
+        return await apiClient.get<DiscoveryHistoryItem[]>(
           `${API_BASE}/projects/${projectId}/history?limit=${limit}`
         );
-        if (response.ok) {
-          return response.json();
-        }
       } catch {
         // Fall back to direct query
       }
@@ -530,18 +482,28 @@ export function useDiscoveryHistory(projectId: string | null, limit: number = 20
 
 /**
  * SSE hook for real-time discovery updates
+ *
+ * Note: Native EventSource doesn't support custom headers, so we pass
+ * the auth token as a query parameter. The backend should accept both
+ * Authorization header and ?token= query parameter for SSE endpoints.
  */
 export function useDiscoveryStream(sessionId: string | null) {
   const [status, setStatus] = useState<DiscoveryStatus | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!sessionId) return null;
 
-    const eventSource = new EventSource(
-      `${API_BASE}/sessions/${sessionId}/stream`
-    );
+    // Get auth token for SSE connection
+    // Native EventSource doesn't support headers, so pass token as query param
+    const token = await getAuthToken();
+    const url = new URL(`${BACKEND_URL}${API_BASE}/sessions/${sessionId}/stream`);
+    if (token) {
+      url.searchParams.set('token', token);
+    }
+
+    const eventSource = new EventSource(url.toString());
 
     eventSource.onopen = () => {
       setIsConnected(true);
@@ -575,11 +537,17 @@ export function useDiscoveryStream(sessionId: string | null) {
       return;
     }
 
-    const eventSource = connect();
-    if (!eventSource) return;
+    let eventSource: EventSource | null = null;
+
+    // Connect asynchronously to get the token
+    connect().then(es => {
+      eventSource = es;
+    });
 
     return () => {
-      eventSource.close();
+      if (eventSource) {
+        eventSource.close();
+      }
       setIsConnected(false);
     };
   }, [sessionId, connect]);
@@ -612,7 +580,7 @@ export function useFlowValidation(flowId: string | null) {
     queryKey: ['flow-validation', flowId],
     queryFn: async (): Promise<FlowValidationResult | null> => {
       if (!flowId) return null;
-      return fetchApi<FlowValidationResult>(`/flows/${flowId}/validation-status`);
+      return apiClient.get<FlowValidationResult>(`${API_BASE}/flows/${flowId}/validation-status`);
     },
     enabled: !!flowId,
     staleTime: 30 * 1000, // 30 seconds
@@ -627,10 +595,7 @@ export function useBulkGenerateTests() {
 
   return useMutation({
     mutationFn: async (flowIds: string[]): Promise<GeneratedTestResult[]> => {
-      return fetchApi<GeneratedTestResult[]>('/flows/bulk-generate-tests', {
-        method: 'POST',
-        body: JSON.stringify({ flowIds }),
-      });
+      return apiClient.post<GeneratedTestResult[]>(`${API_BASE}/flows/bulk-generate-tests`, { flowIds });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discovered-flows'] });
@@ -659,10 +624,8 @@ export function useDeleteDiscoverySession() {
     }): Promise<void> => {
       // Try API first
       try {
-        const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
-          method: 'DELETE',
-        });
-        if (response.ok) return;
+        await apiClient.delete(`${API_BASE}/sessions/${sessionId}`);
+        return;
       } catch {
         // Fall back to direct delete
       }
@@ -716,12 +679,9 @@ export function useExportFlowsAsTests() {
       flowIds?: string[];
       format?: 'playwright' | 'cypress' | 'testcafe' | 'json';
     }): Promise<{ content: string; filename: string }> => {
-      return fetchApi<{ content: string; filename: string }>(
-        `/sessions/${sessionId}/export`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ flowIds, format }),
-        }
+      return apiClient.post<{ content: string; filename: string }>(
+        `${API_BASE}/sessions/${sessionId}/export`,
+        { flowIds, format }
       );
     },
     onError: (error) => {
@@ -773,10 +733,7 @@ export function useCrossProjectPatterns(sessionId: string | null) {
 
       // Try API first for AI-powered pattern matching
       try {
-        const response = await fetch(`${API_BASE}/sessions/${sessionId}/patterns`);
-        if (response.ok) {
-          return response.json();
-        }
+        return await apiClient.get<PatternMatch[]>(`${API_BASE}/sessions/${sessionId}/patterns`);
       } catch {
         // Fall back to direct query with basic matching
       }
@@ -839,10 +796,7 @@ export function useGlobalPatterns(limit: number = 5) {
     queryFn: async (): Promise<CrossProjectPattern[]> => {
       // Try API first
       try {
-        const response = await fetch(`${API_BASE}/patterns?limit=${limit}`);
-        if (response.ok) {
-          return response.json();
-        }
+        return await apiClient.get<CrossProjectPattern[]>(`${API_BASE}/patterns?limit=${limit}`);
       } catch {
         // Fall back to direct query
       }
@@ -894,10 +848,7 @@ export function useSavePattern() {
 
   return useMutation({
     mutationFn: async (pattern: Omit<CrossProjectPattern, 'id' | 'createdAt'>): Promise<CrossProjectPattern> => {
-      return fetchApi<CrossProjectPattern>('/patterns', {
-        method: 'POST',
-        body: JSON.stringify(pattern),
-      });
+      return apiClient.post<CrossProjectPattern>(`${API_BASE}/patterns`, pattern);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['global-patterns'] });

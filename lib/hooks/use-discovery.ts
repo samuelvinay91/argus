@@ -2,9 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import type { DiscoverySession, DiscoveredPage, DiscoveredFlow, InsertTables } from '@/lib/supabase/types';
-
-const WORKER_URL = process.env.NEXT_PUBLIC_E2E_WORKER_URL || 'https://e2e-testing-agent.samuelvinay-kumar.workers.dev';
 
 export function useDiscoverySessions(projectId: string | null) {
   const supabase = getSupabaseClient();
@@ -165,29 +164,17 @@ export function useStartDiscovery() {
       if (sessionError) throw sessionError;
 
       try {
-        // 2. Call worker to observe the page
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-        const response = await fetch(`${WORKER_URL}/observe`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: appUrl,
-            instruction: 'Analyze this page and identify all interactive elements, forms, links, and possible user flows',
-            projectId,  // Pass for activity logging
-            activityType: 'discovery',
-          }),
-          signal: controller.signal,
+        // 2. Call backend API to observe the page (authenticated)
+        const observeResult = await apiClient.post<{
+          actions?: Array<{ selector?: string; description?: string }>;
+          pageTitle?: string;
+          screenshot?: string;
+        }>('/api/v1/discovery/observe', {
+          url: appUrl,
+          instruction: 'Analyze this page and identify all interactive elements, forms, links, and possible user flows',
+          projectId,  // Pass for activity logging
+          activityType: 'discovery',
         });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          throw new Error(`Worker returned ${response.status}: ${await response.text()}`);
-        }
-
-        const observeResult = await response.json();
 
         // 3. Parse the observation results - worker returns 'actions' not 'elements'
         const actions = observeResult.actions || [];

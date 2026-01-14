@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,35 +24,21 @@ import {
   Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useOrganization,
+  useMembers,
+  usePendingInvitations,
+  useInviteMember,
+  useRemoveMember,
+  useChangeMemberRole,
+  useResendInvitation,
+  useRevokeInvitation,
+  type Member,
+  type PendingInvitation,
+} from '@/lib/hooks/use-team';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 const DEFAULT_ORG_ID = 'default';
-
-interface Member {
-  id: string;
-  email: string;
-  role: 'owner' | 'admin' | 'member' | 'viewer';
-  status: 'active' | 'pending';
-  invited_at?: string;
-  accepted_at?: string;
-}
-
-interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  plan: string;
-  member_count: number;
-}
-
-interface PendingInvitation {
-  id: string;
-  email: string;
-  role: 'owner' | 'admin' | 'member' | 'viewer';
-  invited_at: string;
-  expires_at: string;
-  inviter_email?: string;
-}
 
 const ROLE_CONFIG = {
   owner: { label: 'Owner', icon: Crown, color: 'text-amber-500' },
@@ -62,209 +48,88 @@ const ROLE_CONFIG = {
 };
 
 export default function TeamPage() {
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // UI state only - data is managed by React Query hooks
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'member' | 'viewer'>('member');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
-  const [inviting, setInviting] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [invitationActionLoading, setInvitationActionLoading] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchOrganization = useCallback(async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}`);
-      if (response.ok) {
-        const data = await response.json();
-        setOrganization(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch organization:', err);
-    }
-  }, []);
+  const queryClient = useQueryClient();
 
-  const fetchMembers = useCallback(async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}/members`);
-      if (response.ok) {
-        const data = await response.json();
-        setMembers(data.members || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch members:', err);
-    }
-  }, []);
+  // Data fetching with authenticated hooks
+  const { data: organization, isLoading: orgLoading } = useOrganization(DEFAULT_ORG_ID);
+  const { data: members = [], isLoading: membersLoading, refetch: refetchMembers } = useMembers(DEFAULT_ORG_ID);
+  const { data: pendingInvitations = [], isLoading: invitationsLoading, refetch: refetchInvitations } = usePendingInvitations(DEFAULT_ORG_ID);
 
-  const fetchPendingInvitations = useCallback(async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/invitations/organizations/${DEFAULT_ORG_ID}/invitations`);
-      if (response.ok) {
-        const data = await response.json();
-        // Filter to only show pending invitations
-        const pending = (data.invitations || data || []).filter(
-          (inv: PendingInvitation & { status?: string }) => inv.status === 'pending' || !inv.status
-        );
-        setPendingInvitations(pending);
-      }
-    } catch (err) {
-      console.error('Failed to fetch pending invitations:', err);
-    }
-  }, []);
+  // Mutations with authenticated hooks
+  const inviteMember = useInviteMember(DEFAULT_ORG_ID);
+  const removeMember = useRemoveMember(DEFAULT_ORG_ID);
+  const changeMemberRole = useChangeMemberRole(DEFAULT_ORG_ID);
+  const resendInvitation = useResendInvitation(DEFAULT_ORG_ID);
+  const revokeInvitation = useRevokeInvitation(DEFAULT_ORG_ID);
 
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
-      await Promise.all([fetchOrganization(), fetchMembers(), fetchPendingInvitations()]);
-      setLoading(false);
-    };
-    loadData();
-  }, [fetchOrganization, fetchMembers, fetchPendingInvitations]);
+  const loading = orgLoading || membersLoading || invitationsLoading;
 
-  const filteredMembers = members.filter(m =>
+  const filteredMembers = members.filter((m: Member) =>
     m.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleInvite = async () => {
     if (!inviteEmail) return;
 
-    setInviting(true);
     setError(null);
-
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}/members/invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: inviteEmail,
-          role: inviteRole,
-        }),
-      });
-
-      if (response.ok) {
-        const newMember = await response.json();
-        setMembers([...members, newMember]);
-        setInviteEmail('');
-        setShowInviteModal(false);
-        // Refresh pending invitations to show the new invitation
-        await fetchPendingInvitations();
-        setSuccessMessage(`Invitation sent to ${inviteEmail}`);
-      } else {
-        const data = await response.json();
-        setError(data.detail || 'Failed to send invitation');
-      }
+      await inviteMember.mutateAsync({ email: inviteEmail, role: inviteRole });
+      setInviteEmail('');
+      setShowInviteModal(false);
+      setSuccessMessage(`Invitation sent to ${inviteEmail}`);
     } catch (err) {
-      setError('Failed to connect to server');
-    } finally {
-      setInviting(false);
+      setError(err instanceof Error ? err.message : 'Failed to send invitation');
     }
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    setActionLoading(memberId);
+    setError(null);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}/members/${memberId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setMembers(members.filter(m => m.id !== memberId));
-      } else {
-        const data = await response.json();
-        setError(data.detail || 'Failed to remove member');
-      }
-    } catch (err) {
-      setError('Failed to connect to server');
-    } finally {
-      setActionLoading(null);
+      await removeMember.mutateAsync(memberId);
       setSelectedMember(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove member');
     }
   };
 
   const handleChangeRole = async (memberId: string, newRole: 'admin' | 'member' | 'viewer') => {
-    setActionLoading(memberId);
+    setError(null);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}/members/${memberId}/role`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
-      });
-
-      if (response.ok) {
-        setMembers(members.map(m =>
-          m.id === memberId ? { ...m, role: newRole } : m
-        ));
-      } else {
-        const data = await response.json();
-        setError(data.detail || 'Failed to change role');
-      }
-    } catch (err) {
-      setError('Failed to connect to server');
-    } finally {
-      setActionLoading(null);
+      await changeMemberRole.mutateAsync({ memberId, role: newRole });
       setSelectedMember(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to change role');
     }
   };
 
   const handleResendInvitation = async (invitation: PendingInvitation) => {
-    setInvitationActionLoading(invitation.id);
     setError(null);
     setSuccessMessage(null);
-
     try {
-      // Resend by creating a new invitation with the same email and role
-      const response = await fetch(`${BACKEND_URL}/api/v1/teams/organizations/${DEFAULT_ORG_ID}/members/invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: invitation.email,
-          role: invitation.role,
-        }),
-      });
-
-      if (response.ok) {
-        setSuccessMessage(`Invitation resent to ${invitation.email}`);
-        // Refresh the invitations list
-        await fetchPendingInvitations();
-      } else {
-        const data = await response.json();
-        setError(data.detail || 'Failed to resend invitation');
-      }
+      await resendInvitation.mutateAsync({ email: invitation.email, role: invitation.role });
+      setSuccessMessage(`Invitation resent to ${invitation.email}`);
     } catch (err) {
-      setError('Failed to connect to server');
-    } finally {
-      setInvitationActionLoading(null);
+      setError(err instanceof Error ? err.message : 'Failed to resend invitation');
     }
   };
 
   const handleRevokeInvitation = async (invitationId: string) => {
-    setInvitationActionLoading(invitationId);
     setError(null);
     setSuccessMessage(null);
-
     try {
-      const response = await fetch(
-        `${BACKEND_URL}/api/v1/invitations/organizations/${DEFAULT_ORG_ID}/invitations/${invitationId}`,
-        { method: 'DELETE' }
-      );
-
-      if (response.ok) {
-        setPendingInvitations(pendingInvitations.filter(inv => inv.id !== invitationId));
-        setSuccessMessage('Invitation revoked successfully');
-      } else {
-        const data = await response.json();
-        setError(data.detail || 'Failed to revoke invitation');
-      }
+      await revokeInvitation.mutateAsync(invitationId);
+      setSuccessMessage('Invitation revoked successfully');
     } catch (err) {
-      setError('Failed to connect to server');
-    } finally {
-      setInvitationActionLoading(null);
+      setError(err instanceof Error ? err.message : 'Failed to revoke invitation');
     }
   };
 
@@ -396,7 +261,7 @@ export default function TeamPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={fetchPendingInvitations}
+                    onClick={() => refetchInvitations()}
                     className="text-muted-foreground"
                   >
                     <RefreshCw className="h-4 w-4 mr-1" />
@@ -406,10 +271,11 @@ export default function TeamPage() {
               </CardHeader>
               <CardContent>
                 <div className="divide-y">
-                  {pendingInvitations.map((invitation) => {
+                  {pendingInvitations.map((invitation: PendingInvitation) => {
                     const roleConfig = ROLE_CONFIG[invitation.role];
                     const isExpired = new Date(invitation.expires_at) < new Date();
                     const expiresIn = new Date(invitation.expires_at);
+                    const isActionLoading = resendInvitation.isPending || revokeInvitation.isPending;
 
                     return (
                       <div
@@ -454,9 +320,9 @@ export default function TeamPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleResendInvitation(invitation)}
-                            disabled={invitationActionLoading === invitation.id}
+                            disabled={isActionLoading}
                           >
-                            {invitationActionLoading === invitation.id ? (
+                            {resendInvitation.isPending ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <>
@@ -469,10 +335,10 @@ export default function TeamPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRevokeInvitation(invitation.id)}
-                            disabled={invitationActionLoading === invitation.id}
+                            disabled={isActionLoading}
                             className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
                           >
-                            {invitationActionLoading === invitation.id ? (
+                            {revokeInvitation.isPending ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <>
@@ -497,8 +363,8 @@ export default function TeamPage() {
                 <div>
                   <CardTitle>Team Members</CardTitle>
                   <CardDescription>
-                    {members.filter(m => m.status === 'active').length} active,{' '}
-                    {members.filter(m => m.status === 'pending').length} pending
+                    {members.filter((m: Member) => m.status === 'active').length} active,{' '}
+                    {members.filter((m: Member) => m.status === 'pending').length} pending
                   </CardDescription>
                 </div>
                 <div className="relative w-64">
@@ -533,8 +399,10 @@ export default function TeamPage() {
                 </div>
               ) : (
                 <div className="divide-y">
-                  {filteredMembers.map((member) => {
+                  {filteredMembers.map((member: Member) => {
                     const roleConfig = ROLE_CONFIG[member.role];
+                    const isMutating = removeMember.isPending || changeMemberRole.isPending;
+
                     return (
                       <div
                         key={member.id}
@@ -576,9 +444,9 @@ export default function TeamPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => setSelectedMember(selectedMember === member.id ? null : member.id)}
-                              disabled={actionLoading === member.id}
+                              disabled={isMutating}
                             >
-                              {actionLoading === member.id ? (
+                              {isMutating && selectedMember === member.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <MoreVertical className="h-4 w-4" />
@@ -690,16 +558,16 @@ export default function TeamPage() {
                     variant="outline"
                     className="flex-1"
                     onClick={() => setShowInviteModal(false)}
-                    disabled={inviting}
+                    disabled={inviteMember.isPending}
                   >
                     Cancel
                   </Button>
                   <Button
                     className="flex-1"
                     onClick={handleInvite}
-                    disabled={!inviteEmail || inviting}
+                    disabled={!inviteEmail || inviteMember.isPending}
                   >
-                    {inviting ? (
+                    {inviteMember.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Sending...

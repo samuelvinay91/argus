@@ -80,6 +80,7 @@ const mainNavigation = [
 
 const testingNavigation = [
   { name: 'Test Runner', href: '/tests', icon: TestTube },
+  { name: 'Test Library', href: '/tests/library', icon: BookOpen },
   { name: 'Discovery', href: '/discovery', icon: Compass },
   { name: 'Visual AI', href: '/visual', icon: Eye },
   { name: 'Schedules', href: '/schedules', icon: Calendar },

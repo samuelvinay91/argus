@@ -333,6 +333,90 @@ export function LiveExecutionProgress({
   );
 }
 
+// Elapsed time display component
+function ElapsedTime({ startTime }: { startTime: Date | null }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!startTime) return;
+
+    const updateElapsed = () => {
+      setElapsed(Math.floor((Date.now() - startTime.getTime()) / 1000));
+    };
+
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 1000);
+    return () => clearInterval(interval);
+  }, [startTime]);
+
+  if (!startTime) return null;
+
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+
+  return (
+    <span className="text-xs text-muted-foreground tabular-nums">
+      {minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`}
+    </span>
+  );
+}
+
+// Step dot indicator component
+function StepDots({
+  total,
+  current,
+  status,
+}: {
+  total: number;
+  current: number;
+  status: 'running' | 'completed' | 'failed';
+}) {
+  // Limit visible dots to avoid overflow
+  const maxDots = 8;
+  const visibleDots = Math.min(total, maxDots);
+  const showEllipsis = total > maxDots;
+
+  return (
+    <div className="flex items-center gap-1">
+      {Array.from({ length: visibleDots }).map((_, index) => {
+        const stepIndex = index + 1;
+        const isCompleted = stepIndex < current;
+        const isCurrent = stepIndex === current;
+        const isFailed = status === 'failed' && isCurrent;
+
+        return (
+          <motion.div
+            key={index}
+            initial={{ scale: 0.8, opacity: 0.5 }}
+            animate={{
+              scale: isCurrent ? 1.2 : 1,
+              opacity: 1,
+            }}
+            className={cn(
+              'w-1.5 h-1.5 rounded-full transition-colors',
+              isCompleted && 'bg-success',
+              isCurrent && !isFailed && 'bg-primary',
+              isCurrent && isFailed && 'bg-error',
+              !isCompleted && !isCurrent && 'bg-muted-foreground/30'
+            )}
+          >
+            {isCurrent && status === 'running' && (
+              <motion.div
+                className="w-full h-full rounded-full bg-primary"
+                animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
+            )}
+          </motion.div>
+        );
+      })}
+      {showEllipsis && (
+        <span className="text-[10px] text-muted-foreground ml-0.5">+{total - maxDots}</span>
+      )}
+    </div>
+  );
+}
+
 // Compact version for inline display in chat messages
 export function CompactExecutionProgress({
   sessionId,
@@ -343,6 +427,14 @@ export function CompactExecutionProgress({
 }) {
   const { activities, connectionStatus, isConnected } = useActivityStream(sessionId);
   const [isComplete, setIsComplete] = useState(false);
+  const [startTime, setStartTime] = useState<Date | null>(null);
+
+  // Track start time from first activity
+  useEffect(() => {
+    if (activities.length > 0 && !startTime) {
+      setStartTime(new Date(activities[0].created_at));
+    }
+  }, [activities, startTime]);
 
   // Check if session completed
   useEffect(() => {
@@ -354,57 +446,235 @@ export function CompactExecutionProgress({
     }
   }, [activities]);
 
+  // Calculate steps - count 'step' type activities
+  const stepActivities = activities.filter((a) => a.event_type === 'step');
+  const totalSteps = Math.max(stepActivities.length, 5); // Minimum 5 steps for better UX
+  const completedSteps = stepActivities.length;
+  const currentStep = isComplete ? completedSteps : completedSteps + 1;
+
   const latestActivity = activities[activities.length - 1];
-  const progress = Math.min(activities.length * 10, isComplete ? 100 : 95);
+
+  // Calculate progress based on activities
+  const progress = isComplete
+    ? 100
+    : Math.min(Math.max(activities.length * 8, 5), 95);
+
   const isSuccess = latestActivity?.event_type === 'completed';
 
+  // Determine current status
+  const status: 'running' | 'completed' | 'failed' = isComplete
+    ? isSuccess
+      ? 'completed'
+      : 'failed'
+    : 'running';
+
+  // Get status label
+  const getStatusLabel = () => {
+    if (isComplete) {
+      return isSuccess ? 'Completed' : 'Failed';
+    }
+    if (latestActivity?.event_type === 'thinking') {
+      return 'Analyzing...';
+    }
+    if (latestActivity?.event_type === 'action') {
+      return 'Executing...';
+    }
+    if (latestActivity?.event_type === 'screenshot') {
+      return 'Capturing...';
+    }
+    return latestActivity?.title || 'Processing...';
+  };
+
+  // Get current action description
+  const getCurrentAction = () => {
+    if (isComplete) {
+      return isSuccess
+        ? `All ${completedSteps} step${completedSteps !== 1 ? 's' : ''} completed successfully`
+        : latestActivity?.description || 'Test execution failed';
+    }
+    return latestActivity?.description || latestActivity?.title || 'Starting execution...';
+  };
+
   return (
-    <div className={cn('bg-muted/30 rounded-lg p-3 space-y-2', className)}>
-      {/* Progress header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {isComplete ? (
-            isSuccess ? (
-              <CheckCircle2 className="h-4 w-4 text-success" />
-            ) : (
-              <XCircle className="h-4 w-4 text-error" />
-            )
-          ) : (
-            <Loader2 className="h-4 w-4 text-primary animate-spin" />
-          )}
-          <span className="text-sm font-medium">
-            {isComplete
-              ? isSuccess
-                ? 'Completed'
-                : 'Failed'
-              : latestActivity?.title || 'Processing...'}
-          </span>
+    <div className={cn('bg-muted/30 rounded-lg overflow-hidden', className)}>
+      {/* Header section */}
+      <div className="p-3 space-y-2">
+        {/* Top row: Status and progress */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {/* Status icon with animation */}
+            <AnimatePresence mode="wait">
+              {isComplete ? (
+                isSuccess ? (
+                  <motion.div
+                    key="success"
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="error"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                  >
+                    <XCircle className="h-4 w-4 text-error" />
+                  </motion.div>
+                )
+              ) : (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Status label */}
+            <motion.span
+              key={getStatusLabel()}
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-sm font-medium"
+            >
+              {getStatusLabel()}
+            </motion.span>
+          </div>
+
+          {/* Right side: Step counter and elapsed time */}
+          <div className="flex items-center gap-3">
+            {/* Step counter */}
+            <motion.span
+              className={cn(
+                'text-xs font-medium px-1.5 py-0.5 rounded',
+                isComplete
+                  ? isSuccess
+                    ? 'bg-success/10 text-success'
+                    : 'bg-error/10 text-error'
+                  : 'bg-primary/10 text-primary'
+              )}
+            >
+              {isComplete ? `${completedSteps}/${completedSteps}` : `${currentStep}/${totalSteps}`}
+            </motion.span>
+
+            {/* Elapsed time */}
+            <ElapsedTime startTime={startTime} />
+          </div>
         </div>
-        <span className="text-xs text-muted-foreground">{progress}%</span>
+
+        {/* Progress bar with gradient */}
+        <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
+          {/* Background shimmer for running state */}
+          {!isComplete && (
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+            />
+          )}
+          {/* Progress fill */}
+          <motion.div
+            className={cn(
+              'h-full rounded-full relative',
+              isComplete
+                ? isSuccess
+                  ? 'bg-gradient-to-r from-success/80 to-success'
+                  : 'bg-gradient-to-r from-error/80 to-error'
+                : 'bg-gradient-to-r from-primary/80 to-primary'
+            )}
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          />
+        </div>
+
+        {/* Step dots */}
+        {totalSteps <= 12 && (
+          <div className="flex items-center justify-between">
+            <StepDots total={totalSteps} current={currentStep} status={status} />
+            <span className="text-[10px] text-muted-foreground">{progress}%</span>
+          </div>
+        )}
       </div>
 
-      {/* Progress bar */}
-      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+      {/* Current action description */}
+      <AnimatePresence mode="wait">
         <motion.div
+          key={getCurrentAction()}
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2 }}
           className={cn(
-            'h-full rounded-full',
+            'px-3 pb-3 pt-0',
+            isComplete && !isSuccess && 'bg-error/5'
+          )}
+        >
+          <p className={cn(
+            'text-xs line-clamp-2',
             isComplete
               ? isSuccess
-                ? 'bg-success'
-                : 'bg-error'
-              : 'bg-primary'
-          )}
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.3 }}
-        />
-      </div>
+                ? 'text-success/80'
+                : 'text-error/80'
+              : 'text-muted-foreground'
+          )}>
+            {getCurrentAction()}
+          </p>
 
-      {/* Current step or thinking */}
-      {!isComplete && latestActivity && (
-        <p className="text-xs text-muted-foreground truncate">
-          {latestActivity.description || latestActivity.title}
-        </p>
+          {/* Show thinking indicator when AI is analyzing */}
+          {!isComplete && latestActivity?.event_type === 'thinking' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-1.5 mt-1.5"
+            >
+              <Brain className="h-3 w-3 text-primary animate-pulse" />
+              <span className="text-[10px] text-primary italic">
+                {latestActivity.description?.slice(0, 50)}
+                {(latestActivity.description?.length || 0) > 50 && '...'}
+              </span>
+            </motion.div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Recent activity feed (compact, last 3) */}
+      {!isComplete && activities.length > 2 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="border-t border-border/50 px-3 py-2 bg-muted/20"
+        >
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Activity className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-medium">Recent activity</span>
+          </div>
+          <div className="space-y-1">
+            {activities.slice(-3).map((activity, idx) => {
+              const Icon = getEventIcon(activity.event_type);
+              const color = getEventColor(activity.event_type);
+              return (
+                <motion.div
+                  key={activity.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="flex items-center gap-1.5 text-[10px]"
+                >
+                  <Icon className={cn('h-2.5 w-2.5', color)} />
+                  <span className="text-muted-foreground truncate">
+                    {activity.title}
+                  </span>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
       )}
     </div>
   );

@@ -18,6 +18,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getAuthToken } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
@@ -276,19 +277,30 @@ function DiscoveryProgress({
     return `~${minutes} minute${minutes === 1 ? '' : 's'} remaining`;
   };
 
-  // Connect to SSE endpoint
+  // Connect to SSE endpoint with authentication
   useEffect(() => {
-    const connectSSE = () => {
+    let isMounted = true;
+
+    const connectSSE = async () => {
       // Close existing connection
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
       }
 
+      // Get auth token for SSE connection
+      // Native EventSource doesn't support headers, so pass token as query param
+      const token = await getAuthToken();
+
       // Use backend API URL for SSE streaming, fallback to relative path for Next.js API proxy
       const backendUrl = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL || '';
-      const sseUrl = backendUrl
+      const baseUrl = backendUrl
         ? `${backendUrl}/api/v1/discovery/sessions/${sessionId}/stream`
         : `/api/v1/discovery/sessions/${sessionId}/stream`;
+
+      // Append token as query parameter for authentication
+      const sseUrl = token ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl;
+
+      if (!isMounted) return;
 
       const eventSource = new EventSource(sseUrl);
 
@@ -356,6 +368,7 @@ function DiscoveryProgress({
     connectSSE();
 
     return () => {
+      isMounted = false;
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
       }

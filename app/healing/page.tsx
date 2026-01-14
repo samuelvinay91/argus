@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,63 +12,22 @@ import {
   Zap,
   Shield,
   Bell,
-  Clock,
   Target,
   RefreshCw,
   TrendingUp,
-  AlertTriangle,
   Activity,
   Loader2,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-
-interface HealingConfig {
-  id?: string;
-  organization_id?: string;
-  enabled: boolean;
-  auto_apply: boolean;
-  min_confidence_auto: number;
-  min_confidence_suggest: number;
-  heal_selectors: boolean;
-  max_selector_variations: number;
-  preferred_selector_strategies: string[];
-  heal_timeouts: boolean;
-  max_wait_time_ms: number;
-  heal_text_content: boolean;
-  text_similarity_threshold: number;
-  learn_from_success: boolean;
-  learn_from_manual_fixes: boolean;
-  share_patterns_across_projects: boolean;
-  notify_on_heal: boolean;
-  notify_on_suggestion: boolean;
-  require_approval: boolean;
-  auto_approve_after_hours: number | null;
-  max_heals_per_hour: number;
-  max_heals_per_test: number;
-}
-
-interface HealingStats {
-  total_patterns: number;
-  total_heals_applied: number;
-  total_heals_suggested: number;
-  success_rate: number;
-  heals_last_24h: number;
-  heals_last_7d: number;
-  heals_last_30d: number;
-  avg_confidence: number;
-  top_error_types: Record<string, number>;
-  patterns_by_project: Record<string, number>;
-  recent_heals: Array<{
-    id: string;
-    original: string;
-    healed: string;
-    error_type: string;
-    confidence: number;
-    created_at: string;
-  }>;
-}
+import {
+  useHealingConfig,
+  useHealingStats,
+  useUpdateHealingConfig,
+  DEFAULT_HEALING_CONFIG,
+  type HealingConfig,
+} from '@/lib/hooks/use-healing';
 
 function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
@@ -103,124 +62,65 @@ const SELECTOR_STRATEGIES = [
 // Default organization ID - in production this would come from auth context
 const DEFAULT_ORG_ID = 'default';
 
-const DEFAULT_CONFIG: HealingConfig = {
-  enabled: true,
-  auto_apply: false,
-  min_confidence_auto: 0.95,
-  min_confidence_suggest: 0.70,
-  heal_selectors: true,
-  max_selector_variations: 9,
-  preferred_selector_strategies: ['id', 'data-testid', 'role', 'text', 'css'],
-  heal_timeouts: true,
-  max_wait_time_ms: 30000,
-  heal_text_content: true,
-  text_similarity_threshold: 0.85,
-  learn_from_success: true,
-  learn_from_manual_fixes: true,
-  share_patterns_across_projects: false,
-  notify_on_heal: true,
-  notify_on_suggestion: true,
-  require_approval: true,
-  auto_approve_after_hours: null,
-  max_heals_per_hour: 50,
-  max_heals_per_test: 5,
-};
-
-const DEFAULT_STATS: HealingStats = {
-  total_patterns: 0,
-  total_heals_applied: 0,
-  total_heals_suggested: 0,
-  success_rate: 0,
-  heals_last_24h: 0,
-  heals_last_7d: 0,
-  heals_last_30d: 0,
-  avg_confidence: 0,
-  top_error_types: {},
-  patterns_by_project: {},
-  recent_heals: [],
-};
-
 export default function HealingPage() {
-  const [config, setConfig] = useState<HealingConfig>(DEFAULT_CONFIG);
-  const [stats, setStats] = useState<HealingStats>(DEFAULT_STATS);
+  // Local state for form editing
+  const [localConfig, setLocalConfig] = useState<HealingConfig>(DEFAULT_HEALING_CONFIG);
   const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchConfig = useCallback(async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/healing/organizations/${DEFAULT_ORG_ID}/config`);
-      if (response.ok) {
-        const data = await response.json();
-        setConfig(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch healing config:', err);
-      // Use defaults if API fails
-    }
-  }, []);
+  // Data fetching with authenticated hooks
+  const { data: config, isLoading: configLoading } = useHealingConfig(DEFAULT_ORG_ID);
+  const { data: stats, isLoading: statsLoading } = useHealingStats(DEFAULT_ORG_ID);
+  const updateConfig = useUpdateHealingConfig(DEFAULT_ORG_ID);
 
-  const fetchStats = useCallback(async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/healing/organizations/${DEFAULT_ORG_ID}/stats`);
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch healing stats:', err);
-      // Use defaults if API fails
-    }
-  }, []);
+  const loading = configLoading || statsLoading;
 
+  // Sync local state with fetched config
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
-      await Promise.all([fetchConfig(), fetchStats()]);
-      setLoading(false);
-    };
-    loadData();
-  }, [fetchConfig, fetchStats]);
+    if (config) {
+      setLocalConfig(config);
+    }
+  }, [config]);
 
   const handleSave = async () => {
-    setSaving(true);
     setError(null);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/healing/organizations/${DEFAULT_ORG_ID}/config`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-      });
-      if (response.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-      } else {
-        const data = await response.json();
-        setError(data.detail || 'Failed to save configuration');
-      }
+      await updateConfig.mutateAsync(localConfig);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      setError('Failed to connect to server');
-    } finally {
-      setSaving(false);
+      setError(err instanceof Error ? err.message : 'Failed to save configuration');
     }
   };
 
   const toggleStrategy = (strategyId: string) => {
-    const current = config.preferred_selector_strategies;
+    const current = localConfig.preferred_selector_strategies;
     if (current.includes(strategyId)) {
-      setConfig({
-        ...config,
+      setLocalConfig({
+        ...localConfig,
         preferred_selector_strategies: current.filter(s => s !== strategyId),
       });
     } else {
-      setConfig({
-        ...config,
+      setLocalConfig({
+        ...localConfig,
         preferred_selector_strategies: [...current, strategyId],
       });
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading healing configuration...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -237,8 +137,13 @@ export default function HealingPage() {
               Configure how Argus automatically fixes broken selectors and tests
             </p>
           </div>
-          <Button onClick={handleSave}>
-            {saved ? (
+          <Button onClick={handleSave} disabled={updateConfig.isPending}>
+            {updateConfig.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : saved ? (
               <>
                 <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
                 Saved!
@@ -253,6 +158,21 @@ export default function HealingPage() {
         </header>
 
         <div className="p-6 space-y-6">
+          {/* Error Alert */}
+          {error && (
+            <Card className="border-red-500/50 bg-red-500/5">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 text-red-500">
+                  <AlertCircle className="h-5 w-5" />
+                  <span>{error}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setError(null)} className="ml-auto">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
@@ -262,7 +182,7 @@ export default function HealingPage() {
                     <Target className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{stats.total_patterns}</p>
+                    <p className="text-2xl font-bold">{stats?.total_patterns ?? 0}</p>
                     <p className="text-sm text-muted-foreground">Learned Patterns</p>
                   </div>
                 </div>
@@ -276,7 +196,7 @@ export default function HealingPage() {
                     <CheckCircle className="h-6 w-6 text-green-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{stats.total_heals_applied}</p>
+                    <p className="text-2xl font-bold">{stats?.total_heals_applied ?? 0}</p>
                     <p className="text-sm text-muted-foreground">Heals Applied</p>
                   </div>
                 </div>
@@ -290,7 +210,7 @@ export default function HealingPage() {
                     <TrendingUp className="h-6 w-6 text-blue-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{stats.success_rate}%</p>
+                    <p className="text-2xl font-bold">{stats?.success_rate ?? 0}%</p>
                     <p className="text-sm text-muted-foreground">Success Rate</p>
                   </div>
                 </div>
@@ -304,7 +224,7 @@ export default function HealingPage() {
                     <Activity className="h-6 w-6 text-amber-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{stats.heals_last_24h}</p>
+                    <p className="text-2xl font-bold">{stats?.heals_last_24h ?? 0}</p>
                     <p className="text-sm text-muted-foreground">Last 24 Hours</p>
                   </div>
                 </div>
@@ -333,8 +253,8 @@ export default function HealingPage() {
                     </div>
                   </div>
                   <Toggle
-                    checked={config.enabled}
-                    onChange={(v) => setConfig({ ...config, enabled: v })}
+                    checked={localConfig.enabled}
+                    onChange={(v) => setLocalConfig({ ...localConfig, enabled: v })}
                   />
                 </div>
 
@@ -346,9 +266,9 @@ export default function HealingPage() {
                     </div>
                   </div>
                   <Toggle
-                    checked={config.auto_apply}
-                    onChange={(v) => setConfig({ ...config, auto_apply: v })}
-                    disabled={!config.enabled}
+                    checked={localConfig.auto_apply}
+                    onChange={(v) => setLocalConfig({ ...localConfig, auto_apply: v })}
+                    disabled={!localConfig.enabled}
                   />
                 </div>
 
@@ -360,9 +280,9 @@ export default function HealingPage() {
                     </div>
                   </div>
                   <Toggle
-                    checked={config.heal_selectors}
-                    onChange={(v) => setConfig({ ...config, heal_selectors: v })}
-                    disabled={!config.enabled}
+                    checked={localConfig.heal_selectors}
+                    onChange={(v) => setLocalConfig({ ...localConfig, heal_selectors: v })}
+                    disabled={!localConfig.enabled}
                   />
                 </div>
 
@@ -374,9 +294,9 @@ export default function HealingPage() {
                     </div>
                   </div>
                   <Toggle
-                    checked={config.heal_timeouts}
-                    onChange={(v) => setConfig({ ...config, heal_timeouts: v })}
-                    disabled={!config.enabled}
+                    checked={localConfig.heal_timeouts}
+                    onChange={(v) => setLocalConfig({ ...localConfig, heal_timeouts: v })}
+                    disabled={!localConfig.enabled}
                   />
                 </div>
 
@@ -388,9 +308,9 @@ export default function HealingPage() {
                     </div>
                   </div>
                   <Toggle
-                    checked={config.heal_text_content}
-                    onChange={(v) => setConfig({ ...config, heal_text_content: v })}
-                    disabled={!config.enabled}
+                    checked={localConfig.heal_text_content}
+                    onChange={(v) => setLocalConfig({ ...localConfig, heal_text_content: v })}
+                    disabled={!localConfig.enabled}
                   />
                 </div>
               </CardContent>
@@ -416,13 +336,13 @@ export default function HealingPage() {
                       min="0.5"
                       max="1"
                       step="0.05"
-                      value={config.min_confidence_auto}
-                      onChange={(e) => setConfig({ ...config, min_confidence_auto: parseFloat(e.target.value) })}
+                      value={localConfig.min_confidence_auto}
+                      onChange={(e) => setLocalConfig({ ...localConfig, min_confidence_auto: parseFloat(e.target.value) })}
                       className="flex-1"
-                      disabled={!config.enabled}
+                      disabled={!localConfig.enabled}
                     />
                     <span className="text-sm font-mono w-16 text-right">
-                      {(config.min_confidence_auto * 100).toFixed(0)}%
+                      {(localConfig.min_confidence_auto * 100).toFixed(0)}%
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -438,13 +358,13 @@ export default function HealingPage() {
                       min="0.3"
                       max="1"
                       step="0.05"
-                      value={config.min_confidence_suggest}
-                      onChange={(e) => setConfig({ ...config, min_confidence_suggest: parseFloat(e.target.value) })}
+                      value={localConfig.min_confidence_suggest}
+                      onChange={(e) => setLocalConfig({ ...localConfig, min_confidence_suggest: parseFloat(e.target.value) })}
                       className="flex-1"
-                      disabled={!config.enabled}
+                      disabled={!localConfig.enabled}
                     />
                     <span className="text-sm font-mono w-16 text-right">
-                      {(config.min_confidence_suggest * 100).toFixed(0)}%
+                      {(localConfig.min_confidence_suggest * 100).toFixed(0)}%
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -460,13 +380,13 @@ export default function HealingPage() {
                       min="0.5"
                       max="1"
                       step="0.05"
-                      value={config.text_similarity_threshold}
-                      onChange={(e) => setConfig({ ...config, text_similarity_threshold: parseFloat(e.target.value) })}
+                      value={localConfig.text_similarity_threshold}
+                      onChange={(e) => setLocalConfig({ ...localConfig, text_similarity_threshold: parseFloat(e.target.value) })}
                       className="flex-1"
-                      disabled={!config.enabled || !config.heal_text_content}
+                      disabled={!localConfig.enabled || !localConfig.heal_text_content}
                     />
                     <span className="text-sm font-mono w-16 text-right">
-                      {(config.text_similarity_threshold * 100).toFixed(0)}%
+                      {(localConfig.text_similarity_threshold * 100).toFixed(0)}%
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -481,10 +401,10 @@ export default function HealingPage() {
                       type="number"
                       min="1"
                       max="20"
-                      value={config.max_selector_variations}
-                      onChange={(e) => setConfig({ ...config, max_selector_variations: parseInt(e.target.value) })}
+                      value={localConfig.max_selector_variations}
+                      onChange={(e) => setLocalConfig({ ...localConfig, max_selector_variations: parseInt(e.target.value) })}
                       className="mt-2"
-                      disabled={!config.enabled}
+                      disabled={!localConfig.enabled}
                     />
                   </div>
                   <div>
@@ -494,10 +414,10 @@ export default function HealingPage() {
                       min="1000"
                       max="120000"
                       step="1000"
-                      value={config.max_wait_time_ms}
-                      onChange={(e) => setConfig({ ...config, max_wait_time_ms: parseInt(e.target.value) })}
+                      value={localConfig.max_wait_time_ms}
+                      onChange={(e) => setLocalConfig({ ...localConfig, max_wait_time_ms: parseInt(e.target.value) })}
                       className="mt-2"
-                      disabled={!config.enabled}
+                      disabled={!localConfig.enabled}
                     />
                   </div>
                 </div>
@@ -518,8 +438,8 @@ export default function HealingPage() {
               <CardContent>
                 <div className="space-y-3">
                   {SELECTOR_STRATEGIES.map((strategy) => {
-                    const isEnabled = config.preferred_selector_strategies.includes(strategy.id);
-                    const index = config.preferred_selector_strategies.indexOf(strategy.id);
+                    const isEnabled = localConfig.preferred_selector_strategies.includes(strategy.id);
+                    const index = localConfig.preferred_selector_strategies.indexOf(strategy.id);
                     return (
                       <div
                         key={strategy.id}
@@ -542,7 +462,7 @@ export default function HealingPage() {
                         <Toggle
                           checked={isEnabled}
                           onChange={() => toggleStrategy(strategy.id)}
-                          disabled={!config.enabled}
+                          disabled={!localConfig.enabled}
                         />
                       </div>
                     );
@@ -571,9 +491,9 @@ export default function HealingPage() {
                     </div>
                   </div>
                   <Toggle
-                    checked={config.learn_from_success}
-                    onChange={(v) => setConfig({ ...config, learn_from_success: v })}
-                    disabled={!config.enabled}
+                    checked={localConfig.learn_from_success}
+                    onChange={(v) => setLocalConfig({ ...localConfig, learn_from_success: v })}
+                    disabled={!localConfig.enabled}
                   />
                 </div>
 
@@ -585,9 +505,9 @@ export default function HealingPage() {
                     </div>
                   </div>
                   <Toggle
-                    checked={config.learn_from_manual_fixes}
-                    onChange={(v) => setConfig({ ...config, learn_from_manual_fixes: v })}
-                    disabled={!config.enabled}
+                    checked={localConfig.learn_from_manual_fixes}
+                    onChange={(v) => setLocalConfig({ ...localConfig, learn_from_manual_fixes: v })}
+                    disabled={!localConfig.enabled}
                   />
                 </div>
 
@@ -599,9 +519,9 @@ export default function HealingPage() {
                     </div>
                   </div>
                   <Toggle
-                    checked={config.share_patterns_across_projects}
-                    onChange={(v) => setConfig({ ...config, share_patterns_across_projects: v })}
-                    disabled={!config.enabled}
+                    checked={localConfig.share_patterns_across_projects}
+                    onChange={(v) => setLocalConfig({ ...localConfig, share_patterns_across_projects: v })}
+                    disabled={!localConfig.enabled}
                   />
                 </div>
 
@@ -614,9 +534,9 @@ export default function HealingPage() {
                       </div>
                     </div>
                     <Toggle
-                      checked={config.notify_on_heal}
-                      onChange={(v) => setConfig({ ...config, notify_on_heal: v })}
-                      disabled={!config.enabled}
+                      checked={localConfig.notify_on_heal}
+                      onChange={(v) => setLocalConfig({ ...localConfig, notify_on_heal: v })}
+                      disabled={!localConfig.enabled}
                     />
                   </div>
 
@@ -628,9 +548,9 @@ export default function HealingPage() {
                       </div>
                     </div>
                     <Toggle
-                      checked={config.notify_on_suggestion}
-                      onChange={(v) => setConfig({ ...config, notify_on_suggestion: v })}
-                      disabled={!config.enabled}
+                      checked={localConfig.notify_on_suggestion}
+                      onChange={(v) => setLocalConfig({ ...localConfig, notify_on_suggestion: v })}
+                      disabled={!localConfig.enabled}
                     />
                   </div>
                 </div>
@@ -656,10 +576,10 @@ export default function HealingPage() {
                       type="number"
                       min="1"
                       max="1000"
-                      value={config.max_heals_per_hour}
-                      onChange={(e) => setConfig({ ...config, max_heals_per_hour: parseInt(e.target.value) })}
+                      value={localConfig.max_heals_per_hour}
+                      onChange={(e) => setLocalConfig({ ...localConfig, max_heals_per_hour: parseInt(e.target.value) })}
                       className="mt-2"
-                      disabled={!config.enabled}
+                      disabled={!localConfig.enabled}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       Limit heals across all tests
@@ -672,10 +592,10 @@ export default function HealingPage() {
                       type="number"
                       min="1"
                       max="50"
-                      value={config.max_heals_per_test}
-                      onChange={(e) => setConfig({ ...config, max_heals_per_test: parseInt(e.target.value) })}
+                      value={localConfig.max_heals_per_test}
+                      onChange={(e) => setLocalConfig({ ...localConfig, max_heals_per_test: parseInt(e.target.value) })}
                       className="mt-2"
-                      disabled={!config.enabled}
+                      disabled={!localConfig.enabled}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       Limit heals per single test run
@@ -688,14 +608,14 @@ export default function HealingPage() {
                       type="number"
                       min="1"
                       max="168"
-                      value={config.auto_approve_after_hours || ''}
-                      onChange={(e) => setConfig({
-                        ...config,
+                      value={localConfig.auto_approve_after_hours || ''}
+                      onChange={(e) => setLocalConfig({
+                        ...localConfig,
                         auto_approve_after_hours: e.target.value ? parseInt(e.target.value) : null
                       })}
                       className="mt-2"
                       placeholder="Never"
-                      disabled={!config.enabled || config.auto_apply}
+                      disabled={!localConfig.enabled || localConfig.auto_apply}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       Auto-approve pending fixes after N hours
@@ -711,9 +631,9 @@ export default function HealingPage() {
                     </div>
                   </div>
                   <Toggle
-                    checked={config.require_approval}
-                    onChange={(v) => setConfig({ ...config, require_approval: v })}
-                    disabled={!config.enabled || config.auto_apply}
+                    checked={localConfig.require_approval}
+                    onChange={(v) => setLocalConfig({ ...localConfig, require_approval: v })}
+                    disabled={!localConfig.enabled || localConfig.auto_apply}
                   />
                 </div>
               </CardContent>
