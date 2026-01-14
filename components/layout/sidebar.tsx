@@ -39,6 +39,7 @@ import {
   Sparkles,
   Search,
   HeartPulse,
+  Cable,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
@@ -97,6 +98,7 @@ const workspaceNavigation = [
   { name: 'Team', href: '/team', icon: Users },
   { name: 'Organizations', href: '/organizations', icon: Building2 },
   { name: 'API Keys', href: '/api-keys', icon: Key },
+  { name: 'MCP Sessions', href: '/mcp-sessions', icon: Cable },
   { name: 'Activity', href: '/activity', icon: Activity },
 ];
 
@@ -453,7 +455,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 avatarBox: 'h-9 w-9 rounded-xl',
               },
             }}
-            signOutUrl="/"
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">Account</p>
@@ -625,7 +626,6 @@ export function MobileHeader() {
               avatarBox: 'h-8 w-8 rounded-lg',
             },
           }}
-          signOutUrl="/"
         />
         <Button
           variant="ghost"
