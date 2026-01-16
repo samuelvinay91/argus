@@ -3,27 +3,27 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@clerk/nextjs';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import type { Project, InsertTables } from '@/lib/supabase/types';
 
+/**
+ * Fetch projects via backend API (organization-based access control)
+ * This uses the same logic as MCP server, ensuring data consistency.
+ */
 export function useProjects() {
-  const { user } = useUser();
-  const supabase = getSupabaseClient();
+  const { user, isLoaded } = useUser();
 
   return useQuery({
     queryKey: ['projects', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as Project[];
+      // Use backend API which handles organization-based filtering
+      // This matches how MCP server fetches projects
+      const projects = await apiClient.get<Project[]>('/api/v1/projects');
+      return projects;
     },
-    enabled: !!user?.id,
+    enabled: isLoaded && !!user?.id,
     staleTime: 10 * 60 * 1000, // 10 minutes - projects rarely change
     gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
     placeholderData: [], // Prevent loading state flash
@@ -53,21 +53,15 @@ export function useProject(projectId: string | null) {
 
 export function useCreateProject() {
   const { user } = useUser();
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (project: Omit<InsertTables<'projects'>, 'user_id'>) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('projects') as any)
-        .insert({ ...project, user_id: user.id })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as Project;
+      // Use backend API which handles organization assignment
+      const created = await apiClient.post<Project>('/api/v1/projects', project);
+      return created;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
