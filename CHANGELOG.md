@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.4.0](https://github.com/RaphaEnterprises-AI/argus/compare/v1.3.0...v1.4.0) (2026-01-16)
+
+
+### Features
+
+* **dashboard:** add device auth page and UI improvements ([38b0b62](https://github.com/RaphaEnterprises-AI/argus/commit/38b0b628eebc382c0032f05f51614ce50a1a629f))
+* **dashboard:** add MCP Sessions management page ([8eb74d7](https://github.com/RaphaEnterprises-AI/argus/commit/8eb74d7b1d92b294719d8f5a091bde4d6c7d2c8b))
+* **dashboard:** unified organization context architecture ([c617311](https://github.com/RaphaEnterprises-AI/argus/commit/c617311cc618218f8e20d03ec6a0e87e9e44508e))
+
+
+### Bug Fixes
+
+* prevent AI from calling discoverElements multiple times ([53bc274](https://github.com/RaphaEnterprises-AI/argus/commit/53bc274083f4f0479bf3d9ef552b27a7d8f3bf2e))
+* resolve console warnings and critical chat persistence bug ([eaceffd](https://github.com/RaphaEnterprises-AI/argus/commit/eaceffd6671f77904448f11ff583cf909669c9cc))
+
 ## [1.3.0](https://github.com/RaphaEnterprises-AI/argus/compare/v1.2.0...v1.3.0) (2026-01-14)
 
 

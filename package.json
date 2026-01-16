@@ -1,6 +1,6 @@
 {
   "name": "argus-dashboard",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Argus - AI-Powered E2E Testing Platform",
   "private": true,
   "scripts": {
