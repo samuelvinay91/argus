@@ -39,6 +39,7 @@ import {
   Sparkles,
   Search,
   HeartPulse,
+  Server,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
@@ -91,6 +92,7 @@ const insightsNavigation = [
   { name: 'AI Insights', href: '/insights', icon: Brain },
   { name: 'Test Health', href: '/flaky', icon: HeartPulse },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
+  { name: 'Infrastructure', href: '/infra', icon: Server, badge: 'NEW' },
 ];
 
 const workspaceNavigation = [
