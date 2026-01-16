@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/RaphaEnterprises-AI/argus/compare/v1.4.0...v1.4.1) (2026-01-16)
+
+
+### Bug Fixes
+
+* **ui:** standardize MCP sessions pages to dashboard template ([40a256c](https://github.com/RaphaEnterprises-AI/argus/commit/40a256cf5f2c5e64fc173d9c79f94be404d368e9))
+
 ## [1.4.0](https://github.com/RaphaEnterprises-AI/argus/compare/v1.3.0...v1.4.0) (2026-01-16)
 
 
