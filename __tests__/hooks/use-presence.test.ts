@@ -76,9 +76,9 @@ vi.mock('@/lib/supabase/client', () => ({
 import { useUser } from '@clerk/nextjs';
 
 describe('use-presence', () => {
-  // Mock window and document
-  const originalWindow = global.window;
-  const originalDocument = global.document;
+  // Store original values for cleanup
+  let originalLocationPathname: string;
+  let originalDocumentHidden: boolean;
 
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -99,26 +99,19 @@ describe('use-presence', () => {
       isLoaded: true,
     } as any);
 
-    // Mock window
-    Object.defineProperty(global, 'window', {
-      value: {
-        location: {
-          pathname: '/dashboard',
-        },
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      },
+    // Mock window.location.pathname without replacing entire window
+    originalLocationPathname = window.location.pathname;
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, pathname: '/dashboard' },
       writable: true,
     });
 
-    // Mock document
-    Object.defineProperty(global, 'document', {
-      value: {
-        hidden: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      },
+    // Mock document.hidden without replacing entire document
+    originalDocumentHidden = document.hidden;
+    Object.defineProperty(document, 'hidden', {
+      value: false,
       writable: true,
+      configurable: true,
     });
   });
 
@@ -126,19 +119,12 @@ describe('use-presence', () => {
     vi.restoreAllMocks();
     vi.useRealTimers();
 
-    // Restore originals
-    if (originalWindow) {
-      Object.defineProperty(global, 'window', {
-        value: originalWindow,
-        writable: true,
-      });
-    }
-    if (originalDocument) {
-      Object.defineProperty(global, 'document', {
-        value: originalDocument,
-        writable: true,
-      });
-    }
+    // Restore original document.hidden value
+    Object.defineProperty(document, 'hidden', {
+      value: originalDocumentHidden,
+      writable: true,
+      configurable: true,
+    });
   });
 
   describe('usePresence', () => {

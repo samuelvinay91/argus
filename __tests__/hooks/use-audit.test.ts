@@ -126,8 +126,10 @@ describe('use-audit', () => {
 
       const { result } = renderHook(() => useAuditLogs('org-123'), { wrapper });
 
+      // Wait for data to be populated (more reliable than just isLoading)
       await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
+        expect(result.current.data?.logs).toBeDefined();
+        expect(result.current.data?.logs.length).toBeGreaterThan(0);
       });
 
       expect(mockApiClient.get).toHaveBeenCalledWith(
