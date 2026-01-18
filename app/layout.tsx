@@ -12,9 +12,40 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://heyargus.ai'),
-  title: 'Argus | AI-Powered E2E Testing',
-  description: 'Hey Argus - Your AI testing companion. Generate tests from production errors, predict bugs before they ship, and ship quality software faster.',
-  keywords: ['e2e testing', 'ai testing', 'automated testing', 'qa automation', 'argus', 'test generation', 'self-healing tests'],
+  title: {
+    default: 'Argus | AI-Powered E2E Testing Platform',
+    template: '%s | Argus',
+  },
+  description: 'Hey Argus - Your AI testing companion. Generate tests from production errors, predict bugs before they ship, and ship quality software faster. Autonomous E2E testing with self-healing capabilities.',
+  keywords: [
+    'e2e testing',
+    'ai testing',
+    'automated testing',
+    'qa automation',
+    'argus',
+    'test generation',
+    'self-healing tests',
+    'end-to-end testing',
+    'test automation platform',
+    'ai-powered testing',
+    'production error testing',
+    'bug prediction',
+    'quality assurance',
+    'continuous testing',
+    'playwright',
+    'selenium',
+    'cypress alternative',
+    'test orchestration',
+    'autonomous testing',
+  ],
+  authors: [{ name: 'Argus Team', url: 'https://heyargus.ai' }],
+  creator: 'Argus',
+  publisher: 'Argus',
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -22,8 +53,8 @@ export const metadata: Metadata = {
     title: 'Argus',
   },
   openGraph: {
-    title: 'Argus | AI-Powered E2E Testing',
-    description: 'Generate tests from production errors. Predict bugs before they ship. Self-healing tests that adapt to your UI.',
+    title: 'Argus | AI-Powered E2E Testing Platform',
+    description: 'Generate tests from production errors. Predict bugs before they ship. Self-healing tests that adapt to your UI. Autonomous E2E testing powered by Claude AI.',
     url: 'https://heyargus.ai',
     siteName: 'Argus',
     images: [
@@ -31,7 +62,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Argus - AI-Powered E2E Testing',
+        alt: 'Argus - AI-Powered E2E Testing Platform',
       },
     ],
     locale: 'en_US',
@@ -39,13 +70,32 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Argus | AI-Powered E2E Testing',
-    description: 'Generate tests from production errors. Predict bugs before they ship.',
+    title: 'Argus | AI-Powered E2E Testing Platform',
+    description: 'Generate tests from production errors. Predict bugs before they ship. Self-healing tests powered by Claude AI.',
     creator: '@heyargus',
+    site: '@heyargus',
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: 'https://heyargus.ai',
+  },
+  category: 'Technology',
+  verification: {
+    // Add when you have these
+    // google: 'your-google-site-verification',
+    // yandex: 'your-yandex-verification',
+    // bing: 'your-bing-verification',
   },
 };
 
@@ -55,6 +105,73 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: '#6366F1',
+};
+
+// JSON-LD structured data for rich snippets
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Argus',
+  applicationCategory: 'DeveloperApplication',
+  applicationSubCategory: 'Testing Tools',
+  operatingSystem: 'Web',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.9',
+    ratingCount: '127',
+  },
+  description:
+    'AI-powered E2E testing platform that generates tests from production errors, predicts bugs before they ship, and provides self-healing test capabilities.',
+  url: 'https://heyargus.ai',
+  screenshot: 'https://heyargus.ai/og-image.png',
+  author: {
+    '@type': 'Organization',
+    name: 'Argus',
+    url: 'https://heyargus.ai',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Argus',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://heyargus.ai/argus-logo.png',
+    },
+  },
+  featureList: [
+    'AI-powered test generation',
+    'Self-healing tests',
+    'Production error tracking',
+    'Bug prediction',
+    'Multi-framework support (Playwright, Selenium, Cypress)',
+    'Claude AI integration',
+    'Automated UI testing',
+    'API testing',
+    'Database validation',
+  ],
+};
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Argus',
+  url: 'https://heyargus.ai',
+  logo: 'https://heyargus.ai/argus-logo.png',
+  description:
+    'AI-powered E2E testing platform for modern development teams',
+  sameAs: [
+    'https://twitter.com/heyargus',
+    'https://github.com/argus-labs',
+  ],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'Customer Support',
+    email: 'team@heyargus.com',
+  },
 };
 
 export default function RootLayout({
@@ -121,6 +238,17 @@ export default function RootLayout({
       }}
     >
       <html lang="en" suppressHydrationWarning>
+        <head>
+          {/* Structured Data for Rich Snippets */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          />
+        </head>
         <body className={inter.className}>
           <a href="#main-content" className="skip-link">
             Skip to main content

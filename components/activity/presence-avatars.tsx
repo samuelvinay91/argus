@@ -18,9 +18,12 @@ export function PresenceAvatars({
   showCount = true,
   className,
 }: PresenceAvatarsProps) {
-  const { onlineUsers, isConnected } = projectId
-    ? useProjectPresence(projectId)
-    : usePresence();
+  // Call both hooks unconditionally to follow Rules of Hooks
+  const globalPresence = usePresence();
+  const projectPresence = useProjectPresence(projectId ?? '');
+
+  // Use project presence if projectId is provided, otherwise global
+  const { onlineUsers, isConnected } = projectId ? projectPresence : globalPresence;
 
   const sizeClasses = {
     sm: 'h-6 w-6 text-xs',
@@ -93,9 +96,12 @@ export function PresenceAvatars({
 
 // Compact version for small spaces
 export function OnlineIndicator({ projectId }: { projectId?: string | null }) {
-  const { onlineUsers, isConnected } = projectId
-    ? useProjectPresence(projectId)
-    : usePresence();
+  // Call both hooks unconditionally to follow Rules of Hooks
+  const globalPresence = usePresence();
+  const projectPresence = useProjectPresence(projectId ?? '');
+
+  // Use project presence if projectId is provided, otherwise global
+  const { onlineUsers, isConnected } = projectId ? projectPresence : globalPresence;
 
   if (!isConnected) {
     return (
