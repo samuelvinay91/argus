@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.6.0](https://github.com/RaphaEnterprises-AI/argus/compare/v1.5.0...v1.6.0) (2026-01-18)
+
+
+### Features
+
+* **ci:** add test workflow with coverage enforcement ([ba423f7](https://github.com/RaphaEnterprises-AI/argus/commit/ba423f739d11eb9562d70851c4ce9d87a0e8829c))
+* **dashboard:** Add Infrastructure & Costs page ([542b5f2](https://github.com/RaphaEnterprises-AI/argus/commit/542b5f26987688b29af16add38da2bcc111587d7))
+* **tests:** add comprehensive test suite with 2,502 passing tests ([70f775b](https://github.com/RaphaEnterprises-AI/argus/commit/70f775bc91ddab707f59a9ed30e79aea4d2b5ffd))
+
+
+### Bug Fixes
+
+* **chat:** add Clerk auth token to chat API requests ([d9f9c0d](https://github.com/RaphaEnterprises-AI/argus/commit/d9f9c0d114e3b582ba657994c3fc473dd827b4bb))
+* **dashboard:** Fix infra page layout to match template design ([3c9c54d](https://github.com/RaphaEnterprises-AI/argus/commit/3c9c54d82721c435e5b89f10c863c37622442649))
+* **dashboard:** suppress auth warning + security headers + type alignment ([5b2be31](https://github.com/RaphaEnterprises-AI/argus/commit/5b2be313bcf81b674b217a71a09539ad58443e67))
+* **dashboard:** use backend API for projects to sync with MCP ([6e01362](https://github.com/RaphaEnterprises-AI/argus/commit/6e01362c00216b23b1f02e4f19b4cb2e325dc3c1))
+* **discovery:** align type mappings with backend enum values ([41c2dd1](https://github.com/RaphaEnterprises-AI/argus/commit/41c2dd1260b5c8fee619c14ebc8ab4645322fe37))
+* **e2e:** correct page.url() usage - returns string not Promise ([f3f8afa](https://github.com/RaphaEnterprises-AI/argus/commit/f3f8afab6faddccb9157498a06e0281926bf7d73))
+* **lint:** add ESLint configuration for CI ([9e4fd9e](https://github.com/RaphaEnterprises-AI/argus/commit/9e4fd9e1db3f543c0ab7361dbe254f62e0e83e69))
+* **lint:** resolve all ESLint errors for CI ([69eb264](https://github.com/RaphaEnterprises-AI/argus/commit/69eb2644da7aeec4aec03244b2f4729fee1d07cf))
+* **tests:** fix additional hook test failures ([0493791](https://github.com/RaphaEnterprises-AI/argus/commit/049379174cf5f4070549cf7a6edde2998f39b90e))
+* **tests:** fix mcp-sessions loading state test ([d3bdc7c](https://github.com/RaphaEnterprises-AI/argus/commit/d3bdc7c79bc51ab51b453710b3d2420159b09c59))
+* **tests:** improve vitest setup and hook test mocking ([e3c8dc5](https://github.com/RaphaEnterprises-AI/argus/commit/e3c8dc5007f0ae2f76c3e50fd277780ef44ee2f2))
+* update worker URL to argus-api across all components ([a45c88f](https://github.com/RaphaEnterprises-AI/argus/commit/a45c88fb8641eb54a020a4d36c980f59dd82cef4))
+
+
+### Documentation
+
+* update Clerk env vars to use new redirect props ([9967329](https://github.com/RaphaEnterprises-AI/argus/commit/99673291c56aa515b798e34c945f97eb91dc11ab))
+
 ## [1.5.0](https://github.com/RaphaEnterprises-AI/argus/compare/v1.4.0...v1.5.0) (2026-01-16)
 
 
