@@ -98,9 +98,8 @@ test.describe('Authentication Flow', () => {
       // If neither is found, we might already be on an auth page or the app redirected
       if (!hasSignIn) {
         // Check if we're on a Clerk sign-in page or the app shows a different auth UI
-        const isOnAuthPage = await page.url().then(url =>
-          url.includes('sign-in') || url.includes('clerk')
-        );
+        const currentUrl = page.url();
+        const isOnAuthPage = currentUrl.includes('sign-in') || currentUrl.includes('clerk');
 
         // The test passes if we found sign-in UI OR we're on an auth page
         expect(hasSignIn || isOnAuthPage).toBeTruthy();
