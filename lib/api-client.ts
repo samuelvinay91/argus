@@ -59,16 +59,28 @@ export function isAuthInitialized(): boolean {
 
 /**
  * Get the current auth token
- * Returns null silently during initial auth loading to avoid console spam
+ * Waits for auth to be initialized to avoid race conditions
  */
 export async function getAuthToken(): Promise<string | null> {
+  // Wait for auth to be initialized (with timeout)
   if (!globalGetToken) {
-    // Only warn in development and after initial load phase
-    // During initial page load, this is expected behavior
-    if (process.env.NODE_ENV === 'development' && authInitialized) {
-      console.warn('[api-client] No token getter available - requests will be unauthenticated');
+    // Give the auth provider time to initialize (up to 2 seconds)
+    const maxWaitMs = 2000;
+    const checkIntervalMs = 50;
+    let waitedMs = 0;
+
+    while (!globalGetToken && waitedMs < maxWaitMs) {
+      await new Promise(resolve => setTimeout(resolve, checkIntervalMs));
+      waitedMs += checkIntervalMs;
     }
-    return null;
+
+    if (!globalGetToken) {
+      // Only warn after we've waited and still no token getter
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[api-client] Auth not initialized after waiting - requests will be unauthenticated');
+      }
+      return null;
+    }
   }
   return globalGetToken();
 }
@@ -100,14 +112,23 @@ export async function authenticatedFetch(
 
 /**
  * Authenticated JSON fetch - returns parsed JSON
+ * Includes retry logic for 401 errors (token may need refresh)
  */
 export async function fetchJson<T>(
   url: string,
-  options?: RequestInit
+  options?: RequestInit,
+  retryCount = 0
 ): Promise<T> {
   const response = await authenticatedFetch(url, options);
 
   if (!response.ok) {
+    // On 401, try once more after a short delay (token might refresh)
+    if (response.status === 401 && retryCount === 0) {
+      console.log('[api-client] Got 401, retrying after token refresh...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return fetchJson(url, options, retryCount + 1);
+    }
+
     const error = await response.json().catch(() => ({ message: 'Request failed' }));
     throw new Error(error.message || error.detail || `Request failed with status ${response.status}`);
   }

@@ -10,19 +10,29 @@
  * throughout the application.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { setGlobalTokenGetter, clearGlobalTokenGetter } from '@/lib/api-client';
 
-export function ApiClientProvider({ children }: { children: React.ReactNode }) {
-  const { getToken, isLoaded } = useAuth();
+// Use useLayoutEffect on client to set token getter before paint
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-  useEffect(() => {
-    if (isLoaded) {
+export function ApiClientProvider({ children }: { children: React.ReactNode }) {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const initializedRef = useRef(false);
+
+  // Use layout effect to set token getter synchronously before child components render
+  useIsomorphicLayoutEffect(() => {
+    if (isLoaded && !initializedRef.current) {
+      initializedRef.current = true;
       // Set the global token getter when auth is loaded
       setGlobalTokenGetter(async () => {
         try {
-          return await getToken();
+          const token = await getToken();
+          if (!token && isSignedIn) {
+            console.warn('[ApiClientProvider] User is signed in but token is null');
+          }
+          return token;
         } catch (error) {
           console.error('[ApiClientProvider] Failed to get token:', error);
           return null;
@@ -32,9 +42,12 @@ export function ApiClientProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       // Clean up on unmount
-      clearGlobalTokenGetter();
+      if (initializedRef.current) {
+        clearGlobalTokenGetter();
+        initializedRef.current = false;
+      }
     };
-  }, [getToken, isLoaded]);
+  }, [getToken, isLoaded, isSignedIn]);
 
   return <>{children}</>;
 }
