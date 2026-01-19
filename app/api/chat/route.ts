@@ -149,8 +149,20 @@ export async function POST(req: Request) {
         }, 300000); // 5 minute timeout for streaming
 
         if (!response.ok) {
-          console.error('Python backend error:', response.status, await response.text());
-          // Fall through to direct Claude API
+          const errorText = await response.text();
+          console.error('Python backend error:', response.status, errorText);
+
+          // If auth error, return it directly instead of falling back
+          if (response.status === 401) {
+            // Return AI SDK error format for auth errors
+            const errorStream = `3:"Authentication failed. Please sign in again."\nd:{"finishReason":"error"}\n`;
+            return new Response(errorStream, {
+              headers: {
+                'Content-Type': 'text/plain; charset=utf-8',
+              },
+            });
+          }
+          // Fall through to direct Claude API for other errors
         } else {
           // Return the AI SDK text stream from Python backend
           // Important: Use text/plain for AI SDK data stream protocol, NOT text/event-stream
