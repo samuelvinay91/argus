@@ -4,6 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { Loader2, ImageOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  getSignedScreenshotUrl,
+  extractArtifactId,
+  resolveScreenshotUrl,
+} from '@/lib/screenshot-utils';
 
 interface AuthenticatedImageProps {
   src: string;
@@ -13,18 +18,28 @@ interface AuthenticatedImageProps {
   loading?: 'eager' | 'lazy';
   onLoad?: () => void;
   onError?: (error: Error) => void;
+  /**
+   * If true, fetch a signed URL from the API for authenticated access.
+   * Default: true for artifact IDs and Worker URLs.
+   */
+  useSignedUrl?: boolean;
 }
 
 /**
- * AuthenticatedImage component that fetches images with proper authentication.
+ * AuthenticatedImage component that renders images with proper authentication.
  *
- * For API URLs that require authentication, this component:
- * 1. Fetches the image with Authorization header
- * 2. Creates a blob URL from the response
- * 3. Renders the blob URL in an img tag
- * 4. Cleans up the blob URL on unmount
+ * Uses signed URLs for secure, CDN-cacheable image access:
+ * 1. Extracts artifact ID from src (if applicable)
+ * 2. Fetches signed URL from API (with auth)
+ * 3. Renders signed URL directly in <img> tag (CDN cached)
  *
- * For data URLs, external URLs, and placeholder images, renders directly.
+ * For data URLs and external URLs, renders directly without signing.
+ *
+ * Benefits of signed URLs over blob URLs:
+ * - CDN caching works (same signed URL reused across page loads)
+ * - Lower memory usage (no blob storage)
+ * - Better browser caching
+ * - Parallel loading (no auth header blocking)
  */
 export function AuthenticatedImage({
   src,
@@ -34,83 +49,90 @@ export function AuthenticatedImage({
   loading = 'lazy',
   onLoad,
   onError,
+  useSignedUrl = true,
 }: AuthenticatedImageProps) {
   const { getToken, isSignedIn } = useAuth();
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  // Determine if the URL requires authentication
-  const requiresAuth = useCallback((url: string): boolean => {
-    // Data URLs don't need auth
+  // Determine if the URL should use signed URL access
+  const shouldUseSignedUrl = useCallback((url: string): boolean => {
+    if (!useSignedUrl) return false;
+    // Data URLs don't need signing
     if (url.startsWith('data:')) return false;
-    // Placeholder images don't need auth
+    // Placeholder images don't need signing
     if (url.startsWith('/')) return false;
-    // External URLs (not our API) don't need auth
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      // Check if it's our API endpoint
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://argus-brain-production.up.railway.app';
-      return url.startsWith(apiUrl);
-    }
+    // Artifact IDs need signing
+    if (url.startsWith('screenshot_') || url.startsWith('video_')) return true;
+    // Worker URLs need signing (when MEDIA_SIGNING_SECRET is configured)
+    if (url.includes('workers.dev/screenshots/')) return true;
+    // External URLs don't need signing
     return false;
-  }, []);
+  }, [useSignedUrl]);
 
   useEffect(() => {
     let isMounted = true;
-    let blobUrl: string | null = null;
 
-    async function fetchImage() {
+    async function resolveImage() {
       if (!src) {
         setImageSrc(fallbackSrc);
         setIsLoading(false);
         return;
       }
 
-      // If the URL doesn't require auth, use it directly
-      if (!requiresAuth(src)) {
-        setImageSrc(src);
+      // If the URL doesn't need signed access, use directly
+      if (!shouldUseSignedUrl(src)) {
+        // Still apply URL transformations (e.g., fix broken R2 URLs)
+        setImageSrc(resolveScreenshotUrl(src));
         setIsLoading(false);
         return;
       }
 
-      // Need to fetch with authentication
+      // Extract artifact ID and fetch signed URL
       try {
         setIsLoading(true);
         setHasError(false);
 
-        const token = await getToken();
-        if (!token) {
-          console.warn('[AuthenticatedImage] No auth token available');
-          setImageSrc(fallbackSrc);
-          setHasError(true);
+        const artifactId = extractArtifactId(src);
+        if (!artifactId) {
+          // Can't extract artifact ID - fall back to resolved URL
+          setImageSrc(resolveScreenshotUrl(src));
           setIsLoading(false);
           return;
         }
 
-        const response = await fetch(src, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+        const token = await getToken();
+        if (!token) {
+          console.warn('[AuthenticatedImage] No auth token available, using unsigned URL');
+          // Fall back to unsigned URL (will work during public access rollout)
+          setImageSrc(resolveScreenshotUrl(src));
+          setIsLoading(false);
+          return;
         }
 
-        const blob = await response.blob();
-        blobUrl = URL.createObjectURL(blob);
+        // Fetch signed URL from API
+        const signedUrl = await getSignedScreenshotUrl(
+          artifactId,
+          token,
+          process.env.NEXT_PUBLIC_API_URL
+        );
 
         if (isMounted) {
-          setImageSrc(blobUrl);
+          if (signedUrl) {
+            setImageSrc(signedUrl);
+          } else {
+            // Signed URL fetch failed - fall back to unsigned URL
+            console.warn('[AuthenticatedImage] Failed to get signed URL, using unsigned');
+            setImageSrc(resolveScreenshotUrl(src));
+          }
           setIsLoading(false);
-        } else {
-          // Clean up if component unmounted during fetch
-          URL.revokeObjectURL(blobUrl);
         }
       } catch (error) {
-        console.error('[AuthenticatedImage] Error fetching image:', error);
+        console.error('[AuthenticatedImage] Error resolving image:', error);
         if (isMounted) {
-          setImageSrc(fallbackSrc);
+          // Fall back to resolved URL on error
+          setImageSrc(resolveScreenshotUrl(src));
           setHasError(true);
           setIsLoading(false);
           onError?.(error instanceof Error ? error : new Error(String(error)));
@@ -118,16 +140,12 @@ export function AuthenticatedImage({
       }
     }
 
-    fetchImage();
+    resolveImage();
 
     return () => {
       isMounted = false;
-      // Clean up blob URL on unmount
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
     };
-  }, [src, fallbackSrc, getToken, requiresAuth, onError]);
+  }, [src, fallbackSrc, getToken, shouldUseSignedUrl, onError]);
 
   // Handle image load
   const handleLoad = useCallback(() => {
