@@ -160,7 +160,8 @@ export function useCurrentOrganization(): UseCurrentOrganizationReturn {
   // Switch organization function
   const switchOrganization = useCallback(
     (orgId: string, options: SwitchOptions = {}) => {
-      const { reload = true, updateServer = false } = options;
+      // Default to NOT reloading - callers should use queryClient.invalidateQueries() instead
+      const { reload = false, updateServer = false } = options;
 
       // Update localStorage
       setCurrentOrgId(orgId);

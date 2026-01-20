@@ -34,6 +34,15 @@ export interface ApiResponse<T> {
   status: number;
 }
 
+export interface FetchJsonOptions extends Omit<RequestInit, 'signal'> {
+  /** AbortSignal for request cancellation */
+  signal?: AbortSignal;
+  /** Request timeout in milliseconds (default: 30000) */
+  timeout?: number;
+}
+
+const DEFAULT_TIMEOUT_MS = 30000;
+
 /**
  * Hook for making authenticated API calls to Argus backend
  *
@@ -66,32 +75,42 @@ export function useAuthApi() {
     });
   }, [getToken]);
 
-  // Helper for JSON responses
+  // Helper for JSON responses with abort and timeout support
   const fetchJson = useCallback(async <T>(
     endpoint: string,
-    options?: RequestInit
+    options?: FetchJsonOptions
   ): Promise<ApiResponse<T>> => {
+    const { signal, timeout = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options || {};
+
+    // Create timeout controller
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      timeoutController.abort(new Error(`Request timeout after ${timeout}ms`));
+    }, timeout);
+
+    // Merge signals: external signal + timeout
+    const mergedSignal = signal
+      ? (signal.aborted
+          ? timeoutController.signal
+          : (() => {
+              signal.addEventListener('abort', () => timeoutController.abort(signal.reason));
+              return timeoutController.signal;
+            })())
+      : timeoutController.signal;
+
     try {
       // Use default Clerk token for backend authentication
       const token = await getToken();
 
-      // Debug: Log token and request info
-      console.log('[useAuthApi] fetchJson:', {
-        endpoint,
-        hasToken: !!token,
-        tokenPreview: token ? `${token.substring(0, 20)}...` : 'NULL',
-        isLoaded,
-        isSignedIn,
-      });
-
       const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}${endpoint}`;
 
       const response = await fetch(url, {
-        ...options,
+        ...fetchOptions,
+        signal: mergedSignal,
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(options?.headers || {}),
+          ...(fetchOptions?.headers || {}),
         },
       });
 
@@ -107,19 +126,30 @@ export function useAuthApi() {
       const data = await response.json();
       return { data, error: null, status: response.status };
     } catch (error) {
+      // Handle abort errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          data: null,
+          error: 'Request was cancelled',
+          status: 0,
+        };
+      }
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error',
         status: 0,
       };
+    } finally {
+      clearTimeout(timeoutId);
     }
   }, [getToken]);
 
-  // Stream fetch for SSE endpoints
+  // Stream fetch for SSE endpoints with abort support
   const fetchStream = useCallback(async (
     endpoint: string,
     body?: unknown,
-    onMessage?: (event: string, data: unknown) => void
+    onMessage?: (event: string, data: unknown) => void,
+    signal?: AbortSignal
   ): Promise<void> => {
     // Use default Clerk token for backend authentication
     const token = await getToken();
@@ -133,6 +163,7 @@ export function useAuthApi() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
+      signal,
     });
 
     if (!response.ok || !response.body) {
@@ -143,34 +174,49 @@ export function useAuthApi() {
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        // Check if aborted
+        if (signal?.aborted) {
+          await reader.cancel();
+          break;
+        }
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      for (const line of lines) {
-        if (line.startsWith('event:')) {
-          const eventType = line.slice(6).trim();
-          const nextLine = lines[lines.indexOf(line) + 1];
-          if (nextLine?.startsWith('data:')) {
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            const eventType = line.slice(6).trim();
+            const nextLine = lines[lines.indexOf(line) + 1];
+            if (nextLine?.startsWith('data:')) {
+              try {
+                const data = JSON.parse(nextLine.slice(5).trim());
+                onMessage?.(eventType, data);
+              } catch {
+                onMessage?.(eventType, nextLine.slice(5).trim());
+              }
+            }
+          } else if (line.startsWith('data:')) {
             try {
-              const data = JSON.parse(nextLine.slice(5).trim());
-              onMessage?.(eventType, data);
+              const data = JSON.parse(line.slice(5).trim());
+              onMessage?.('message', data);
             } catch {
-              onMessage?.(eventType, nextLine.slice(5).trim());
+              onMessage?.('message', line.slice(5).trim());
             }
           }
-        } else if (line.startsWith('data:')) {
-          try {
-            const data = JSON.parse(line.slice(5).trim());
-            onMessage?.('message', data);
-          } catch {
-            onMessage?.('message', line.slice(5).trim());
-          }
         }
+      }
+    } finally {
+      // Ensure reader is released
+      try {
+        await reader.cancel();
+      } catch {
+        // Ignore cancel errors
       }
     }
   }, [getToken]);

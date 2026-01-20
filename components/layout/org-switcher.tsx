@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Plus, Settings, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCurrentOrg, type Organization } from '@/lib/contexts/organization-context';
@@ -45,6 +46,7 @@ function OrgAvatar({ org, size = 'md' }: { org: Organization; size?: 'sm' | 'md'
 
 export function OrganizationSwitcher() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { currentOrg, organizations, isLoading, switchOrganization } = useCurrentOrg();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -74,10 +76,13 @@ export function OrganizationSwitcher() {
   }, []);
 
   const handleOrgSelect = (org: Organization) => {
+    // Switch organization without page reload
     switchOrganization(org.id);
     setIsOpen(false);
-    // Reload to refresh data with new org context
-    window.location.reload();
+    // Invalidate all queries to refetch with new org context
+    queryClient.invalidateQueries();
+    // Refresh Server Components
+    router.refresh();
   };
 
   const handleCreateNew = () => {

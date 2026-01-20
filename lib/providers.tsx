@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { ApiClientProvider } from '@/components/providers/api-client-provider';
 import { OrganizationProvider } from '@/lib/contexts/organization-context';
+import { SessionTimeoutProvider } from '@/components/providers/session-timeout-provider';
 
 // ============================================================================
 // Reduced Motion Provider
@@ -87,7 +88,9 @@ export function Providers({ children }: { children: ReactNode }) {
       >
         <ApiClientProvider>
           <OrganizationProvider>
-            <ReducedMotionProvider>{children}</ReducedMotionProvider>
+            <SessionTimeoutProvider>
+              <ReducedMotionProvider>{children}</ReducedMotionProvider>
+            </SessionTimeoutProvider>
           </OrganizationProvider>
         </ApiClientProvider>
       </NextThemesProvider>
