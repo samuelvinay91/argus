@@ -1543,21 +1543,8 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   // Get AI preferences for model selection
   const { data: aiPreferences } = useAIPreferences();
 
-  // Slash command detection
-  const { showMenu: showSlashMenu } = useSlashCommands(input);
+  // Slash command state (will be initialized after useChat)
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
-
-  // Update slash menu state based on input
-  useEffect(() => {
-    setSlashMenuOpen(showSlashMenu);
-  }, [showSlashMenu]);
-
-  // Handle slash command selection
-  const handleSlashCommandSelect = useCallback((transformedInput: string) => {
-    setInput(transformedInput);
-    setSlashMenuOpen(false);
-    inputRef.current?.focus();
-  }, [setInput]);
 
   // Proactive intelligence engine
   // Build context from conversation state for trigger evaluation
@@ -1736,6 +1723,20 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
       }
     },
   });
+
+  // Slash command detection (must be after useChat which declares `input`)
+  const { showMenu: showSlashMenu } = useSlashCommands(input);
+
+  // Update slash menu state based on input
+  useEffect(() => {
+    setSlashMenuOpen(showSlashMenu);
+  }, [showSlashMenu]);
+
+  // Handle slash command selection
+  const handleSlashCommandSelect = useCallback((transformedInput: string) => {
+    setInput(transformedInput);
+    setSlashMenuOpen(false);
+  }, [setInput]);
 
   // Determine AI status based on loading state and messages
   const aiStatus: AIStatus = useMemo(() => {
