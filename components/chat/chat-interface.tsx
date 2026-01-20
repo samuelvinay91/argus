@@ -1546,78 +1546,6 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   // Slash command state (will be initialized after useChat)
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
 
-  // Proactive intelligence engine
-  // Build context from conversation state for trigger evaluation
-  const proactiveContext = useMemo(() => {
-    // Count recent failures from messages
-    const recentFailures = messages.filter(m =>
-      m.toolInvocations?.some(t =>
-        t.state === 'result' &&
-        typeof t.result === 'object' &&
-        t.result !== null &&
-        ('error' in t.result || (t.result as any).success === false)
-      )
-    ).length;
-
-    // Get last visit time from localStorage
-    const lastVisitTime = typeof window !== 'undefined'
-      ? localStorage.getItem('argus_last_visit')
-      : null;
-
-    return {
-      recentFailures,
-      lastVisitTime: lastVisitTime ? new Date(lastVisitTime) : undefined,
-      pendingTests: 0, // Would come from API
-      activeSchedules: 0, // Would come from API
-      lastTestRunTime: undefined,
-      averagePassRate: undefined,
-    };
-  }, [messages]);
-
-  // Use proactive engine
-  const {
-    suggestions: proactiveSuggestions,
-    dismiss: dismissSuggestion,
-    accept: acceptSuggestion,
-  } = useProactiveEngine(proactiveContext, {
-    enabled: messages.length > 0, // Only show after user has started chatting
-    checkIntervalMs: 60000, // Check every minute
-  });
-
-  // Handle proactive suggestion acceptance
-  const handleProactiveSuggestionAccept = useCallback((suggestion: ProactiveSuggestion) => {
-    acceptSuggestion(suggestion.id);
-
-    // Map actions to natural language prompts
-    const actionPrompts: Record<string, string> = {
-      generateReport: 'Generate a test report for today',
-      getAIInsights: 'Show me AI insights about recent failures',
-      getTestRuns: 'Show me recent test runs that failed',
-      createSchedule: 'Help me create a test schedule',
-      runTest: 'Run my tests',
-    };
-
-    const prompt = actionPrompts[suggestion.action] || suggestion.description;
-    setInput(prompt);
-    inputRef.current?.focus();
-  }, [acceptSuggestion, setInput]);
-
-  // Update last visit time on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('argus_last_visit', new Date().toISOString());
-    }
-  }, []);
-
-  // Voice input handler
-  const handleVoiceTranscript = useCallback((text: string, isFinal: boolean) => {
-    if (isFinal) {
-      // Set the final transcript as input
-      setInput(text);
-      inputRef.current?.focus();
-    }
-  }, [setInput]);
-
   // Attachment state
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showAttachmentPanel, setShowAttachmentPanel] = useState(false);
@@ -1738,6 +1666,68 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     setSlashMenuOpen(false);
   }, [setInput]);
 
+  // Input ref for focus management
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Proactive intelligence engine
+  const proactiveContext = useMemo(() => {
+    const recentFailures = messages.filter(m =>
+      m.toolInvocations?.some(t =>
+        t.state === 'result' &&
+        typeof t.result === 'object' &&
+        t.result !== null &&
+        ('error' in t.result || (t.result as any).success === false)
+      )
+    ).length;
+
+    const lastVisitTime = typeof window !== 'undefined'
+      ? localStorage.getItem('argus_last_visit')
+      : null;
+
+    return {
+      recentFailures,
+      lastVisitTime: lastVisitTime ? new Date(lastVisitTime) : undefined,
+      pendingTests: 0,
+      activeSchedules: 0,
+      lastTestRunTime: undefined,
+      averagePassRate: undefined,
+    };
+  }, [messages]);
+
+  const {
+    suggestions: proactiveSuggestions,
+    dismiss: dismissSuggestion,
+    accept: acceptSuggestion,
+  } = useProactiveEngine(proactiveContext, {
+    enabled: messages.length > 0,
+    checkIntervalMs: 60000,
+  });
+
+  const handleProactiveSuggestionAccept = useCallback((suggestion: ProactiveSuggestion) => {
+    acceptSuggestion(suggestion.id);
+    const actionPrompts: Record<string, string> = {
+      generateReport: 'Generate a test report for today',
+      getAIInsights: 'Show me AI insights about recent failures',
+      getTestRuns: 'Show me recent test runs that failed',
+      createSchedule: 'Help me create a test schedule',
+      runTest: 'Run my tests',
+    };
+    const prompt = actionPrompts[suggestion.action] || suggestion.description;
+    setInput(prompt);
+  }, [acceptSuggestion, setInput]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('argus_last_visit', new Date().toISOString());
+    }
+  }, []);
+
+  const handleVoiceTranscript = useCallback((text: string, isFinal: boolean) => {
+    if (isFinal) {
+      setInput(text);
+    }
+  }, [setInput]);
+
   // Determine AI status based on loading state and messages
   const aiStatus: AIStatus = useMemo(() => {
     if (!isLoading) return 'ready';
@@ -1845,7 +1835,6 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   // REMOVED: useEffect that was causing infinite re-renders
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // Smooth scroll to bottom with animation
   const scrollToBottom = useCallback(() => {
