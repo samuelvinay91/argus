@@ -1677,10 +1677,12 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
             initial="hidden"
             animate="visible"
           >
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence mode="sync">
               {messages.map((message, index) => {
                 const isLastMessage = index === messages.length - 1;
                 const isStreamingThisMessage = isLoading && isLastMessage && message.role === 'assistant';
+                // Disable layout animations during streaming to prevent wobbling
+                const isAnyMessageStreaming = isLoading && messages[messages.length - 1]?.role === 'assistant';
 
                 return (
                   <motion.div
@@ -1689,7 +1691,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                     initial="hidden"
                     animate="visible"
                     exit="exit"
-                    layout
+                    layout={!isAnyMessageStreaming}
                     className={cn(
                       'flex gap-3 mb-3 sm:mb-4 min-w-0 max-w-full',
                       message.role === 'user' ? 'justify-end' : 'justify-start'
