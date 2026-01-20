@@ -324,19 +324,19 @@ export function AISettingsSection({
                 label="Show model in chat"
                 description="Display the current model name in the chat interface"
                 checked={preferences?.show_model_in_chat ?? true}
-                onCheckedChange={(checked) => handleUpdatePrefs('show_model_in_chat', checked)}
+                onChange={(checked) => handleUpdatePrefs('show_model_in_chat', checked)}
               />
               <ToggleRow
                 label="Show token costs"
                 description="Display token count and cost for each message"
                 checked={preferences?.show_token_costs ?? true}
-                onCheckedChange={(checked) => handleUpdatePrefs('show_token_costs', checked)}
+                onChange={(checked) => handleUpdatePrefs('show_token_costs', checked)}
               />
               <ToggleRow
                 label="Use platform fallback"
                 description="Fall back to Argus's API keys if your key is not configured"
                 checked={preferences?.use_platform_key_fallback ?? true}
-                onCheckedChange={(checked) => handleUpdatePrefs('use_platform_key_fallback', checked)}
+                onChange={(checked) => handleUpdatePrefs('use_platform_key_fallback', checked)}
               />
             </div>
           </CardContent>
