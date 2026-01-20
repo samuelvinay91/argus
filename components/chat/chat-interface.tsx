@@ -2,7 +2,8 @@
 
 import { useChat, Message } from 'ai/react';
 import { useRef, useEffect, useState, useCallback, memo, useMemo, Suspense, lazy } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
+import { useAIPreferences } from '@/lib/hooks/use-ai-settings';
 import dynamic from 'next/dynamic';
 import {
   Send,
@@ -42,6 +43,20 @@ import {
 } from './session-screenshots-panel';
 import { SaveTestDialog } from '@/components/tests/save-test-dialog';
 import { AuthenticatedImage } from '@/components/ui/authenticated-image';
+import { SlashCommandMenu, useSlashCommands } from './slash-command-menu';
+import { ModelBadge } from './model-badge';
+import {
+  QualityReportCard,
+  ScheduleCard,
+  ScheduleListCard,
+  ReportSummaryCard,
+  InfraStatusCard,
+  TestListCard,
+  TestRunsCard,
+} from './responses';
+import { useProactiveEngine, ProactiveSuggestion } from '@/lib/chat/proactive-engine';
+import { VoiceInput } from './voice-input';
+import { AttachmentInput, AttachmentButton, Attachment } from './attachment-input';
 
 // Type for R2 artifact references
 interface ArtifactRef {
@@ -1108,6 +1123,116 @@ function ResultDisplay({ result, onAction }: { result: unknown; onAction?: (acti
     );
   }
 
+  // Handle quality audit results
+  if (data._type === 'quality_audit') {
+    return (
+      <QualityReportCard
+        data={data as Parameters<typeof QualityReportCard>[0]['data']}
+        onAction={(action) => onAction?.(action, data)}
+      />
+    );
+  }
+
+  // Handle schedule created
+  if (data._type === 'schedule_created') {
+    return (
+      <ScheduleCard
+        data={data as Parameters<typeof ScheduleCard>[0]['data']}
+        onAction={(action, d) => onAction?.(action, d)}
+      />
+    );
+  }
+
+  // Handle schedule list
+  if (data._type === 'schedule_list') {
+    return (
+      <ScheduleListCard
+        data={data as Parameters<typeof ScheduleListCard>[0]['data']}
+        onAction={(action, d) => onAction?.(action, d)}
+      />
+    );
+  }
+
+  // Handle report generated
+  if (data._type === 'report_generated') {
+    return (
+      <ReportSummaryCard
+        data={data as Parameters<typeof ReportSummaryCard>[0]['data']}
+        onAction={(action) => onAction?.(action, data)}
+      />
+    );
+  }
+
+  // Handle infrastructure status
+  if (data._type === 'infra_status') {
+    return (
+      <InfraStatusCard
+        data={data as Parameters<typeof InfraStatusCard>[0]['data']}
+        onAction={(action) => onAction?.(action, data)}
+      />
+    );
+  }
+
+  // Handle test list
+  if (data._type === 'test_list') {
+    return (
+      <TestListCard
+        data={data as Parameters<typeof TestListCard>[0]['data']}
+        onAction={(action, d) => onAction?.(action, d)}
+      />
+    );
+  }
+
+  // Handle test runs
+  if (data._type === 'test_runs') {
+    return (
+      <TestRunsCard
+        data={data as Parameters<typeof TestRunsCard>[0]['data']}
+        onAction={(action, d) => onAction?.(action, d)}
+      />
+    );
+  }
+
+  // Handle AI insights (falls through to default for now, can add InsightsCard later)
+  if (data._type === 'ai_insights') {
+    const insights = data as { insights: unknown[]; summary: { critical_count: number; high_count: number; total_insights: number } };
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span>{insights.summary.total_insights} insights found</span>
+          {insights.summary.critical_count > 0 && (
+            <span className="text-red-500">({insights.summary.critical_count} critical)</span>
+          )}
+        </div>
+        {Array.isArray(insights.insights) && insights.insights.length > 0 ? (
+          <div className="space-y-1.5">
+            {insights.insights.slice(0, 5).map((insight: any, idx: number) => (
+              <div key={idx} className="text-xs bg-muted/50 rounded p-2">
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    'px-1.5 py-0.5 rounded text-[10px] font-medium',
+                    insight.severity === 'critical' ? 'bg-red-500/10 text-red-500' :
+                    insight.severity === 'high' ? 'bg-orange-500/10 text-orange-500' :
+                    'bg-yellow-500/10 text-yellow-500'
+                  )}>
+                    {insight.severity || 'info'}
+                  </span>
+                  <span className="font-medium">{insight.title || insight.category}</span>
+                </div>
+                {insight.description && (
+                  <p className="text-muted-foreground mt-1">{insight.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">No active insights at this time.</p>
+        )}
+      </div>
+    );
+  }
+
   // Show live execution progress if there's an active session
   const sessionId = data.sessionId as string | undefined;
 
@@ -1410,8 +1535,136 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     summary?: { name: string; steps_count: number; assertions_count: number };
   } | null>(null);
 
-  // Get auth token for API calls
+  // Get auth token and user info for API calls
   const { getToken } = useAuth();
+  const { user } = useUser();
+
+  // Get AI preferences for model selection
+  const { data: aiPreferences } = useAIPreferences();
+
+  // Slash command detection
+  const { showMenu: showSlashMenu } = useSlashCommands(input);
+  const [slashMenuOpen, setSlashMenuOpen] = useState(false);
+
+  // Update slash menu state based on input
+  useEffect(() => {
+    setSlashMenuOpen(showSlashMenu);
+  }, [showSlashMenu]);
+
+  // Handle slash command selection
+  const handleSlashCommandSelect = useCallback((transformedInput: string) => {
+    setInput(transformedInput);
+    setSlashMenuOpen(false);
+    inputRef.current?.focus();
+  }, [setInput]);
+
+  // Proactive intelligence engine
+  // Build context from conversation state for trigger evaluation
+  const proactiveContext = useMemo(() => {
+    // Count recent failures from messages
+    const recentFailures = messages.filter(m =>
+      m.toolInvocations?.some(t =>
+        t.state === 'result' &&
+        typeof t.result === 'object' &&
+        t.result !== null &&
+        ('error' in t.result || (t.result as any).success === false)
+      )
+    ).length;
+
+    // Get last visit time from localStorage
+    const lastVisitTime = typeof window !== 'undefined'
+      ? localStorage.getItem('argus_last_visit')
+      : null;
+
+    return {
+      recentFailures,
+      lastVisitTime: lastVisitTime ? new Date(lastVisitTime) : undefined,
+      pendingTests: 0, // Would come from API
+      activeSchedules: 0, // Would come from API
+      lastTestRunTime: undefined,
+      averagePassRate: undefined,
+    };
+  }, [messages]);
+
+  // Use proactive engine
+  const {
+    suggestions: proactiveSuggestions,
+    dismiss: dismissSuggestion,
+    accept: acceptSuggestion,
+  } = useProactiveEngine(proactiveContext, {
+    enabled: messages.length > 0, // Only show after user has started chatting
+    checkIntervalMs: 60000, // Check every minute
+  });
+
+  // Handle proactive suggestion acceptance
+  const handleProactiveSuggestionAccept = useCallback((suggestion: ProactiveSuggestion) => {
+    acceptSuggestion(suggestion.id);
+
+    // Map actions to natural language prompts
+    const actionPrompts: Record<string, string> = {
+      generateReport: 'Generate a test report for today',
+      getAIInsights: 'Show me AI insights about recent failures',
+      getTestRuns: 'Show me recent test runs that failed',
+      createSchedule: 'Help me create a test schedule',
+      runTest: 'Run my tests',
+    };
+
+    const prompt = actionPrompts[suggestion.action] || suggestion.description;
+    setInput(prompt);
+    inputRef.current?.focus();
+  }, [acceptSuggestion, setInput]);
+
+  // Update last visit time on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('argus_last_visit', new Date().toISOString());
+    }
+  }, []);
+
+  // Voice input handler
+  const handleVoiceTranscript = useCallback((text: string, isFinal: boolean) => {
+    if (isFinal) {
+      // Set the final transcript as input
+      setInput(text);
+      inputRef.current?.focus();
+    }
+  }, [setInput]);
+
+  // Attachment state
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [showAttachmentPanel, setShowAttachmentPanel] = useState(false);
+
+  // Handle file attachment from compact button
+  const handleAttachFiles = useCallback(async (files: File[]) => {
+    // Convert files to attachments
+    const newAttachments: Attachment[] = [];
+    for (const file of files) {
+      try {
+        const reader = new FileReader();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        newAttachments.push({
+          name: file.name,
+          contentType: file.type,
+          url: dataUrl,
+        });
+      } catch {
+        console.error(`Failed to process file: ${file.name}`);
+      }
+    }
+    if (newAttachments.length > 0) {
+      setAttachments(prev => [...prev, ...newAttachments].slice(0, 5));
+    }
+  }, []);
+
+  // Clear attachments after send
+  const clearAttachments = useCallback(() => {
+    setAttachments([]);
+    setShowAttachmentPanel(false);
+  }, []);
 
   // Store conversationId in ref to avoid stale closure issues
   const conversationIdRef = useRef(conversationId);
@@ -1436,6 +1689,15 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     id: isValidConversationId ? conversationId : undefined,
     initialMessages,
     maxSteps: 3, // Allow multi-step tool calls (reduced from 5 to prevent duplicate calls)
+    // Pass AI config and user ID for model selection and BYOK support
+    body: {
+      aiConfig: aiPreferences ? {
+        model: aiPreferences.default_model,
+        provider: aiPreferences.default_provider,
+        useBYOK: true,
+      } : undefined,
+      userId: user?.id,
+    },
     // Custom fetch to include Clerk auth token
     fetch: async (url, options) => {
       const token = await getToken();
@@ -1508,14 +1770,27 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   const handleSubmitWithPersist = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const userInput = input.trim();
-    if (!userInput) return;
+    if (!userInput && attachments.length === 0) return;
 
     // Get current values from refs to avoid stale closures
     const currentConversationId = conversationIdRef.current;
     const currentOnMessagesChange = onMessagesChangeRef.current;
 
-    // Submit to AI SDK
-    handleSubmit(e);
+    // Submit to AI SDK with attachments if any
+    if (attachments.length > 0) {
+      // Use experimental_attachments for file uploads
+      handleSubmit(e, {
+        experimental_attachments: attachments.map(a => ({
+          name: a.name,
+          contentType: a.contentType,
+          url: a.url,
+        })),
+      });
+      // Clear attachments after sending
+      clearAttachments();
+    } else {
+      handleSubmit(e);
+    }
 
     // Immediately persist the user message
     if (currentOnMessagesChange && currentConversationId) {
@@ -1534,7 +1809,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
         currentOnMessagesChange([...messages, userMessage]);
       }, 100);
     }
-  }, [handleSubmit, input, messages]);
+  }, [handleSubmit, input, messages, attachments, clearAttachments]);
 
   // Handle actions from test preview cards (run, edit, save)
   const handleTestPreviewAction = useCallback((action: string, data: unknown) => {
@@ -1612,16 +1887,20 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     <div className="flex h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] lg:h-[calc(100vh-12rem)] min-w-0 w-full overflow-hidden">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Screenshots Toggle Button - Fixed position */}
-        {messages.length > 0 && (
-          <div className="absolute top-2 right-2 z-30 lg:top-4 lg:right-4">
+        {/* Chat Header Controls - Fixed position */}
+        <div className="absolute top-2 right-2 z-30 lg:top-4 lg:right-4 flex items-center gap-2">
+          {/* Model Badge - Always visible */}
+          <ModelBadge showCost={true} compact={false} />
+
+          {/* Screenshots Toggle - Only when messages exist */}
+          {messages.length > 0 && (
             <ScreenshotsPanelToggle
               screenshotCount={screenshotCount}
               isOpen={isScreenshotsPanelOpen}
               onClick={() => setIsScreenshotsPanelOpen(!isScreenshotsPanelOpen)}
             />
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Chat Messages */}
         <div
@@ -1739,7 +2018,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
           </motion.div>
         )}
 
-        {/* Inline AI Suggestion Card */}
+        {/* Inline AI Suggestion Card - Manual */}
         <AnimatePresence>
           {showSuggestionCard && suggestionCardData && (
             <motion.div className="flex gap-3 justify-start">
@@ -1750,6 +2029,34 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                 onAccept={handleAcceptSuggestion}
                 onDismiss={handleDismissSuggestion}
               />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Proactive AI Suggestions */}
+        <AnimatePresence>
+          {proactiveSuggestions.length > 0 && !isLoading && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-2"
+            >
+              {proactiveSuggestions.map((suggestion) => (
+                <motion.div
+                  key={suggestion.id}
+                  className="flex gap-3 justify-start"
+                  layout
+                >
+                  <AIAvatar status="ready" size="sm" />
+                  <AISuggestionCard
+                    title={suggestion.title}
+                    description={suggestion.description}
+                    onAccept={() => handleProactiveSuggestionAccept(suggestion)}
+                    onDismiss={() => dismissSuggestion(suggestion.id)}
+                  />
+                </motion.div>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
@@ -1786,16 +2093,86 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
 
       {/* Input Area */}
       <div className="border-t bg-background/80 backdrop-blur-sm p-2 sm:p-4 safe-area-inset-bottom">
+        {/* Attachment Preview */}
+        <AnimatePresence>
+          {attachments.length > 0 && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="max-w-4xl mx-auto mb-2 overflow-hidden"
+            >
+              <div className="flex items-center gap-2 flex-wrap p-2 bg-muted/50 rounded-lg">
+                {attachments.map((attachment, index) => (
+                  <div
+                    key={`${attachment.name}-${index}`}
+                    className="relative group"
+                  >
+                    <div className="w-12 h-12 rounded border bg-background overflow-hidden">
+                      {attachment.contentType.startsWith('image/') ? (
+                        <img
+                          src={attachment.url}
+                          alt={attachment.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <span className="text-xs text-muted-foreground">
+                  {attachments.length} file{attachments.length !== 1 ? 's' : ''} attached
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <form onSubmit={handleSubmitWithPersist} className="flex gap-2 max-w-4xl mx-auto">
+          {/* Attachment Button */}
+          <AttachmentButton
+            onFiles={handleAttachFiles}
+            disabled={isLoading || attachments.length >= 5}
+            className="h-10 sm:h-11"
+          />
+
           <div className="flex-1 relative">
+            {/* Slash Command Menu */}
+            <AnimatePresence>
+              {slashMenuOpen && (
+                <SlashCommandMenu
+                  input={input}
+                  onSelect={handleSlashCommandSelect}
+                  onClose={() => setSlashMenuOpen(false)}
+                />
+              )}
+            </AnimatePresence>
             <input
               ref={inputRef}
               value={input}
               onChange={handleInputChange}
-              placeholder="Describe what to test..."
+              placeholder="Describe what to test... (type / for commands)"
               disabled={isLoading}
-              className="w-full h-10 sm:h-11 px-3 sm:px-4 text-sm sm:text-base rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full h-10 sm:h-11 px-3 sm:px-4 pr-12 text-sm sm:text-base rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             />
+            {/* Voice Input Button - inside input */}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+              <VoiceInput
+                onTranscript={handleVoiceTranscript}
+                disabled={isLoading}
+                className="h-7 w-7"
+              />
+            </div>
           </div>
           {isLoading ? (
             <Button type="button" variant="outline" size="sm" className="h-10 sm:h-11 px-3" onClick={stop}>

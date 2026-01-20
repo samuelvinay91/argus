@@ -9,6 +9,7 @@ import {
   Info,
   User,
   Building,
+  Cpu,
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,7 @@ export type SettingsSection =
   | 'profile'
   | 'organization'
   | 'api'
+  | 'ai'
   | 'notifications'
   | 'defaults'
   | 'security'
@@ -32,6 +34,7 @@ const sections: SectionConfig[] = [
   { id: 'profile', name: 'Profile', icon: User },
   { id: 'organization', name: 'Organization', icon: Building },
   { id: 'api', name: 'API Keys', icon: Key },
+  { id: 'ai', name: 'AI Configuration', icon: Cpu },
   { id: 'notifications', name: 'Notifications', icon: Bell },
   { id: 'defaults', name: 'Test Defaults', icon: Settings },
   { id: 'security', name: 'Security', icon: Shield },

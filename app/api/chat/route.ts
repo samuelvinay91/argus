@@ -12,7 +12,7 @@
  */
 
 import { anthropic } from '@ai-sdk/anthropic';
-import { streamText, tool } from 'ai';
+import { streamText, tool, convertToCoreMessages, CoreMessage } from 'ai';
 import { z } from 'zod';
 import { WORKER_URL, BACKEND_URL } from '@/lib/config/api-endpoints';
 
@@ -107,7 +107,12 @@ export async function POST(req: Request) {
     const apiKey = req.headers.get('X-API-Key');
 
     const body = await req.json();
-    const { messages, threadId, appUrl } = body;
+    const { messages, threadId, appUrl, aiConfig, userId } = body;
+
+    // Convert messages using AI SDK to properly handle attachments
+    // This transforms experimental_attachments into the correct format for Claude
+    // Attachments (images, documents) are converted to multimodal content parts
+    const coreMessages: CoreMessage[] = convertToCoreMessages(messages);
 
     // Check if Python backend is available
     const backendAvailable = await isBackendAvailable();
@@ -130,16 +135,26 @@ export async function POST(req: Request) {
           backendHeaders['X-API-Key'] = apiKey;
         }
 
+        // Use coreMessages which properly handles multimodal content (images, attachments)
+        // The convertToCoreMessages function transforms experimental_attachments into
+        // content arrays with image_url parts for images
         const response = await fetchWithTimeout(`${BACKEND_URL}/api/v1/chat/stream`, {
           method: 'POST',
           headers: backendHeaders,
           body: JSON.stringify({
-            messages: messages.map((m: { role: string; content: string }) => ({
+            messages: coreMessages.map((m) => ({
               role: m.role,
               content: m.content,
             })),
             thread_id: threadId,
             app_url: appUrl,
+            // AI model configuration (BYOK support)
+            ai_config: aiConfig ? {
+              model: aiConfig.model,
+              provider: aiConfig.provider,
+              use_byok: aiConfig.useBYOK ?? true,
+            } : undefined,
+            user_id: userId,
           }),
         }, 300000); // 5 minute timeout for streaming
 
@@ -206,8 +221,14 @@ IMPORTANT RULES:
 
 Be helpful, concise, and proactive. Format test results clearly with pass/fail status.
 When showing test steps, use numbered lists. When showing code or selectors, use code blocks.
-Report any self-healing that occurred during tests.`,
-      messages,
+Report any self-healing that occurred during tests.
+
+MULTIMODAL SUPPORT:
+- When users share images (screenshots, diagrams, UI mockups), analyze them carefully
+- For error screenshots: identify the error message, suggest debugging steps
+- For UI mockups: describe what you see and suggest test scenarios
+- For test failure screenshots: identify visual differences or broken elements`,
+      messages: coreMessages,
       tools: {
         // Execute a browser action using natural language
         executeAction: tool({

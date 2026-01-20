@@ -4,6 +4,14 @@ export { Toggle, LoadingSpinner, ErrorMessage, SectionSkeleton, ToggleRow, getPl
 export { ProfileSection, type ProfileData } from './profile-section';
 export { OrganizationSection, type OrganizationData } from './organization-section';
 export { ApiKeysSection, type ApiKey } from './api-keys-section';
+export {
+  AISettingsSection,
+  type AIPreferences,
+  type ProviderKey,
+  type ModelInfo,
+  type UsageSummary,
+  type BudgetStatus,
+} from './ai-settings-section';
 export { NotificationsSection, type NotificationSettings } from './notifications-section';
 export { TestDefaultsSection, type TestDefaults, type BrowserType } from './test-defaults-section';
 export { SecuritySection } from './security-section';

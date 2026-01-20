@@ -7,6 +7,7 @@ import { useUserProfile } from '@/lib/hooks/use-user-profile';
 import { useUserSettings } from '@/lib/hooks/use-user-settings';
 import { useCurrentOrganization } from '@/lib/hooks/use-current-organization';
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from '@/lib/hooks/use-api-keys';
+import { useAISettings } from '@/lib/hooks/use-ai-settings';
 
 import {
   SettingsLayout,
@@ -14,6 +15,7 @@ import {
   ProfileSection,
   OrganizationSection,
   ApiKeysSection,
+  AISettingsSection,
   NotificationsSection,
   TestDefaultsSection,
   SecuritySection,
@@ -48,6 +50,22 @@ export default function SettingsPage() {
   const { data: apiKeys, isLoading: keysLoading, error: keysError } = useApiKeys();
   const { mutateAsync: createApiKey, isPending: isCreatingKey } = useCreateApiKey();
   const { mutate: revokeApiKey, isPending: isRevokingKey } = useRevokeApiKey();
+
+  // AI Settings
+  const {
+    preferences: aiPreferences,
+    providerKeys,
+    models: aiModels,
+    userProviders,
+    usageSummary,
+    budgetStatus,
+    isLoading: aiLoading,
+    error: aiError,
+    updatePreferences: updateAIPreferences,
+    addProviderKey,
+    removeProviderKey,
+    validateProviderKey,
+  } = useAISettings();
 
   // Derived state
   const settingsError = settingsErrorObj?.message || null;
@@ -123,6 +141,23 @@ export default function SettingsPage() {
             isRevoking={isRevokingKey}
             onCreateKey={createApiKey}
             onRevokeKey={revokeApiKey}
+          />
+        );
+      case 'ai':
+        return (
+          <AISettingsSection
+            preferences={aiPreferences}
+            providerKeys={providerKeys}
+            models={aiModels}
+            userProviders={userProviders}
+            usageSummary={usageSummary}
+            budgetStatus={budgetStatus}
+            loading={aiLoading}
+            error={aiError}
+            onUpdatePreferences={updateAIPreferences}
+            onAddProviderKey={addProviderKey}
+            onRemoveProviderKey={removeProviderKey}
+            onValidateProviderKey={validateProviderKey}
           />
         );
       case 'notifications':
