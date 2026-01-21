@@ -244,7 +244,26 @@ export async function fetchJson<T>(
       }
 
       const error = await response.json().catch(() => ({ message: 'Request failed' }));
-      throw new Error(error.message || error.detail || `Request failed with status ${response.status}`);
+
+      // Extract error message, handling FastAPI/Pydantic validation errors
+      let errorMessage = error.message;
+      if (!errorMessage && error.detail) {
+        if (typeof error.detail === 'string') {
+          errorMessage = error.detail;
+        } else if (Array.isArray(error.detail)) {
+          // Pydantic validation errors: [{loc: [...], msg: "...", type: "..."}]
+          errorMessage = error.detail
+            .map((e: { loc?: string[]; msg?: string }) => {
+              const field = e.loc?.slice(-1)[0] || 'field';
+              return `${field}: ${e.msg || 'validation error'}`;
+            })
+            .join(', ');
+        } else if (typeof error.detail === 'object' && error.detail.msg) {
+          errorMessage = error.detail.msg;
+        }
+      }
+
+      throw new Error(errorMessage || `Request failed with status ${response.status}`);
     }
 
     return response.json();

@@ -124,10 +124,41 @@ export function useAuthApi() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
+        // Try to parse as JSON to extract structured error messages
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.detail) {
+            if (typeof errorData.detail === 'string') {
+              errorMessage = errorData.detail;
+            } else if (Array.isArray(errorData.detail)) {
+              // Pydantic validation errors: [{loc: [...], msg: "...", type: "..."}]
+              errorMessage = errorData.detail
+                .map((e: { loc?: string[]; msg?: string }) => {
+                  const field = e.loc?.slice(-1)[0] || 'field';
+                  return `${field}: ${e.msg || 'validation error'}`;
+                })
+                .join(', ');
+            } else if (typeof errorData.detail === 'object' && errorData.detail.msg) {
+              errorMessage = errorData.detail.msg;
+            }
+          }
+        } catch {
+          // If JSON parsing fails, try to get text
+          try {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          } catch {
+            // Use default error message
+          }
+        }
         return {
           data: null,
-          error: errorText || `HTTP ${response.status}`,
+          error: errorMessage,
           status: response.status,
         };
       }

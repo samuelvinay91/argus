@@ -79,6 +79,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { toast } from 'sonner';
 import type { DiscoveredFlow, DiscoveredPage, DiscoverySession } from '@/lib/supabase/types';
 
 // Import local components
@@ -1118,6 +1119,10 @@ export default function DiscoveryPage() {
       setCurrentSessionId(result.id);
     } catch (error) {
       console.error('Failed to start discovery:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error('Failed to start discovery', {
+        description: errorMessage,
+      });
     }
   };
 
@@ -1128,6 +1133,9 @@ export default function DiscoveryPage() {
       await pauseDiscovery.mutateAsync(currentSessionId);
     } catch (error) {
       console.error('Failed to pause discovery:', error);
+      toast.error('Failed to pause discovery', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   };
 
@@ -1137,6 +1145,9 @@ export default function DiscoveryPage() {
       await resumeDiscovery.mutateAsync(currentSessionId);
     } catch (error) {
       console.error('Failed to resume discovery:', error);
+      toast.error('Failed to resume discovery', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   };
 
@@ -1147,6 +1158,9 @@ export default function DiscoveryPage() {
       setCurrentSessionId(null);
     } catch (error) {
       console.error('Failed to cancel discovery:', error);
+      toast.error('Failed to cancel discovery', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   };
 
