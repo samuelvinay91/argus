@@ -22,6 +22,40 @@ const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
 const MAX_RETRIES = 2;
 const INITIAL_RETRY_DELAY_MS = 500;
 
+/**
+ * Convert camelCase to snake_case
+ * Frontend uses camelCase (JS convention), backend uses snake_case (Python convention)
+ */
+function camelToSnake(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+
+/**
+ * Recursively convert object keys from camelCase to snake_case
+ * Handles nested objects and arrays
+ * Exported for use in other modules (e.g., useAuthApi)
+ */
+export function convertKeysToSnakeCase(obj: unknown): unknown {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(convertKeysToSnakeCase);
+  }
+
+  if (typeof obj === 'object' && obj.constructor === Object) {
+    const converted: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const snakeKey = camelToSnake(key);
+      converted[snakeKey] = convertKeysToSnakeCase(value);
+    }
+    return converted;
+  }
+
+  return obj;
+}
+
 // Backend URL configuration
 // Use empty string for relative URLs (proxied through Next.js rewrites)
 const getBackendUrl = () => {
@@ -297,21 +331,24 @@ export const apiClient = {
     fetchJson<T>(url, {
       ...options,
       method: 'POST',
-      body: body ? JSON.stringify(body) : undefined,
+      // Convert camelCase keys to snake_case for Python backend
+      body: body ? JSON.stringify(convertKeysToSnakeCase(body)) : undefined,
     }),
 
   put: <T>(url: string, body?: unknown, options?: FetchOptions) =>
     fetchJson<T>(url, {
       ...options,
       method: 'PUT',
-      body: body ? JSON.stringify(body) : undefined,
+      // Convert camelCase keys to snake_case for Python backend
+      body: body ? JSON.stringify(convertKeysToSnakeCase(body)) : undefined,
     }),
 
   patch: <T>(url: string, body?: unknown, options?: FetchOptions) =>
     fetchJson<T>(url, {
       ...options,
       method: 'PATCH',
-      body: body ? JSON.stringify(body) : undefined,
+      // Convert camelCase keys to snake_case for Python backend
+      body: body ? JSON.stringify(convertKeysToSnakeCase(body)) : undefined,
     }),
 
   delete: <T>(url: string, options?: FetchOptions) =>

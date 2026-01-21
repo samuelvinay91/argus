@@ -10,6 +10,7 @@
 import { useAuth } from '@clerk/nextjs';
 import { useCallback, useMemo } from 'react';
 import { createAuthenticatedClient } from '@/lib/auth-api';
+import { convertKeysToSnakeCase } from '@/lib/api-client';
 
 // Backend URL (client-side needs NEXT_PUBLIC_ prefix)
 // In production, use the Railway backend URL directly to avoid Vercel rewrite issues
@@ -203,7 +204,8 @@ export function useAuthApi() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...getOrgHeaders(),
       },
-      body: body ? JSON.stringify(body) : undefined,
+      // Convert camelCase keys to snake_case for Python backend
+      body: body ? JSON.stringify(convertKeysToSnakeCase(body)) : undefined,
       signal,
     });
 
