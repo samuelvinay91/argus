@@ -24,15 +24,15 @@ const ToastViewport = React.forwardRef<
 ToastViewport.displayName = ToastPrimitive.Viewport.displayName;
 
 const toastVariants = cva(
-  'group pointer-events-auto relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-lg border p-4 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-bottom-full',
+  'group pointer-events-auto relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border-2 p-4 pr-10 shadow-xl transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-bottom-full',
   {
     variants: {
       variant: {
-        default: 'border bg-card text-card-foreground',
-        success: 'border-green-500/50 bg-green-500/10 text-green-50',
-        destructive: 'border-red-500/50 bg-red-500/10 text-red-50',
-        warning: 'border-amber-500/50 bg-amber-500/10 text-amber-50',
-        info: 'border-blue-500/50 bg-blue-500/10 text-blue-50',
+        default: 'border-border bg-card text-card-foreground',
+        success: 'border-green-600 bg-green-50 text-green-900 dark:bg-green-950 dark:text-green-100 dark:border-green-800',
+        destructive: 'border-red-600 bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100 dark:border-red-800',
+        warning: 'border-amber-600 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-100 dark:border-amber-800',
+        info: 'border-blue-600 bg-blue-50 text-blue-900 dark:bg-blue-950 dark:text-blue-100 dark:border-blue-800',
       },
     },
     defaultVariants: {
@@ -78,7 +78,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitive.Close
     ref={ref}
     className={cn(
-      'absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
+      'absolute right-3 top-3 rounded-full p-1.5 opacity-70 transition-all hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2',
       className
     )}
     toast-close=""
@@ -116,17 +116,19 @@ ToastDescription.displayName = ToastPrimitive.Description.displayName;
 type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>;
 type ToastActionElement = React.ReactElement<typeof ToastAction>;
 
-// Toast Icon Component
+// Toast Icon Component - matches the toast variant colors
 function ToastIcon({ variant }: { variant?: 'default' | 'success' | 'destructive' | 'warning' | 'info' }) {
+  const iconClass = 'h-5 w-5 flex-shrink-0';
+
   switch (variant) {
     case 'success':
-      return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+      return <CheckCircle2 className={cn(iconClass, 'text-green-600 dark:text-green-400')} />;
     case 'destructive':
-      return <AlertCircle className="h-5 w-5 text-red-500" />;
+      return <AlertCircle className={cn(iconClass, 'text-red-600 dark:text-red-400')} />;
     case 'warning':
-      return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+      return <AlertTriangle className={cn(iconClass, 'text-amber-600 dark:text-amber-400')} />;
     case 'info':
-      return <Info className="h-5 w-5 text-blue-500" />;
+      return <Info className={cn(iconClass, 'text-blue-600 dark:text-blue-400')} />;
     default:
       return null;
   }
