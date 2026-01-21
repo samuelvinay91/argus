@@ -800,8 +800,14 @@ export default function DiscoveryPage() {
   const effectiveAppUrl = appUrl || currentProjectData?.app_url || 'https://example.com';
 
   // Derived state - check both legacy and session-based data
+  // Keep showing progress if:
+  // 1. Start mutation is pending, OR
+  // 2. We have a currentSessionId (active session), OR
+  // 3. Legacy session is running, OR
+  // 4. Current session is running/pending/paused
   const isDiscovering =
     startDiscoverySession.isPending ||
+    (currentSessionId !== null && (!currentSession || ['pending', 'running', 'paused'].includes(currentSession?.status || ''))) ||
     discoveryData?.session?.status === 'running' ||
     currentSession?.status === 'running';
   const hasData = !!discoveryData?.session || !!currentSession;
@@ -1418,18 +1424,24 @@ export default function DiscoveryPage() {
         </header>
 
         <div className="p-6 space-y-6">
-          {/* Discovery Progress (shown when running) */}
-          {/* Use currentSessionId for new sessions, or discoveryData.session.id for existing */}
-          {isDiscovering && (currentSessionId || discoveryData?.session?.id) && (
+          {/* Discovery Progress (shown when running or has active session) */}
+          {/* Keep showing if we have a currentSessionId OR if discovery is actively running */}
+          {(currentSessionId || isDiscovering) && (
             <DiscoveryProgress
               sessionId={currentSessionId || discoveryData?.session?.id || ''}
               onComplete={(result) => {
-                setCurrentSessionId(null);
+                // Delay clearing the session ID to allow UI to show completion state
+                setTimeout(() => {
+                  setCurrentSessionId(null);
+                }, 3000); // Keep visible for 3 seconds after completion
                 queryClient.invalidateQueries({ queryKey: ['latest-discovery', currentProject] });
               }}
               onError={(error) => {
                 console.error('Discovery error:', error);
-                setCurrentSessionId(null);
+                // Delay clearing to show error state
+                setTimeout(() => {
+                  setCurrentSessionId(null);
+                }, 3000);
               }}
             />
           )}
