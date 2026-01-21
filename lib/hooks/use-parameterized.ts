@@ -5,8 +5,6 @@ import { useEffect } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Json } from '@/lib/supabase/types';
 import { WORKER_URL } from '@/lib/config/api-endpoints';
-import { useFeatureFlags } from '@/lib/feature-flags';
-import { parameterizedApi } from '@/lib/api-client';
 
 // ============================================
 // TYPES
@@ -174,22 +172,9 @@ export function useParameterizedTest(testId: string | null) {
 export function useCreateParameterizedTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
-  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (test: InsertParameterizedTest) => {
-      if (flags.useBackendApi('parameterized')) {
-        // NEW: Use backend API
-        return parameterizedApi.createTest({
-          projectId: test.project_id,
-          name: test.name,
-          description: test.description || undefined,
-          baseSteps: test.steps as unknown[],
-          parameters: test.parameter_schema as Record<string, unknown>,
-        }) as Promise<ParameterizedTest>;
-      }
-
-      // LEGACY: Direct Supabase
       const { data, error } = await (supabase.from('parameterized_tests') as any)
         .insert(test)
         .select()
@@ -207,16 +192,9 @@ export function useCreateParameterizedTest() {
 export function useUpdateParameterizedTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
-  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & UpdateParameterizedTest) => {
-      if (flags.useBackendApi('parameterized')) {
-        // NEW: Use backend API
-        return parameterizedApi.updateTest(id, updates) as Promise<ParameterizedTest>;
-      }
-
-      // LEGACY: Direct Supabase
       const { data, error } = await (supabase.from('parameterized_tests') as any)
         .update(updates)
         .eq('id', id)
@@ -236,17 +214,9 @@ export function useUpdateParameterizedTest() {
 export function useDeleteParameterizedTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
-  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ testId, projectId }: { testId: string; projectId: string }) => {
-      if (flags.useBackendApi('parameterized')) {
-        // NEW: Use backend API (soft delete)
-        await parameterizedApi.deleteTest(testId);
-        return projectId;
-      }
-
-      // LEGACY: Direct Supabase
       // Soft delete by setting is_active to false
       const { error } = await (supabase.from('parameterized_tests') as any)
         .update({ is_active: false })
@@ -291,19 +261,9 @@ export function useParameterSets(testId: string | null) {
 export function useCreateParameterSet() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
-  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (paramSet: InsertParameterSet) => {
-      if (flags.useBackendApi('parameterized')) {
-        // NEW: Use backend API
-        return parameterizedApi.createParamSet(
-          paramSet.parameterized_test_id,
-          paramSet
-        ) as Promise<ParameterSet>;
-      }
-
-      // LEGACY: Direct Supabase
       const { data, error } = await (supabase.from('parameter_sets') as any)
         .insert(paramSet)
         .select()
@@ -321,17 +281,9 @@ export function useCreateParameterSet() {
 export function useUpdateParameterSet() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
-  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ id, testId, ...updates }: { id: string; testId: string } & UpdateParameterSet) => {
-      if (flags.useBackendApi('parameterized')) {
-        // NEW: Use backend API
-        const result = await parameterizedApi.updateParamSet(id, updates) as ParameterSet;
-        return { ...result, testId } as ParameterSet & { testId: string };
-      }
-
-      // LEGACY: Direct Supabase
       const { data, error } = await (supabase.from('parameter_sets') as any)
         .update(updates)
         .eq('id', id)
@@ -350,17 +302,9 @@ export function useUpdateParameterSet() {
 export function useDeleteParameterSet() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
-  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ id, testId }: { id: string; testId: string }) => {
-      if (flags.useBackendApi('parameterized')) {
-        // NEW: Use backend API
-        await parameterizedApi.deleteParamSet(id);
-        return testId;
-      }
-
-      // LEGACY: Direct Supabase
       const { error } = await (supabase.from('parameter_sets') as any)
         .delete()
         .eq('id', id);
@@ -508,7 +452,6 @@ export function useIterationResults(resultId: string | null) {
 export function useRunParameterizedTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
-  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -526,12 +469,6 @@ export function useRunParameterizedTest() {
       browser?: string;
       selectedSetIds?: string[];
     }) => {
-      if (flags.useBackendApi('parameterized')) {
-        // NEW: Use backend API
-        return parameterizedApi.run(testId, selectedSetIds) as Promise<ParameterizedResult>;
-      }
-
-      // LEGACY: Direct Supabase
       // 1. Create parameterized result record
       const { data: result, error: resultError } = await (supabase.from('parameterized_results') as any)
         .insert({
