@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import {
   CheckCircle2,
@@ -37,7 +38,14 @@ export function RecentRunsTable({
   isLoading = false,
   limit = 10,
 }: RecentRunsTableProps) {
+  const router = useRouter();
   const displayedRuns = runs.slice(0, limit);
+
+  // Handle navigation with explicit router.push to avoid React 18 transition delays
+  const handleNavigation = (e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    router.push(href);
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -79,7 +87,7 @@ export function RecentRunsTable({
           <CardDescription>Latest test execution history</CardDescription>
         </div>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/reports">
+          <Link href="/reports" onClick={(e) => handleNavigation(e, '/reports')}>
             View All
             <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
           </Link>
@@ -188,7 +196,7 @@ export function RecentRunsTable({
         {runs.length > limit && (
           <div className="px-6 py-3 border-t">
             <Button variant="ghost" size="sm" className="w-full" asChild>
-              <Link href="/reports">
+              <Link href="/reports" onClick={(e) => handleNavigation(e, '/reports')}>
                 View all {runs.length} runs
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Link>

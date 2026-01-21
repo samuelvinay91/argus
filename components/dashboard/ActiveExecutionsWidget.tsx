@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { Play, ExternalLink, Loader2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -18,9 +19,16 @@ export function ActiveExecutionsWidget({
   executions,
   isLoading = false,
 }: ActiveExecutionsWidgetProps) {
+  const router = useRouter();
   const activeExecutions = executions.filter(
     (e) => e.status === 'running' || e.status === 'pending'
   );
+
+  // Handle navigation with explicit router.push to avoid React 18 transition delays
+  const handleNavigation = (e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    router.push(href);
+  };
 
   const getProgress = (execution: TestRun): number => {
     if (execution.total_tests === 0) return 0;
@@ -50,7 +58,7 @@ export function ActiveExecutionsWidget({
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/tests">
+            <Link href="/tests" onClick={(e) => handleNavigation(e, '/tests')}>
               View All
               <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
             </Link>
@@ -88,6 +96,7 @@ export function ActiveExecutionsWidget({
                 <Link
                   key={execution.id}
                   href={`/tests/${execution.id}`}
+                  onClick={(e) => handleNavigation(e, `/tests/${execution.id}`)}
                   className="block p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors group"
                 >
                   <div className="flex items-center justify-between mb-2">

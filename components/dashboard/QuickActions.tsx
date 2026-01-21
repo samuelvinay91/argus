@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Play,
   Plus,
@@ -40,6 +41,14 @@ export function QuickActions({
   onCreateTest,
   isRunning = false,
 }: QuickActionsProps) {
+  const router = useRouter();
+
+  // Handle navigation with explicit router.push to avoid React 18 transition delays
+  const handleNavigation = (e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    router.push(href);
+  };
+
   const actions: QuickAction[] = [
     {
       id: 'run-all',
@@ -150,7 +159,11 @@ export function QuickActions({
 
             if (action.href && !action.disabled) {
               return (
-                <Link key={action.id} href={action.href}>
+                <Link
+                  key={action.id}
+                  href={action.href}
+                  onClick={(e) => handleNavigation(e, action.href!)}
+                >
                   {content}
                 </Link>
               );
@@ -181,6 +194,14 @@ export function QuickActionsCompact({
   onRunAllTests?: () => void;
   isRunning?: boolean;
 }) {
+  const router = useRouter();
+
+  // Handle navigation with explicit router.push to avoid React 18 transition delays
+  const handleNavigation = (e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    router.push(href);
+  };
+
   return (
     <div className="flex flex-wrap gap-2">
       <Button
@@ -197,13 +218,13 @@ export function QuickActionsCompact({
         {isRunning ? 'Running...' : 'Run Tests'}
       </Button>
       <Button variant="outline" size="sm" asChild>
-        <Link href="/reports" className="gap-2">
+        <Link href="/reports" className="gap-2" onClick={(e) => handleNavigation(e, '/reports')}>
           <BarChart3 className="h-4 w-4" />
           Reports
         </Link>
       </Button>
       <Button variant="outline" size="sm" asChild>
-        <Link href="/discovery" className="gap-2">
+        <Link href="/discovery" className="gap-2" onClick={(e) => handleNavigation(e, '/discovery')}>
           <Compass className="h-4 w-4" />
           Discover
         </Link>
