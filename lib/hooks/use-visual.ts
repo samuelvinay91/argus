@@ -252,7 +252,14 @@ export function useRunVisualTest() {
         : `data:image/png;base64,${screenshotBase64}`;
 
       // Generate name from URL if not provided
-      const testName = name || new URL(url).pathname.replace(/\//g, '-').replace(/^-/, '') || 'homepage';
+      let testName = name;
+      if (!testName) {
+        try {
+          testName = new URL(url).pathname.replace(/\//g, '-').replace(/^-/, '') || 'homepage';
+        } catch {
+          testName = 'visual-test';
+        }
+      }
 
       // 2. Check for existing baseline
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

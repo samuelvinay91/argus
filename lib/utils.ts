@@ -53,3 +53,19 @@ export function getStatusBgColor(status: string): string {
       return 'bg-muted';
   }
 }
+
+/**
+ * Safely extract hostname from a URL string.
+ * Returns the URL as-is if parsing fails, or a fallback value if empty.
+ */
+export function safeHostname(url: string | null | undefined, fallback = 'Unknown'): string {
+  if (!url || url.trim() === '') {
+    return fallback;
+  }
+  try {
+    return new URL(url).hostname;
+  } catch {
+    // Return the original URL if it's not parseable (e.g., just a domain without protocol)
+    return url;
+  }
+}

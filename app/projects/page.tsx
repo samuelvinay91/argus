@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CreateProjectModal, CreateProjectInline } from '@/components/projects/create-project-modal';
 import { useProjects, useDeleteProject } from '@/lib/hooks/use-projects';
-import { cn } from '@/lib/utils';
+import { cn, safeHostname } from '@/lib/utils';
 import type { Project } from '@/lib/supabase/types';
 
 export default function ProjectsPage() {
@@ -222,7 +222,7 @@ function ProjectCard({
               onClick={(e) => e.stopPropagation()}
               className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
             >
-              {new URL(project.app_url).hostname}
+              {safeHostname(project.app_url)}
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>

@@ -77,7 +77,7 @@ import {
 import { useCreateTest } from '@/lib/hooks/use-tests';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
-import { cn } from '@/lib/utils';
+import { cn, safeHostname } from '@/lib/utils';
 import { WORKER_URL } from '@/lib/config/api-endpoints';
 import { useToast } from '@/lib/hooks/useToast';
 import type { DiscoveredFlow, DiscoveredPage, DiscoverySession } from '@/lib/supabase/types';
@@ -1541,7 +1541,7 @@ export default function DiscoveryPage() {
                           >
                             <div className="flex items-center justify-between mb-1">
                               <span className="font-medium truncate max-w-[120px]">
-                                {new URL(session.appUrl).hostname}
+                                {safeHostname(session.appUrl)}
                               </span>
                               <Badge
                                 variant={
