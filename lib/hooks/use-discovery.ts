@@ -2,7 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, discoveryApi } from '@/lib/api-client';
+import { useFeatureFlags } from '@/lib/feature-flags';
 import type { DiscoverySession, DiscoveredPage, DiscoveredFlow, InsertTables } from '@/lib/supabase/types';
 
 export function useDiscoverySessions(projectId: string | null) {
@@ -137,6 +138,7 @@ interface DiscoveryResult {
 export function useStartDiscovery() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -148,6 +150,26 @@ export function useStartDiscovery() {
       appUrl: string;
       triggeredBy?: string | null;
     }): Promise<DiscoveryResult> => {
+      // NEW: Use backend API when feature flag is enabled
+      if (flags.useBackendApi('discovery')) {
+        const response = await discoveryApi.startSession({
+          projectId,
+          appUrl,
+        });
+        // The backend handles all the discovery logic and returns session data
+        // We need to fetch the full session data after starting
+        const sessionData = await discoveryApi.getSession(response.id);
+        const pages = await apiClient.get<DiscoveredPage[]>(`/api/v1/discovery/sessions/${response.id}/pages`);
+        const flows = await apiClient.get<DiscoveredFlow[]>(`/api/v1/discovery/sessions/${response.id}/flows`);
+
+        return {
+          session: sessionData as unknown as DiscoverySession,
+          pages: pages || [],
+          flows: flows || [],
+        };
+      }
+
+      // LEGACY: Direct Supabase (keep existing code)
       // 1. Create session with 'running' status
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: session, error: sessionError } = await (supabase.from('discovery_sessions') as any)

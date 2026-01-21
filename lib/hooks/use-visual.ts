@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { VisualBaseline, VisualComparison } from '@/lib/supabase/types';
 import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { useFeatureFlags } from '@/lib/feature-flags';
+import { visualApi } from '@/lib/api-client';
 
 // Simple pixel diffing using canvas
 async function compareScreenshots(
@@ -153,6 +155,7 @@ export function useVisualComparison(comparisonId: string | null) {
 export function useApproveComparison() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -164,6 +167,13 @@ export function useApproveComparison() {
       projectId: string;
       approvedBy?: string | null;
     }) => {
+      if (flags.useBackendApi('visual')) {
+        // NEW: Use backend API
+        const comparison = await visualApi.approveComparison(comparisonId) as VisualComparison;
+        return { comparison, projectId };
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('visual_comparisons') as any)
         .update({
@@ -194,6 +204,7 @@ interface VisualTestResult {
 export function useRunVisualTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -209,6 +220,34 @@ export function useRunVisualTest() {
       viewport?: string;
       threshold?: number;
     }): Promise<VisualTestResult> => {
+      if (flags.useBackendApi('visual')) {
+        // NEW: Use backend API
+        // First capture the screenshot
+        const [width] = viewport.split('x').map(Number);
+        const device = width <= 768 ? 'mobile' : width <= 1024 ? 'tablet' : 'desktop';
+
+        const captureResult = await visualApi.capture({
+          projectId,
+          url,
+          viewport,
+          device,
+        }) as { screenshotUrl: string };
+
+        // Then compare (or create baseline if none exists)
+        const compareResult = await visualApi.compare({
+          projectId,
+          currentUrl: captureResult.screenshotUrl,
+          threshold,
+        }) as { comparison: VisualComparison; baseline: VisualBaseline | null; isNew: boolean };
+
+        return {
+          comparison: compareResult.comparison,
+          baseline: compareResult.baseline,
+          isNew: compareResult.isNew,
+        };
+      }
+
+      // LEGACY: Direct Supabase
       // Parse viewport
       const [width, height] = viewport.split('x').map(Number);
       const device = width <= 768 ? 'mobile' : width <= 1024 ? 'tablet' : 'desktop';
@@ -361,6 +400,7 @@ export function useRunVisualTest() {
 export function useUpdateBaseline() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -370,6 +410,25 @@ export function useUpdateBaseline() {
       comparisonId: string;
       projectId: string;
     }) => {
+      if (flags.useBackendApi('visual')) {
+        // NEW: Use backend API
+        // Get comparison first to find baseline_id
+        const comparison = await visualApi.getComparison(comparisonId) as VisualComparison;
+        if (!comparison) throw new Error('Comparison not found');
+
+        // Update baseline with current screenshot
+        if (comparison.baseline_id) {
+          await visualApi.updateBaseline(comparison.baseline_id, {
+            screenshotUrl: comparison.current_url,
+          });
+        }
+
+        // Approve the comparison
+        const updated = await visualApi.approveComparison(comparisonId) as VisualComparison;
+        return { comparison: updated, projectId };
+      }
+
+      // LEGACY: Direct Supabase
       // Get the comparison
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: comparison, error: compError } = await (supabase.from('visual_comparisons') as any)

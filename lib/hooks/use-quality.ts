@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { QualityAudit, AccessibilityIssue } from '@/lib/supabase/types';
 import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { useFeatureFlags } from '@/lib/feature-flags';
+import { qualityApi } from '@/lib/api-client';
 
 export function useQualityAudits(projectId: string | null, limit = 10) {
   const supabase = getSupabaseClient();
@@ -90,6 +92,7 @@ export function useAccessibilityIssues(auditId: string | null) {
 export function useStartQualityAudit() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -101,6 +104,27 @@ export function useStartQualityAudit() {
       url: string;
       triggeredBy?: string | null;
     }) => {
+      if (flags.useBackendApi('quality')) {
+        // NEW: Use backend API
+        const result = await qualityApi.runAudit({
+          projectId,
+          url,
+          auditTypes: ['accessibility', 'performance', 'best-practices', 'seo'],
+        }) as { audit: QualityAudit; issues?: AccessibilityIssue[] };
+
+        // Get accessibility issues if not included in response
+        let issues = result.issues;
+        if (!issues && result.audit?.id) {
+          issues = await qualityApi.getAccessibilityIssues(result.audit.id) as AccessibilityIssue[];
+        }
+
+        return {
+          audit: result.audit,
+          issues: issues || [],
+        };
+      }
+
+      // LEGACY: Direct Supabase
       // 1. Create audit with 'running' status
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: audit, error: auditError } = await (supabase.from('quality_audits') as any)

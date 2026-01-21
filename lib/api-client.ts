@@ -414,3 +414,344 @@ export const artifactsApi = {
   resolve: (artifactRefs: string[], options?: FetchOptions) =>
     apiClient.post('/api/v1/artifacts/resolve', { artifact_refs: artifactRefs }, options),
 };
+
+// =============================================================================
+// Domain-specific API endpoints for backend migration
+// =============================================================================
+
+/**
+ * Tests API endpoints
+ */
+export const testsApi = {
+  // Test CRUD
+  list: (projectId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/tests?project_id=${projectId}`, options),
+
+  get: (testId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/tests/${testId}`, options),
+
+  create: (test: {
+    projectId: string;
+    name: string;
+    description?: string;
+    steps?: unknown[];
+    tags?: string[];
+    priority?: string;
+    source?: string;
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/tests', test, options),
+
+  update: (testId: string, updates: Record<string, unknown>, options?: FetchOptions) =>
+    apiClient.patch(`/api/v1/tests/${testId}`, updates, options),
+
+  delete: (testId: string, options?: FetchOptions) =>
+    apiClient.delete(`/api/v1/tests/${testId}`, options),
+
+  bulkDelete: (testIds: string[], options?: FetchOptions) =>
+    apiClient.post('/api/v1/tests/bulk-delete', { test_ids: testIds }, options),
+
+  bulkUpdate: (testIds: string[], updates: Record<string, unknown>, options?: FetchOptions) =>
+    apiClient.post('/api/v1/tests/bulk-update', { test_ids: testIds, updates }, options),
+
+  // Test Runs
+  run: (params: {
+    projectId: string;
+    appUrl: string;
+    codebasePath?: string;
+    name?: string;
+    trigger?: string;
+    testIds?: string[];
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/tests/run', params, options),
+
+  getRunStatus: (jobId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/jobs/${jobId}`, options),
+
+  // Test Results
+  listRuns: (projectId: string, limit?: number, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/test-runs?project_id=${projectId}&limit=${limit || 20}`, options),
+
+  getRun: (runId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/test-runs/${runId}`, options),
+
+  getRunResults: (runId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/test-runs/${runId}/results`, options),
+};
+
+/**
+ * Projects API endpoints
+ */
+export const projectsApi = {
+  list: (options?: FetchOptions) =>
+    apiClient.get('/api/v1/projects', options),
+
+  get: (projectId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/projects/${projectId}`, options),
+
+  create: (project: {
+    name: string;
+    appUrl: string;
+    description?: string;
+    settings?: Record<string, unknown>;
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/projects', project, options),
+
+  update: (projectId: string, updates: Record<string, unknown>, options?: FetchOptions) =>
+    apiClient.patch(`/api/v1/projects/${projectId}`, updates, options),
+
+  delete: (projectId: string, options?: FetchOptions) =>
+    apiClient.delete(`/api/v1/projects/${projectId}`, options),
+
+  getStats: (projectId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/projects/${projectId}/stats`, options),
+};
+
+/**
+ * Visual Testing API endpoints
+ */
+export const visualApi = {
+  // Baselines
+  listBaselines: (projectId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/visual/baselines?project_id=${projectId}`, options),
+
+  createBaseline: (baseline: {
+    projectId: string;
+    name: string;
+    pageUrl: string;
+    viewport?: string;
+    screenshotUrl: string;
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/visual/baselines', baseline, options),
+
+  updateBaseline: (baselineId: string, updates: Record<string, unknown>, options?: FetchOptions) =>
+    apiClient.patch(`/api/v1/visual/baselines/${baselineId}`, updates, options),
+
+  deleteBaseline: (baselineId: string, options?: FetchOptions) =>
+    apiClient.delete(`/api/v1/visual/baselines/${baselineId}`, options),
+
+  // Comparisons
+  listComparisons: (projectId: string, limit?: number, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/visual/comparisons?project_id=${projectId}&limit=${limit || 20}`, options),
+
+  getComparison: (comparisonId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/visual/comparisons/${comparisonId}`, options),
+
+  compare: (params: {
+    projectId: string;
+    baselineId?: string;
+    currentUrl: string;
+    threshold?: number;
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/visual/compare', params, options),
+
+  approveComparison: (comparisonId: string, options?: FetchOptions) =>
+    apiClient.post(`/api/v1/visual/comparisons/${comparisonId}/approve`, undefined, options),
+
+  rejectComparison: (comparisonId: string, options?: FetchOptions) =>
+    apiClient.post(`/api/v1/visual/comparisons/${comparisonId}/reject`, undefined, options),
+
+  // Capture
+  capture: (params: {
+    projectId: string;
+    url: string;
+    viewport?: string;
+    device?: string;
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/visual/capture', params, options),
+};
+
+/**
+ * Quality Audits API endpoints
+ */
+export const qualityApi = {
+  // Audits
+  listAudits: (projectId: string, limit?: number, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/quality/audits?project_id=${projectId}&limit=${limit || 20}`, options),
+
+  getAudit: (auditId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/quality/audits/${auditId}`, options),
+
+  runAudit: (params: {
+    projectId: string;
+    url: string;
+    auditTypes?: string[];
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/quality/audits', params, options),
+
+  // Accessibility Issues
+  getAccessibilityIssues: (auditId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/quality/audits/${auditId}/accessibility`, options),
+};
+
+/**
+ * Global Tests API endpoints
+ */
+export const globalTestsApi = {
+  list: (projectId: string, limit?: number, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/global-tests?project_id=${projectId}&limit=${limit || 20}`, options),
+
+  get: (testId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/global-tests/${testId}`, options),
+
+  run: (params: {
+    projectId: string;
+    url: string;
+    regions?: string[];
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/global-tests', params, options),
+
+  getResults: (testId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/global-tests/${testId}/results`, options),
+};
+
+/**
+ * Schedules API endpoints
+ */
+export const schedulesApi = {
+  list: (projectId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/schedules?project_id=${projectId}`, options),
+
+  get: (scheduleId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/schedules/${scheduleId}`, options),
+
+  create: (schedule: {
+    projectId: string;
+    name: string;
+    scheduleType: string;
+    cronExpression?: string;
+    testIds?: string[];
+    enabled?: boolean;
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/schedules', schedule, options),
+
+  update: (scheduleId: string, updates: Record<string, unknown>, options?: FetchOptions) =>
+    apiClient.patch(`/api/v1/schedules/${scheduleId}`, updates, options),
+
+  delete: (scheduleId: string, options?: FetchOptions) =>
+    apiClient.delete(`/api/v1/schedules/${scheduleId}`, options),
+
+  toggle: (scheduleId: string, enabled: boolean, options?: FetchOptions) =>
+    apiClient.patch(`/api/v1/schedules/${scheduleId}`, { enabled }, options),
+
+  listHistory: (scheduleId: string, limit?: number, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/schedules/${scheduleId}/history?limit=${limit || 20}`, options),
+};
+
+/**
+ * Notifications API endpoints
+ */
+export const notificationsApi = {
+  listChannels: (options?: FetchOptions) =>
+    apiClient.get('/api/v1/notifications/channels', options),
+
+  createChannel: (channel: {
+    name: string;
+    channelType: string;
+    config: Record<string, unknown>;
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/notifications/channels', channel, options),
+
+  updateChannel: (channelId: string, updates: Record<string, unknown>, options?: FetchOptions) =>
+    apiClient.patch(`/api/v1/notifications/channels/${channelId}`, updates, options),
+
+  deleteChannel: (channelId: string, options?: FetchOptions) =>
+    apiClient.delete(`/api/v1/notifications/channels/${channelId}`, options),
+
+  testChannel: (channelId: string, options?: FetchOptions) =>
+    apiClient.post(`/api/v1/notifications/channels/${channelId}/test`, undefined, options),
+
+  listRules: (projectId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/notifications/rules?project_id=${projectId}`, options),
+
+  createRule: (rule: {
+    projectId: string;
+    name: string;
+    eventType: string;
+    channelId: string;
+    conditions?: Record<string, unknown>;
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/notifications/rules', rule, options),
+
+  updateRule: (ruleId: string, updates: Record<string, unknown>, options?: FetchOptions) =>
+    apiClient.patch(`/api/v1/notifications/rules/${ruleId}`, updates, options),
+
+  deleteRule: (ruleId: string, options?: FetchOptions) =>
+    apiClient.delete(`/api/v1/notifications/rules/${ruleId}`, options),
+};
+
+/**
+ * Insights API endpoints
+ */
+export const insightsApi = {
+  list: (projectId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/insights?project_id=${projectId}`, options),
+
+  get: (insightId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/insights/${insightId}`, options),
+
+  resolve: (insightId: string, options?: FetchOptions) =>
+    apiClient.post(`/api/v1/insights/${insightId}/resolve`, undefined, options),
+
+  dismiss: (insightId: string, options?: FetchOptions) =>
+    apiClient.post(`/api/v1/insights/${insightId}/dismiss`, undefined, options),
+};
+
+/**
+ * Parameterized Tests API endpoints
+ */
+export const parameterizedApi = {
+  listTests: (projectId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/parameterized/tests?project_id=${projectId}`, options),
+
+  getTest: (testId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/parameterized/tests/${testId}`, options),
+
+  createTest: (test: {
+    projectId: string;
+    name: string;
+    description?: string;
+    baseSteps: unknown[];
+    parameters: Record<string, unknown>;
+  }, options?: FetchOptions) =>
+    apiClient.post('/api/v1/parameterized/tests', test, options),
+
+  updateTest: (testId: string, updates: Record<string, unknown>, options?: FetchOptions) =>
+    apiClient.patch(`/api/v1/parameterized/tests/${testId}`, updates, options),
+
+  deleteTest: (testId: string, options?: FetchOptions) =>
+    apiClient.delete(`/api/v1/parameterized/tests/${testId}`, options),
+
+  // Parameter Sets
+  listParamSets: (testId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/parameterized/tests/${testId}/param-sets`, options),
+
+  createParamSet: (testId: string, paramSet: Record<string, unknown>, options?: FetchOptions) =>
+    apiClient.post(`/api/v1/parameterized/tests/${testId}/param-sets`, paramSet, options),
+
+  updateParamSet: (paramSetId: string, updates: Record<string, unknown>, options?: FetchOptions) =>
+    apiClient.patch(`/api/v1/parameterized/param-sets/${paramSetId}`, updates, options),
+
+  deleteParamSet: (paramSetId: string, options?: FetchOptions) =>
+    apiClient.delete(`/api/v1/parameterized/param-sets/${paramSetId}`, options),
+
+  // Runs
+  run: (testId: string, paramSetIds?: string[], options?: FetchOptions) =>
+    apiClient.post(`/api/v1/parameterized/tests/${testId}/run`, { param_set_ids: paramSetIds }, options),
+
+  getRun: (runId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/parameterized/runs/${runId}`, options),
+};
+
+/**
+ * Activity/Live Session API endpoints
+ */
+export const activityApi = {
+  listSessions: (projectId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/activity/sessions?project_id=${projectId}`, options),
+
+  getSession: (sessionId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/activity/sessions/${sessionId}`, options),
+
+  getLogs: (sessionId: string, options?: FetchOptions) =>
+    apiClient.get(`/api/v1/activity/sessions/${sessionId}/logs`, options),
+};

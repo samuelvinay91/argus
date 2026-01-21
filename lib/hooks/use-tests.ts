@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Test, TestRun, TestResult, InsertTables } from '@/lib/supabase/types';
 import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { useFeatureFlags } from '@/lib/feature-flags';
+import { testsApi } from '@/lib/api-client';
 
 // ============================================
 // TESTS
@@ -38,9 +40,25 @@ export function useTests(projectId: string | null) {
 export function useCreateTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (test: InsertTables<'tests'>) => {
+      if (flags.useBackendApi('tests')) {
+        // NEW: Use backend API
+        const result = await testsApi.create({
+          projectId: test.project_id,
+          name: test.name,
+          description: test.description || undefined,
+          steps: test.steps as unknown[] | undefined,
+          tags: test.tags || undefined,
+          priority: test.priority || undefined,
+          source: test.source || undefined,
+        });
+        return result as Test;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('tests') as any)
         .insert(test)
@@ -59,9 +77,17 @@ export function useCreateTest() {
 export function useUpdateTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<Test>) => {
+      if (flags.useBackendApi('tests')) {
+        // NEW: Use backend API
+        const result = await testsApi.update(id, updates as Record<string, unknown>);
+        return result as Test;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('tests') as any)
         .update(updates)
@@ -81,10 +107,17 @@ export function useUpdateTest() {
 export function useDeleteTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ testId, projectId }: { testId: string; projectId: string }) => {
-      // Soft delete by setting is_active to false
+      if (flags.useBackendApi('tests')) {
+        // NEW: Use backend API (soft delete via API)
+        await testsApi.delete(testId);
+        return projectId;
+      }
+
+      // LEGACY: Direct Supabase - Soft delete by setting is_active to false
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('tests') as any)
         .update({ is_active: false })
@@ -207,6 +240,7 @@ export function useTestRunSubscription(projectId: string | null) {
 export function useRunTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -220,6 +254,24 @@ export function useRunTest() {
       tests: Test[];
       browser?: string;
     }) => {
+      if (flags.useBackendApi('tests')) {
+        // NEW: Use backend API to run tests
+        const response = await testsApi.run({
+          projectId,
+          appUrl,
+          testIds: tests.map(t => t.id),
+          name: tests.length === 1 ? tests[0].name : `Run ${tests.length} tests`,
+          trigger: 'manual',
+        });
+        // The backend returns a job ID, we need to poll or return the initial state
+        // For now, return a placeholder that will be updated via subscription
+        return {
+          testRun: { id: (response as { id: string }).id, project_id: projectId } as TestRun,
+          results: [] as TestResult[],
+        };
+      }
+
+      // LEGACY: Direct Supabase
       // 1. Create test run in Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: testRun, error: runError } = await (supabase.from('test_runs') as any)
@@ -333,6 +385,7 @@ export function useRunTest() {
 export function useRunSingleTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -346,6 +399,20 @@ export function useRunSingleTest() {
       test: Test;
       browser?: string;
     }) => {
+      if (flags.useBackendApi('tests')) {
+        // NEW: Use backend API to run single test
+        const response = await testsApi.run({
+          projectId,
+          appUrl,
+          testIds: [test.id],
+          name: test.name,
+          trigger: 'manual',
+        });
+        // Return a placeholder that will be updated via subscription
+        return { id: (response as { id: string }).id, project_id: projectId } as TestRun;
+      }
+
+      // LEGACY: Direct Supabase
       const steps = Array.isArray(test.steps)
         ? (test.steps as { instruction: string }[]).map((s) => s.instruction)
         : [];

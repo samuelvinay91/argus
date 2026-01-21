@@ -3,6 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Json } from '@/lib/supabase/types';
+import { useFeatureFlags } from '@/lib/feature-flags';
+import { notificationsApi } from '@/lib/api-client';
 
 // Types for notifications based on the database schema
 export interface NotificationChannel {
@@ -163,9 +165,39 @@ export function useNotificationLogs(limit = 50) {
 export function useCreateNotificationChannel() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (data: ChannelFormData) => {
+      if (flags.useBackendApi('notifications')) {
+        // NEW: Use backend API
+        const channel = await notificationsApi.createChannel({
+          name: data.name,
+          channelType: data.channel_type,
+          config: data.config,
+        }) as NotificationChannel;
+
+        // Create rules if provided (via backend API)
+        if (data.rules && data.rules.length > 0) {
+          for (const rule of data.rules) {
+            try {
+              await notificationsApi.createRule({
+                projectId: channel.project_id || '',
+                name: `Rule for ${data.name}`,
+                eventType: rule.event_type,
+                channelId: channel.id,
+                conditions: rule.conditions,
+              });
+            } catch (rulesError) {
+              console.error('Failed to create rule:', rulesError);
+            }
+          }
+        }
+
+        return channel;
+      }
+
+      // LEGACY: Direct Supabase
       // Create channel
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: channel, error } = await (supabase.from('notification_channels') as any)
@@ -214,9 +246,22 @@ export function useCreateNotificationChannel() {
 export function useUpdateNotificationChannel() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: ChannelFormData }) => {
+      if (flags.useBackendApi('notifications')) {
+        // NEW: Use backend API
+        return notificationsApi.updateChannel(id, {
+          name: data.name,
+          channelType: data.channel_type,
+          config: data.config,
+          enabled: data.enabled,
+          rateLimitPerHour: data.rate_limit_per_hour,
+        }) as Promise<NotificationChannel>;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: channel, error } = await (supabase.from('notification_channels') as any)
         .update({
@@ -243,9 +288,17 @@ export function useUpdateNotificationChannel() {
 export function useDeleteNotificationChannel() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (flags.useBackendApi('notifications')) {
+        // NEW: Use backend API
+        await notificationsApi.deleteChannel(id);
+        return;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('notification_channels') as any)
         .delete()
@@ -262,9 +315,16 @@ export function useDeleteNotificationChannel() {
 // Test a notification channel
 export function useTestNotificationChannel() {
   const supabase = getSupabaseClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (channelId: string) => {
+      if (flags.useBackendApi('notifications')) {
+        // NEW: Use backend API
+        return notificationsApi.testChannel(channelId);
+      }
+
+      // LEGACY: Direct Supabase
       // Queue a test notification
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('notification_logs') as any)

@@ -3,6 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@clerk/nextjs';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { useFeatureFlags } from '@/lib/feature-flags';
+// Note: chatApi only has getHistory and cancel - CRUD endpoints not yet implemented
+// import { chatApi } from '@/lib/api-client';
 import type { ChatConversation, ChatMessage, InsertTables } from '@/lib/supabase/types';
 
 export function useConversations(projectId?: string | null) {
@@ -85,11 +88,19 @@ export function useCreateConversation() {
   const { user } = useUser();
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (data: { projectId?: string; title?: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
+      if (flags.useBackendApi('chat')) {
+        // TODO: Backend chat API doesn't have create conversation endpoint yet
+        // When implemented, use: return chatApi.createConversation(data);
+        // For now, fall through to Supabase
+      }
+
+      // LEGACY: Direct Supabase (also used when backend endpoint not available)
       const insertData = {
         user_id: user.id,
         project_id: data.projectId || null,
@@ -119,6 +130,7 @@ export function useCreateConversation() {
 export function useAddMessage() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (message: InsertTables<'chat_messages'>) => {
@@ -128,6 +140,13 @@ export function useAddMessage() {
         throw new Error(`Invalid conversation_id: ${message.conversation_id}. Must be a valid UUID.`);
       }
 
+      if (flags.useBackendApi('chat')) {
+        // TODO: Backend chat API doesn't have save message endpoint yet
+        // When implemented, use: return chatApi.saveMessage(message);
+        // For now, fall through to Supabase
+      }
+
+      // LEGACY: Direct Supabase (also used when backend endpoint not available)
       console.log('Inserting message into Supabase:', {
         conversation_id: message.conversation_id,
         role: message.role,
@@ -163,9 +182,17 @@ export function useAddMessage() {
 export function useDeleteConversation() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (conversationId: string) => {
+      if (flags.useBackendApi('chat')) {
+        // TODO: Backend chat API doesn't have delete conversation endpoint yet
+        // When implemented, use: await chatApi.deleteConversation(conversationId);
+        // For now, fall through to Supabase
+      }
+
+      // LEGACY: Direct Supabase (also used when backend endpoint not available)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('chat_conversations') as any)
         .delete()
@@ -182,9 +209,17 @@ export function useDeleteConversation() {
 export function useUpdateConversation() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<ChatConversation>) => {
+      if (flags.useBackendApi('chat')) {
+        // TODO: Backend chat API doesn't have update conversation endpoint yet
+        // When implemented, use: return chatApi.updateConversation(id, updates);
+        // For now, fall through to Supabase
+      }
+
+      // LEGACY: Direct Supabase (also used when backend endpoint not available)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('chat_conversations') as any)
         .update(updates)

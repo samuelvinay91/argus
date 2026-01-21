@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useProjects } from './use-projects';
 import type { Test, InsertTables } from '@/lib/supabase/types';
+import { useFeatureFlags } from '@/lib/feature-flags';
+import { testsApi } from '@/lib/api-client';
 
 // ============================================
 // Types for Test Library
@@ -94,6 +96,7 @@ export function useTestLibraryStats(projectId?: string | null) {
 export function useSaveToLibrary() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -114,6 +117,21 @@ export function useSaveToLibrary() {
         order: index + 1,
       }));
 
+      if (flags.useBackendApi('tests')) {
+        // NEW: Use backend API
+        const result = await testsApi.create({
+          projectId,
+          name: testData.name,
+          description: testData.description || `Test with ${steps.length} steps`,
+          steps: steps,
+          tags: testData.tags || [],
+          priority: testData.priority || 'medium',
+          source: 'generated',
+        });
+        return result as Test;
+      }
+
+      // LEGACY: Direct Supabase
       const insertData: InsertTables<'tests'> = {
         project_id: projectId,
         name: testData.name,
@@ -150,6 +168,7 @@ export function useSaveToLibrary() {
 export function useUpdateLibraryTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -176,6 +195,13 @@ export function useUpdateLibraryTest() {
         updated_at: new Date().toISOString(),
       };
 
+      if (flags.useBackendApi('tests')) {
+        // NEW: Use backend API
+        const result = await testsApi.update(id, updateData as Record<string, unknown>);
+        return result as Test;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('tests') as any)
         .update(updateData)
@@ -200,10 +226,17 @@ export function useUpdateLibraryTest() {
 export function useDeleteLibraryTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ testId, projectId }: { testId: string; projectId: string }) => {
-      // Soft delete by setting is_active to false
+      if (flags.useBackendApi('tests')) {
+        // NEW: Use backend API (soft delete via API)
+        await testsApi.delete(testId);
+        return { testId, projectId };
+      }
+
+      // LEGACY: Direct Supabase - Soft delete by setting is_active to false
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('tests') as any)
         .update({ is_active: false })
@@ -226,9 +259,25 @@ export function useDeleteLibraryTest() {
 export function useDuplicateLibraryTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ test, newName }: { test: Test; newName?: string }) => {
+      if (flags.useBackendApi('tests')) {
+        // NEW: Use backend API
+        const result = await testsApi.create({
+          projectId: test.project_id,
+          name: newName || `${test.name} (Copy)`,
+          description: test.description || undefined,
+          steps: test.steps as unknown[] | undefined,
+          tags: test.tags || undefined,
+          priority: test.priority || undefined,
+          source: test.source || undefined,
+        });
+        return result as Test;
+      }
+
+      // LEGACY: Direct Supabase
       const insertData: InsertTables<'tests'> = {
         project_id: test.project_id,
         name: newName || `${test.name} (Copy)`,

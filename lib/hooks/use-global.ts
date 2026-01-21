@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { GlobalTest, GlobalTestResult } from '@/lib/supabase/types';
 import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { useFeatureFlags } from '@/lib/feature-flags';
+import { globalTestsApi } from '@/lib/api-client';
 
 // Simulated edge regions for testing
 const EDGE_REGIONS = [
@@ -81,6 +83,7 @@ export function useLatestGlobalTest(projectId: string | null) {
 export function useStartGlobalTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -92,6 +95,24 @@ export function useStartGlobalTest() {
       url: string;
       triggeredBy?: string | null;
     }) => {
+      if (flags.useBackendApi('global')) {
+        // NEW: Use backend API
+        const test = await globalTestsApi.run({
+          projectId,
+          url,
+          regions: EDGE_REGIONS.map(r => r.code),
+        }) as GlobalTest;
+
+        // Get results for the test
+        const results = await globalTestsApi.getResults(test.id) as GlobalTestResult[];
+
+        return {
+          test,
+          results,
+        };
+      }
+
+      // LEGACY: Direct Supabase
       // 1. Create test with 'running' status
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: test, error: testError } = await (supabase.from('global_tests') as any)

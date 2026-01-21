@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useProjects } from './use-projects';
 import type { Json } from '@/lib/supabase/types';
+import { useFeatureFlags } from '@/lib/feature-flags';
+import { schedulesApi } from '@/lib/api-client';
 
 // Types for schedules based on the database schema
 export interface TestSchedule {
@@ -182,9 +184,23 @@ export function useScheduleStats() {
 export function useCreateSchedule() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ projectId, data }: { projectId: string; data: ScheduleFormData }) => {
+      if (flags.useBackendApi('schedules')) {
+        // NEW: Use backend API
+        return schedulesApi.create({
+          projectId,
+          name: data.name,
+          scheduleType: 'cron',
+          cronExpression: data.cron_expression,
+          testIds: data.test_ids,
+          enabled: true,
+        }) as Promise<TestSchedule>;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: schedule, error } = await (supabase.from('test_schedules') as any)
         .insert({
@@ -208,9 +224,16 @@ export function useCreateSchedule() {
 export function useUpdateSchedule() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<ScheduleFormData> }) => {
+      if (flags.useBackendApi('schedules')) {
+        // NEW: Use backend API
+        return schedulesApi.update(id, data) as Promise<TestSchedule>;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: schedule, error } = await (supabase.from('test_schedules') as any)
         .update(data)
@@ -231,9 +254,16 @@ export function useUpdateSchedule() {
 export function useToggleSchedule() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ id, enabled }: { id: string; enabled: boolean }) => {
+      if (flags.useBackendApi('schedules')) {
+        // NEW: Use backend API
+        return schedulesApi.toggle(id, enabled) as Promise<TestSchedule>;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: schedule, error } = await (supabase.from('test_schedules') as any)
         .update({ enabled })
@@ -254,9 +284,17 @@ export function useToggleSchedule() {
 export function useDeleteSchedule() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (flags.useBackendApi('schedules')) {
+        // NEW: Use backend API
+        await schedulesApi.delete(id);
+        return;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('test_schedules') as any)
         .delete()

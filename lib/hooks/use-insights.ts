@@ -2,6 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { useFeatureFlags } from '@/lib/feature-flags';
+import { insightsApi } from '@/lib/api-client';
 import type { AIInsight } from '@/lib/supabase/types';
 
 export function useAIInsights(projectId: string | null) {
@@ -29,6 +31,7 @@ export function useAIInsights(projectId: string | null) {
 export function useResolveInsight() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -40,6 +43,13 @@ export function useResolveInsight() {
       projectId: string;
       resolvedBy?: string | null;
     }) => {
+      if (flags.useBackendApi('insights')) {
+        // NEW: Use backend API
+        const insight = await insightsApi.resolve(insightId) as AIInsight;
+        return { insight, projectId };
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('ai_insights') as any)
         .update({

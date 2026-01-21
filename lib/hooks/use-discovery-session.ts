@@ -3,7 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { apiClient, BACKEND_URL, getAuthToken } from '@/lib/api-client';
+import { apiClient, discoveryApi, BACKEND_URL, getAuthToken } from '@/lib/api-client';
+import { useFeatureFlags } from '@/lib/feature-flags';
 import type {
   DiscoverySession,
   DiscoveredPage,
@@ -234,12 +235,19 @@ export function useDiscoverySession(sessionId: string | null) {
  */
 export function useDiscoveredPages(sessionId: string | null) {
   const supabase = getSupabaseClient();
+  const flags = useFeatureFlags();
 
   return useQuery({
     queryKey: ['discovered-pages', sessionId],
     queryFn: async (): Promise<DiscoveredPage[]> => {
       if (!sessionId) return [];
 
+      // NEW: Use backend API when feature flag is enabled
+      if (flags.useBackendApi('discovery')) {
+        return await apiClient.get<DiscoveredPage[]>(`${API_BASE}/sessions/${sessionId}/pages`);
+      }
+
+      // LEGACY: Direct Supabase (keep existing code)
       // Try API first, fall back to direct Supabase query
       try {
         return await apiClient.get<DiscoveredPage[]>(`${API_BASE}/sessions/${sessionId}/pages`);
@@ -268,12 +276,19 @@ export function useDiscoveredPages(sessionId: string | null) {
  */
 export function useDiscoveredFlows(sessionId: string | null) {
   const supabase = getSupabaseClient();
+  const flags = useFeatureFlags();
 
   return useQuery({
     queryKey: ['discovered-flows', sessionId],
     queryFn: async (): Promise<DiscoveredFlow[]> => {
       if (!sessionId) return [];
 
+      // NEW: Use backend API when feature flag is enabled
+      if (flags.useBackendApi('discovery')) {
+        return await apiClient.get<DiscoveredFlow[]>(`${API_BASE}/sessions/${sessionId}/flows`);
+      }
+
+      // LEGACY: Direct Supabase (keep existing code)
       // Try API first, fall back to direct Supabase query
       try {
         return await apiClient.get<DiscoveredFlow[]>(`${API_BASE}/sessions/${sessionId}/flows`);
@@ -303,6 +318,7 @@ export function useDiscoveredFlows(sessionId: string | null) {
 export function useUpdateFlow() {
   const queryClient = useQueryClient();
   const supabase = getSupabaseClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -312,6 +328,12 @@ export function useUpdateFlow() {
       flowId: string;
       updates: Partial<DiscoveredFlow>;
     }): Promise<DiscoveredFlow> => {
+      // NEW: Use backend API when feature flag is enabled
+      if (flags.useBackendApi('discovery')) {
+        return await apiClient.put<DiscoveredFlow>(`${API_BASE}/flows/${flowId}`, updates);
+      }
+
+      // LEGACY: Direct Supabase (keep existing code)
       // Try API first
       try {
         return await apiClient.put<DiscoveredFlow>(`${API_BASE}/flows/${flowId}`, updates);
@@ -451,12 +473,21 @@ export function useCancelDiscovery() {
  */
 export function useDiscoveryHistory(projectId: string | null, limit: number = 20) {
   const supabase = getSupabaseClient();
+  const flags = useFeatureFlags();
 
   return useQuery({
     queryKey: ['discovery-history', projectId, limit],
     queryFn: async (): Promise<DiscoveryHistoryItem[]> => {
       if (!projectId) return [];
 
+      // NEW: Use backend API when feature flag is enabled
+      if (flags.useBackendApi('discovery')) {
+        return await apiClient.get<DiscoveryHistoryItem[]>(
+          `${API_BASE}/projects/${projectId}/history?limit=${limit}`
+        );
+      }
+
+      // LEGACY: Direct Supabase (keep existing code)
       // Try API first
       try {
         return await apiClient.get<DiscoveryHistoryItem[]>(
@@ -630,6 +661,7 @@ export function useBulkGenerateTests() {
 export function useDeleteDiscoverySession() {
   const queryClient = useQueryClient();
   const supabase = getSupabaseClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({
@@ -639,6 +671,13 @@ export function useDeleteDiscoverySession() {
       sessionId: string;
       projectId: string;
     }): Promise<void> => {
+      // NEW: Use backend API when feature flag is enabled
+      if (flags.useBackendApi('discovery')) {
+        await apiClient.delete(`${API_BASE}/sessions/${sessionId}`);
+        return;
+      }
+
+      // LEGACY: Direct Supabase (keep existing code)
       // Try API first
       try {
         await apiClient.delete(`${API_BASE}/sessions/${sessionId}`);
@@ -742,12 +781,19 @@ export interface PatternMatch {
  */
 export function useCrossProjectPatterns(sessionId: string | null) {
   const supabase = getSupabaseClient();
+  const flags = useFeatureFlags();
 
   return useQuery({
     queryKey: ['cross-project-patterns', sessionId],
     queryFn: async (): Promise<PatternMatch[]> => {
       if (!sessionId) return [];
 
+      // NEW: Use backend API when feature flag is enabled
+      if (flags.useBackendApi('discovery')) {
+        return await apiClient.get<PatternMatch[]>(`${API_BASE}/sessions/${sessionId}/patterns`);
+      }
+
+      // LEGACY: Direct Supabase (keep existing code)
       // Try API first for AI-powered pattern matching
       try {
         return await apiClient.get<PatternMatch[]>(`${API_BASE}/sessions/${sessionId}/patterns`);
@@ -807,10 +853,17 @@ export function useCrossProjectPatterns(sessionId: string | null) {
  */
 export function useGlobalPatterns(limit: number = 5) {
   const supabase = getSupabaseClient();
+  const flags = useFeatureFlags();
 
   return useQuery({
     queryKey: ['global-patterns', limit],
     queryFn: async (): Promise<CrossProjectPattern[]> => {
+      // NEW: Use backend API when feature flag is enabled
+      if (flags.useBackendApi('discovery')) {
+        return await apiClient.get<CrossProjectPattern[]>(`${API_BASE}/patterns?limit=${limit}`);
+      }
+
+      // LEGACY: Direct Supabase (keep existing code)
       // Try API first
       try {
         return await apiClient.get<CrossProjectPattern[]>(`${API_BASE}/patterns?limit=${limit}`);

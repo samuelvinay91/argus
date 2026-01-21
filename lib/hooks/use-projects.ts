@@ -3,7 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@clerk/nextjs';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, projectsApi } from '@/lib/api-client';
+import { useFeatureFlags } from '@/lib/feature-flags';
 import type { Project, InsertTables } from '@/lib/supabase/types';
 
 /**
@@ -72,9 +73,16 @@ export function useCreateProject() {
 export function useUpdateProject() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<Project>) => {
+      if (flags.useBackendApi('projects')) {
+        // NEW: Use backend API
+        return projectsApi.update(id, updates) as Promise<Project>;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('projects') as any)
         .update(updates)
@@ -95,9 +103,17 @@ export function useUpdateProject() {
 export function useDeleteProject() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const flags = useFeatureFlags();
 
   return useMutation({
     mutationFn: async (projectId: string) => {
+      if (flags.useBackendApi('projects')) {
+        // NEW: Use backend API
+        await projectsApi.delete(projectId);
+        return;
+      }
+
+      // LEGACY: Direct Supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('projects') as any)
         .delete()
