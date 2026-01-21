@@ -162,17 +162,33 @@ export async function POST(req: Request) {
           const errorText = await response.text();
           console.error('Python backend error:', response.status, errorText);
 
-          // If auth error, return it directly instead of falling back
-          if (response.status === 401) {
-            // Return AI SDK error format for auth errors
-            const errorStream = `3:"Authentication failed. Please sign in again."\nd:{"finishReason":"error"}\n`;
-            return new Response(errorStream, {
-              headers: {
-                'Content-Type': 'text/plain; charset=utf-8',
-              },
-            });
+          // Parse error message from backend response
+          let errorMessage = 'Backend error';
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.detail || errorJson.error || errorJson.message || errorText;
+          } catch {
+            errorMessage = errorText || `Backend returned status ${response.status}`;
           }
-          // Fall through to direct Claude API for other errors
+
+          // Return backend error in AI SDK format (don't fall back for known errors)
+          if (response.status === 401) {
+            errorMessage = 'Authentication failed. Please sign in again.';
+          } else if (response.status === 422) {
+            // Validation error - show the actual message
+            errorMessage = `Validation error: ${errorMessage}`;
+          } else if (response.status >= 500) {
+            // Server error - might be transient, but still show the message
+            errorMessage = `Server error: ${errorMessage}`;
+          }
+
+          // Return error in AI SDK stream format
+          const errorStream = `3:${JSON.stringify(errorMessage)}\nd:{"finishReason":"error"}\n`;
+          return new Response(errorStream, {
+            headers: {
+              'Content-Type': 'text/plain; charset=utf-8',
+            },
+          });
         } else {
           // Return the AI SDK text stream from Python backend
           // Important: Use text/plain for AI SDK data stream protocol, NOT text/event-stream
