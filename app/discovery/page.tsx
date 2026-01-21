@@ -103,7 +103,7 @@ interface DiscoveryConfig {
   excludePatterns: string;
   focusAreas: string[];
   captureScreenshots: boolean;
-  useVisionAI: boolean;
+  useVisionAi: boolean;
   authRequired?: boolean;
   authConfig?: {
     loginUrl?: string;
@@ -162,7 +162,7 @@ const DEFAULT_CONFIG: DiscoveryConfig = {
   excludePatterns: '/api/*, /static/*, *.pdf, *.jpg, *.png',
   focusAreas: [],
   captureScreenshots: true,
-  useVisionAI: false,
+  useVisionAi: false,
 };
 
 // ============================================
@@ -567,9 +567,9 @@ function ConfigurationPanel({
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={localConfig.useVisionAI}
+                checked={localConfig.useVisionAi}
                 onChange={(e) =>
-                  setLocalConfig({ ...localConfig, useVisionAI: e.target.checked })
+                  setLocalConfig({ ...localConfig, useVisionAi: e.target.checked })
                 }
                 className="sr-only peer"
               />
@@ -1062,7 +1062,14 @@ export default function DiscoveryPage() {
 
   // Handlers
   const handleStartDiscovery = async () => {
-    if (!currentProject) return;
+    if (!currentProject) {
+      toast({
+        title: 'No project selected',
+        description: 'Please select or create a project before running discovery.',
+        variant: 'destructive',
+      });
+      return;
+    }
     try {
       // Map local UI types to backend API enum values
       // Backend enums: standard_crawl, quick_scan, deep_analysis, authenticated, api_first
@@ -1114,7 +1121,7 @@ export default function DiscoveryPage() {
         excludePatterns,
         focusAreas: discoveryConfig.focusAreas,
         captureScreenshots: discoveryConfig.captureScreenshots,
-        useVisionAI: discoveryConfig.useVisionAI,
+        useVisionAi: discoveryConfig.useVisionAi,
         authConfig,
       });
       setCurrentSessionId(result.id);
@@ -1353,12 +1360,19 @@ export default function DiscoveryPage() {
                 if (project) setAppUrl(project.app_url);
               }}
               className="h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={projectsLoading}
             >
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
+              {projectsLoading ? (
+                <option value="">Loading projects...</option>
+              ) : projects.length === 0 ? (
+                <option value="">No projects - create one first</option>
+              ) : (
+                projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))
+              )}
             </select>
 
             <div className="flex items-center gap-2">
@@ -1379,8 +1393,9 @@ export default function DiscoveryPage() {
 
               <Button
                 onClick={handleStartDiscovery}
-                disabled={isDiscovering}
+                disabled={isDiscovering || !currentProject || projectsLoading}
                 className="gap-2"
+                title={!currentProject ? 'Select a project first' : undefined}
               >
                 {isDiscovering ? (
                   <>

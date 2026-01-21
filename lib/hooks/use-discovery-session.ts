@@ -63,7 +63,7 @@ export interface DiscoveryConfig {
   excludePatterns?: string[];
   focusAreas?: string[];
   captureScreenshots?: boolean;
-  useVisionAI?: boolean;
+  useVisionAi?: boolean;
   authConfig?: AuthConfig;
   timeout?: number;
   waitForNetworkIdle?: boolean;
@@ -81,7 +81,7 @@ export interface StartDiscoveryParams {
   excludePatterns?: string[];
   focusAreas?: string[];
   captureScreenshots?: boolean;
-  useVisionAI?: boolean;
+  useVisionAi?: boolean;
   authConfig?: AuthConfig;
 }
 
