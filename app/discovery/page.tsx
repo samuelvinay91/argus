@@ -75,6 +75,7 @@ import {
   type PatternMatch,
 } from '@/lib/hooks/use-discovery-session';
 import { useCreateTest } from '@/lib/hooks/use-tests';
+import { useDiscoverySettings, type DiscoveryPreferences, DEFAULT_DISCOVERY_PREFERENCES } from '@/lib/hooks/use-discovery-settings';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn, safeHostname } from '@/lib/utils';
@@ -91,26 +92,10 @@ import { DiscoveryProgress } from './components/DiscoveryProgress';
 // Type Definitions
 // ============================================
 
-type DiscoveryMode = 'quick' | 'standard' | 'deep' | 'focused' | 'autonomous';
-type CrawlStrategy = 'bfs' | 'dfs' | 'priority' | 'ai-guided';
-
-interface DiscoveryConfig {
-  mode: DiscoveryMode;
-  strategy: CrawlStrategy;
-  maxPages: number;
-  maxDepth: number;
-  includePatterns: string;
-  excludePatterns: string;
-  focusAreas: string[];
-  captureScreenshots: boolean;
-  useVisionAi: boolean;
-  authRequired?: boolean;
-  authConfig?: {
-    loginUrl?: string;
-    username?: string;
-    password?: string;
-  };
-}
+// Use DiscoveryPreferences from the hook (aliased as DiscoveryConfig for compatibility)
+type DiscoveryConfig = DiscoveryPreferences;
+type DiscoveryMode = DiscoveryPreferences['mode'];
+type CrawlStrategy = DiscoveryPreferences['strategy'];
 
 interface AIInsight {
   id: string;
@@ -153,17 +138,7 @@ const FOCUS_AREAS = [
   'API Endpoints',
 ];
 
-const DEFAULT_CONFIG: DiscoveryConfig = {
-  mode: 'standard',
-  strategy: 'bfs',
-  maxPages: 50,
-  maxDepth: 3,
-  includePatterns: '',
-  excludePatterns: '/api/*, /static/*, *.pdf, *.jpg, *.png',
-  focusAreas: [],
-  captureScreenshots: true,
-  useVisionAi: false,
-};
+// Using DEFAULT_DISCOVERY_PREFERENCES from the hook
 
 // ============================================
 // Helper Components
@@ -357,16 +332,31 @@ function ConfigurationPanel({
   config,
   onChange,
   onClose,
+  isSaving,
 }: {
   config: DiscoveryConfig;
-  onChange: (config: DiscoveryConfig) => void;
+  onChange: (config: DiscoveryConfig) => Promise<void>;
   onClose: () => void;
+  isSaving?: boolean;
 }) {
   const [localConfig, setLocalConfig] = useState(config);
+  const { toast } = useToast();
 
-  const handleSave = () => {
-    onChange(localConfig);
-    onClose();
+  const handleSave = async () => {
+    try {
+      await onChange(localConfig);
+      toast({
+        title: 'Settings saved',
+        description: 'Your discovery configuration has been saved.',
+      });
+      onClose();
+    } catch (error) {
+      toast({
+        title: 'Failed to save settings',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -632,10 +622,19 @@ function ConfigurationPanel({
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button variant="outline" onClick={onClose}>
+        <Button variant="outline" onClick={onClose} disabled={isSaving}>
           Cancel
         </Button>
-        <Button onClick={handleSave}>Save Configuration</Button>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save Configuration'
+          )}
+        </Button>
       </div>
     </SheetContent>
   );
@@ -761,7 +760,13 @@ export default function DiscoveryPage() {
   const [showFlowEditor, setShowFlowEditor] = useState(false);
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [showPageDetails, setShowPageDetails] = useState(false);
-  const [discoveryConfig, setDiscoveryConfig] = useState<DiscoveryConfig>(DEFAULT_CONFIG);
+
+  // Cloud-persisted discovery settings
+  const {
+    preferences: discoveryConfig,
+    setPreferences: setDiscoveryConfig,
+    isUpdating: isUpdatingConfig,
+  } = useDiscoverySettings();
 
   // Hooks
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
@@ -1834,8 +1839,11 @@ export default function DiscoveryPage() {
         <Sheet open={showConfigPanel} onOpenChange={setShowConfigPanel}>
           <ConfigurationPanel
             config={discoveryConfig}
-            onChange={setDiscoveryConfig}
+            onChange={async (config) => {
+              await setDiscoveryConfig(config);
+            }}
             onClose={() => setShowConfigPanel(false)}
+            isSaving={isUpdatingConfig}
           />
         </Sheet>
 

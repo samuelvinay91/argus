@@ -312,41 +312,177 @@ function DiscoveryProgress({
         retryCountRef.current = 0;
       };
 
-      eventSource.onmessage = (event) => {
+      // Helper to parse SSE event data safely
+      const parseEventData = (event: MessageEvent): Record<string, unknown> | null => {
         try {
-          const data = JSON.parse(event.data);
-
-          // Handle different event types
-          if (data.type === 'status') {
-            setStatus(data.payload);
-
-            // Add activity based on status changes
-            if (data.payload.currentPage) {
-              addActivityLog(`Crawling: ${data.payload.currentPage}`, 'info');
-            }
-          } else if (data.type === 'page_found') {
-            addActivityLog(`Found page: ${data.payload.url}`, 'success');
-          } else if (data.type === 'flow_found') {
-            addActivityLog(`Identified flow: ${data.payload.name}`, 'success');
-          } else if (data.type === 'form_found') {
-            addActivityLog(`Detected form on ${data.payload.page}`, 'info');
-          } else if (data.type === 'element_found') {
-            // Batch element updates to avoid spam
-            if (data.payload.count % 10 === 0) {
-              addActivityLog(`Discovered ${data.payload.count} elements`, 'info');
-            }
-          } else if (data.type === 'error') {
-            addActivityLog(data.payload.message, 'error');
-          } else if (data.type === 'complete') {
-            setStatus((prev) => prev ? { ...prev, status: 'completed', progress: 100 } : null);
-            setShowCelebration(true);
-            if (onComplete && data.payload.result) {
-              onComplete(data.payload.result);
-            }
-            setTimeout(() => setShowCelebration(false), 3000);
-          }
+          return JSON.parse(event.data);
         } catch (err) {
           console.error('Failed to parse SSE event:', err);
+          return null;
+        }
+      };
+
+      // Handle 'start' event - initial session state
+      eventSource.addEventListener('start', (event: MessageEvent) => {
+        const data = parseEventData(event);
+        if (!data) return;
+
+        setStatus({
+          sessionId: data.session_id as string || sessionId,
+          status: (data.status as DiscoveryStatus['status']) || 'running',
+          progress: 0,
+          pagesFound: (data.pages_found as number) || 0,
+          elementsFound: 0,
+          flowsFound: (data.flows_found as number) || 0,
+          formsFound: 0,
+          startedAt: (data.started_at as string) || new Date().toISOString(),
+          errors: [],
+        });
+        addActivityLog('Discovery session started', 'info');
+      });
+
+      // Handle 'running' event - session is now running
+      eventSource.addEventListener('running', (event: MessageEvent) => {
+        const data = parseEventData(event);
+        if (!data) return;
+
+        setStatus((prev) => prev ? { ...prev, status: 'running' } : null);
+        addActivityLog('Discovery is running...', 'info');
+      });
+
+      // Handle 'page_discovered' event
+      eventSource.addEventListener('page_discovered', (event: MessageEvent) => {
+        const data = parseEventData(event);
+        if (!data) return;
+
+        const page = data.page as Record<string, unknown> | undefined;
+        const totalPages = (data.total_pages as number) || 0;
+        const pageUrl = page?.url as string || 'Unknown page';
+
+        setStatus((prev) => prev ? {
+          ...prev,
+          pagesFound: totalPages,
+          currentPage: pageUrl,
+        } : null);
+        addActivityLog(`Found page: ${pageUrl}`, 'success');
+      });
+
+      // Handle 'flow_discovered' event
+      eventSource.addEventListener('flow_discovered', (event: MessageEvent) => {
+        const data = parseEventData(event);
+        if (!data) return;
+
+        const flow = data.flow as Record<string, unknown> | undefined;
+        const totalFlows = (data.total_flows as number) || 0;
+        const flowName = flow?.name as string || 'Unnamed flow';
+
+        setStatus((prev) => prev ? {
+          ...prev,
+          flowsFound: totalFlows,
+        } : null);
+        addActivityLog(`Identified flow: ${flowName}`, 'success');
+      });
+
+      // Handle 'progress' event - periodic status updates
+      eventSource.addEventListener('progress', (event: MessageEvent) => {
+        const data = parseEventData(event);
+        if (!data) return;
+
+        setStatus((prev) => prev ? {
+          ...prev,
+          progress: (data.progress as number) || prev.progress,
+          currentPage: (data.current_url as string) || prev.currentPage,
+          elementsFound: (data.elements_found as number) || prev.elementsFound,
+          formsFound: (data.forms_found as number) || prev.formsFound,
+        } : null);
+      });
+
+      // Handle 'error' event
+      eventSource.addEventListener('error', (event: MessageEvent) => {
+        const data = parseEventData(event);
+        if (!data) return;
+
+        const errorMsg = (data.error as string) || (data.message as string) || 'Unknown error';
+        addActivityLog(errorMsg, 'error');
+        setStatus((prev) => prev ? {
+          ...prev,
+          errors: [...prev.errors, errorMsg],
+        } : null);
+      });
+
+      // Handle 'complete' event - discovery finished successfully
+      eventSource.addEventListener('complete', (event: MessageEvent) => {
+        const data = parseEventData(event);
+        if (!data) return;
+
+        setStatus((prev) => prev ? {
+          ...prev,
+          status: 'completed',
+          progress: 100,
+          pagesFound: (data.pages_found as number) || prev.pagesFound,
+          flowsFound: (data.flows_found as number) || prev.flowsFound,
+        } : null);
+        setShowCelebration(true);
+        addActivityLog('Discovery completed successfully!', 'success');
+
+        if (onComplete && data.result) {
+          onComplete(data.result as DiscoveryResult);
+        }
+        setTimeout(() => setShowCelebration(false), 3000);
+      });
+
+      // Handle 'failed' event
+      eventSource.addEventListener('failed', (event: MessageEvent) => {
+        const data = parseEventData(event);
+        if (!data) return;
+
+        const errorMsg = (data.error as string) || 'Discovery failed';
+        setStatus((prev) => prev ? {
+          ...prev,
+          status: 'failed',
+          errors: [...prev.errors, errorMsg],
+        } : null);
+        addActivityLog(errorMsg, 'error');
+        onError?.(errorMsg);
+      });
+
+      // Handle 'cancelled' event
+      eventSource.addEventListener('cancelled', (event: MessageEvent) => {
+        const data = parseEventData(event);
+        if (!data) return;
+
+        setStatus((prev) => prev ? {
+          ...prev,
+          status: 'cancelled',
+        } : null);
+        addActivityLog('Discovery was cancelled', 'warning');
+      });
+
+      // Handle 'paused' event
+      eventSource.addEventListener('paused', () => {
+        setStatus((prev) => prev ? { ...prev, status: 'paused' } : null);
+        addActivityLog('Discovery paused', 'warning');
+      });
+
+      // Handle 'resumed' event
+      eventSource.addEventListener('resumed', () => {
+        setStatus((prev) => prev ? { ...prev, status: 'running' } : null);
+        addActivityLog('Discovery resumed', 'info');
+      });
+
+      // Handle 'keepalive' events (ping to keep connection alive)
+      eventSource.addEventListener('keepalive', () => {
+        // Silent keepalive, no UI update needed
+      });
+
+      // Fallback for unnamed 'message' events (legacy compatibility)
+      eventSource.onmessage = (event) => {
+        const data = parseEventData(event);
+        if (!data) return;
+
+        // Try to infer event type from data structure
+        if (data.type === 'status' && data.payload) {
+          setStatus(data.payload as DiscoveryStatus);
         }
       };
 

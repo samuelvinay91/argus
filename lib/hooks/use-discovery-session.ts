@@ -878,11 +878,12 @@ export function useSavePattern() {
 }
 
 // ============================================
-// Re-export existing hooks for convenience
+// Re-export read-only hooks for convenience
 // ============================================
 
 export {
   useDiscoverySessions,
   useLatestDiscoveryData,
-  useStartDiscovery,
+  // NOTE: useStartDiscovery is deprecated - use useStartDiscoverySession instead
+  // The legacy hook calls a non-existent /api/v1/discovery/observe endpoint
 } from './use-discovery';

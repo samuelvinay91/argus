@@ -134,6 +134,20 @@ interface DiscoveryResult {
   flows: DiscoveredFlow[];
 }
 
+/**
+ * @deprecated Use `useStartDiscoverySession` from `use-discovery-session.ts` instead.
+ *
+ * This legacy hook calls a non-existent `/api/v1/discovery/observe` endpoint
+ * and bypasses the modern session-based discovery system with SSE streaming.
+ *
+ * The modern hook provides:
+ * - Backend session state management
+ * - Real-time SSE streaming updates
+ * - Proper background task scheduling
+ * - Database persistence
+ *
+ * This hook is kept for backwards compatibility but should not be used.
+ */
 export function useStartDiscovery() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
