@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -157,6 +158,7 @@ function AppContent() {
               <SheetContent side="left" className="w-[300px] p-0">
                 <SheetHeader className="p-4 border-b">
                   <SheetTitle>Chat History</SheetTitle>
+                  <SheetDescription className="sr-only">View and manage your previous conversations</SheetDescription>
                 </SheetHeader>
                 <div className="flex-1 overflow-y-auto">
                   <ConversationList

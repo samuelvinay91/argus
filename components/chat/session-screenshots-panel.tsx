@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -452,6 +453,9 @@ const ScreenshotViewerDialog = memo(function ScreenshotViewerDialog({
               {screenshot.stepIndex !== undefined && ` - Step ${screenshot.stepIndex + 1}`}
               {screenshot.type === 'final' && ' (Final)'}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Screenshot preview from {screenshot.toolLabel}
+            </DialogDescription>
             <span className="text-xs text-muted-foreground">
               {formatDate(screenshot.timestamp)}
             </span>

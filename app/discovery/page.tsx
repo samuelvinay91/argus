@@ -1816,6 +1816,10 @@ export default function DiscoveryPage() {
         {/* Flow Editor Dialog */}
         <Dialog open={showFlowEditor} onOpenChange={setShowFlowEditor}>
           <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Edit Flow</DialogTitle>
+              <DialogDescription>Configure test flow steps and settings</DialogDescription>
+            </DialogHeader>
             {selectedFlow && (
               <FlowEditor
                 flow={{
