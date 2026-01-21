@@ -85,6 +85,18 @@ function getFlags(): Record<FeatureDomain, boolean> {
   return flagsCache;
 }
 
+// Logging for debugging API migration
+const LOG_API_CALLS = process.env.NODE_ENV === 'development';
+
+/**
+ * Log API path usage for debugging
+ */
+export function logApiPath(domain: FeatureDomain, operation: string, usingBackendApi: boolean): void {
+  if (!LOG_API_CALLS) return;
+  const path = usingBackendApi ? '🌐 Backend API' : '🗄️ Supabase';
+  console.log(`[Feature Flag] ${domain}/${operation} → ${path}`);
+}
+
 /**
  * Get feature flags for backend API migration
  * Can be used in both client and server components
@@ -93,7 +105,10 @@ export function getFeatureFlags(): FeatureFlags {
   const flags = getFlags();
 
   return {
-    useBackendApi: (domain: FeatureDomain) => flags[domain] ?? false,
+    useBackendApi: (domain: FeatureDomain) => {
+      const enabled = flags[domain] ?? false;
+      return enabled;
+    },
 
     getEnabledDomains: () => {
       return (Object.entries(flags) as [FeatureDomain, boolean][])

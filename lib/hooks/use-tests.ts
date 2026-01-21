@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Test, TestRun, TestResult, InsertTables } from '@/lib/supabase/types';
 import { WORKER_URL } from '@/lib/config/api-endpoints';
-import { useFeatureFlags } from '@/lib/feature-flags';
+import { useFeatureFlags, logApiPath } from '@/lib/feature-flags';
 import { testsApi } from '@/lib/api-client';
 
 // ============================================
@@ -44,7 +44,10 @@ export function useCreateTest() {
 
   return useMutation({
     mutationFn: async (test: InsertTables<'tests'>) => {
-      if (flags.useBackendApi('tests')) {
+      const useApi = flags.useBackendApi('tests');
+      logApiPath('tests', 'create', useApi);
+
+      if (useApi) {
         // NEW: Use backend API
         const result = await testsApi.create({
           projectId: test.project_id,
@@ -81,7 +84,10 @@ export function useUpdateTest() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<Test>) => {
-      if (flags.useBackendApi('tests')) {
+      const useApi = flags.useBackendApi('tests');
+      logApiPath('tests', 'update', useApi);
+
+      if (useApi) {
         // NEW: Use backend API
         const result = await testsApi.update(id, updates as Record<string, unknown>);
         return result as Test;
@@ -111,7 +117,10 @@ export function useDeleteTest() {
 
   return useMutation({
     mutationFn: async ({ testId, projectId }: { testId: string; projectId: string }) => {
-      if (flags.useBackendApi('tests')) {
+      const useApi = flags.useBackendApi('tests');
+      logApiPath('tests', 'delete', useApi);
+
+      if (useApi) {
         // NEW: Use backend API (soft delete via API)
         await testsApi.delete(testId);
         return projectId;
@@ -254,7 +263,10 @@ export function useRunTest() {
       tests: Test[];
       browser?: string;
     }) => {
-      if (flags.useBackendApi('tests')) {
+      const useApi = flags.useBackendApi('tests');
+      logApiPath('tests', 'run', useApi);
+
+      if (useApi) {
         // NEW: Use backend API to run tests
         const response = await testsApi.run({
           projectId,
@@ -399,7 +411,10 @@ export function useRunSingleTest() {
       test: Test;
       browser?: string;
     }) => {
-      if (flags.useBackendApi('tests')) {
+      const useApi = flags.useBackendApi('tests');
+      logApiPath('tests', 'runSingle', useApi);
+
+      if (useApi) {
         // NEW: Use backend API to run single test
         const response = await testsApi.run({
           projectId,
