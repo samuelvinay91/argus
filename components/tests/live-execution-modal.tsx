@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Test } from '@/lib/supabase/types';
-import { BACKEND_URL } from '@/lib/config/api-endpoints';
+import { useAuthApi } from '@/lib/hooks/use-auth-api';
 
 interface StepResult {
   instruction: string;
@@ -55,6 +55,7 @@ export function LiveExecutionModal({
   onClose,
   onComplete,
 }: LiveExecutionModalProps) {
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
   const [execution, setExecution] = useState<ExecutionState>({
     status: 'idle',
     currentStep: 0,
@@ -82,6 +83,18 @@ export function LiveExecutionModal({
   const runTest = async () => {
     if (!test || steps.length === 0) return;
 
+    // Check if user is authenticated
+    if (!isLoaded || !isSignedIn) {
+      setExecution((prev) => ({
+        ...prev,
+        status: 'failed',
+        error: 'Please sign in to run tests',
+        endTime: Date.now(),
+      }));
+      onComplete(false, []);
+      return;
+    }
+
     setExecution((prev) => ({
       ...prev,
       status: 'running',
@@ -90,30 +103,33 @@ export function LiveExecutionModal({
     }));
 
     try {
-      // Execute test via Backend Browser Pool with extended timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout for browser pool
-
-      const response = await fetch(`${BACKEND_URL}/api/v1/browser/test`, {
+      // Execute test via Backend Browser Pool with authenticated request
+      const response = await fetchJson<{
+        success: boolean;
+        steps: Array<{ instruction: string; success: boolean; error?: string; screenshot?: string }>;
+        final_screenshot?: string;
+        error?: string;
+      }>('/api/v1/browser/test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: appUrl,
           steps,
-          browser: 'chrome',
+          browser: 'chromium',
           screenshot: true,
           verbose: true,
           timeout: 60000, // Give browser pool 60s per step
         }),
-        signal: controller.signal,
+        timeout: 120000, // 120s timeout for browser pool
       });
 
-      clearTimeout(timeoutId);
+      if (response.error || !response.data) {
+        throw new Error(response.error || 'No response from server');
+      }
 
-      const result = await response.json();
+      const result = response.data;
 
       // Process results
-      const stepResults: StepResult[] = result.steps?.map((step: any, index: number) => ({
+      const stepResults: StepResult[] = result.steps?.map((step, index) => ({
         instruction: steps[index] || step.instruction,
         success: step.success,
         error: step.error,
@@ -121,8 +137,9 @@ export function LiveExecutionModal({
       })) || [];
 
       // Update with final results
+      const success = result.success ?? false;
       setExecution({
-        status: result.success ? 'completed' : 'failed',
+        status: success ? 'completed' : 'failed',
         currentStep: steps.length,
         steps: stepResults,
         screenshot: result.final_screenshot || stepResults[stepResults.length - 1]?.screenshot,
@@ -131,7 +148,7 @@ export function LiveExecutionModal({
         endTime: Date.now(),
       });
 
-      onComplete(result.success, stepResults);
+      onComplete(success, stepResults);
     } catch (error) {
       let errorMessage = 'Unknown error';
       if (error instanceof Error) {
