@@ -1,6 +1,26 @@
 import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
 
+// Content Security Policy configuration
+// Note: 'unsafe-inline' for scripts is required by Next.js for inline script hydration
+// Note: 'unsafe-eval' is only added in development for hot reload
+const isDev = process.env.NODE_ENV === 'development';
+
+const ContentSecurityPolicy = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} https://*.clerk.accounts.dev https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://*.sentry.io https://va.vercel-scripts.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  img-src 'self' data: blob: https: http://localhost:*;
+  font-src 'self' https://fonts.gstatic.com;
+  connect-src 'self' https://*.clerk.accounts.dev https://*.supabase.co wss://*.supabase.co https://argus-brain-production.up.railway.app https://argus-api.samuelvinay-kumar.workers.dev https://*.sentry.io https://www.google-analytics.com https://www.clarity.ms https://vitals.vercel-insights.com ${isDev ? 'http://localhost:* ws://localhost:*' : ''};
+  frame-src 'self' https://*.clerk.accounts.dev https://challenges.cloudflare.com;
+  frame-ancestors 'none';
+  form-action 'self';
+  base-uri 'self';
+  object-src 'none';
+  upgrade-insecure-requests;
+`.replace(/\s{2,}/g, ' ').trim();
+
 const nextConfig: NextConfig = {
   // Security headers for all routes
   async headers() {
@@ -8,6 +28,10 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: ContentSecurityPolicy,
+          },
           {
             key: 'X-Frame-Options',
             value: 'DENY',
