@@ -3,7 +3,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { VisualBaseline, VisualComparison } from '@/lib/supabase/types';
-import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { useAuthApi } from './use-auth-api';
+
+// Backend API response type for visual capture
+interface VisualCaptureResponse {
+  id: string;
+  url: string;
+  screenshot_url: string;
+  viewport: { width: number; height: number };
+  browser: string;
+  captured_at: string;
+  metadata?: Record<string, unknown>;
+}
 
 // Simple pixel diffing using canvas
 async function compareScreenshots(
@@ -194,6 +205,7 @@ interface VisualTestResult {
 export function useRunVisualTest() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
+  const { fetchJson } = useAuthApi();
 
   return useMutation({
     mutationFn: async ({
@@ -211,45 +223,34 @@ export function useRunVisualTest() {
     }): Promise<VisualTestResult> => {
       // Parse viewport
       const [width, height] = viewport.split('x').map(Number);
-      const device = width <= 768 ? 'mobile' : width <= 1024 ? 'tablet' : 'desktop';
 
-      // 1. Capture screenshot using worker /test endpoint
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      // 1. Capture screenshot using backend Visual AI API (with authentication, cost tracking, baseline management)
+      const captureResponse = await fetchJson<VisualCaptureResponse>(
+        '/api/v1/visual/capture',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            url,
+            viewport: { width, height },
+            browser: 'chromium',
+            project_id: projectId,
+            name: name || undefined,
+          }),
+          timeout: 90000, // 90 second timeout for screenshot capture
+        }
+      );
 
-      const response = await fetch(`${WORKER_URL}/test`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url,
-          steps: ['Wait for page to load'],
-          screenshot: true,
-          device,
-          timeout: 30000,
-          projectId,  // Pass for activity logging
-          activityType: 'visual_test',
-        }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`Worker returned ${response.status}: ${await response.text()}`);
+      if (captureResponse.error || !captureResponse.data) {
+        throw new Error(captureResponse.error || 'Failed to capture screenshot');
       }
 
-      const result = await response.json();
+      const captureResult = captureResponse.data;
 
-      // Get screenshot from first browser result or root screenshot
-      const screenshotBase64 = result.browsers?.[0]?.screenshot || result.screenshot;
-      if (!screenshotBase64) {
+      // Get screenshot URL from backend response
+      const screenshotDataUrl = captureResult.screenshot_url;
+      if (!screenshotDataUrl) {
         throw new Error('No screenshot captured');
       }
-
-      // Create data URL for storage
-      const screenshotDataUrl = screenshotBase64.startsWith('data:')
-        ? screenshotBase64
-        : `data:image/png;base64,${screenshotBase64}`;
 
       // Generate name from URL if not provided
       let testName = name;
@@ -358,6 +359,233 @@ export function useRunVisualTest() {
   });
 }
 
+// Responsive Testing Types
+export interface ViewportConfig {
+  name: string;
+  width: number;
+  height: number;
+}
+
+export interface ResponsiveViewportResult {
+  viewport: string;
+  width: number;
+  height: number;
+  status: 'match' | 'mismatch' | 'new' | 'error';
+  match_percentage: number | null;
+  baseline_url: string | null;
+  current_url: string;
+  diff_url: string | null;
+  error?: string;
+}
+
+export interface ResponsiveCompareResult {
+  url: string;
+  results: ResponsiveViewportResult[];
+  summary: {
+    total: number;
+    passed: number;
+    failed: number;
+    new_baselines: number;
+  };
+}
+
+/**
+ * Hook to run responsive visual tests across multiple viewports.
+ * Calls the backend's responsive capture and compare endpoints.
+ */
+export function useRunResponsiveTest() {
+  const queryClient = useQueryClient();
+  const { fetchJson } = useAuthApi();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      url,
+      viewports,
+      threshold = 0.1,
+    }: {
+      projectId: string;
+      url: string;
+      viewports: ViewportConfig[];
+      threshold?: number;
+    }): Promise<ResponsiveCompareResult> => {
+      // 1. Capture screenshots at multiple viewports
+      const captureResponse = await fetchJson<{
+        url: string;
+        viewports: Array<{
+          name: string;
+          width: number;
+          height: number;
+          screenshot_url: string;
+          captured_at: string;
+        }>;
+        project_id: string;
+      }>(
+        '/api/v1/visual/responsive/capture',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            url,
+            viewports: viewports.map((vp) => ({
+              name: vp.name,
+              width: vp.width,
+              height: vp.height,
+            })),
+            project_id: projectId,
+          }),
+          timeout: 120000, // 2 minute timeout for multiple captures
+        }
+      );
+
+      if (captureResponse.error || !captureResponse.data) {
+        throw new Error(captureResponse.error || 'Responsive capture failed');
+      }
+
+      const captureResult = captureResponse.data;
+
+      // 2. Compare against baselines
+      const compareResponse = await fetchJson<ResponsiveCompareResult>(
+        '/api/v1/visual/responsive/compare',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            url,
+            viewports: captureResult.viewports.map((vp) => ({
+              name: vp.name,
+              width: vp.width,
+              height: vp.height,
+              screenshot_url: vp.screenshot_url,
+            })),
+            project_id: projectId,
+            threshold,
+          }),
+          timeout: 60000, // 1 minute timeout for comparisons
+        }
+      );
+
+      if (compareResponse.error || !compareResponse.data) {
+        throw new Error(compareResponse.error || 'Responsive compare failed');
+      }
+
+      return compareResponse.data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['visual-baselines', variables.projectId] });
+      queryClient.invalidateQueries({ queryKey: ['visual-comparisons', variables.projectId] });
+      queryClient.invalidateQueries({ queryKey: ['responsive-results', variables.projectId] });
+    },
+  });
+}
+
+// AI Explanation response types
+export interface AIExplainChangeDetail {
+  change: string;
+  likely_cause: string;
+  intentional_likelihood: 'high' | 'medium' | 'low';
+  risk_level: 'high' | 'medium' | 'low';
+}
+
+export interface AIExplainResponse {
+  summary: string;
+  changes_explained: AIExplainChangeDetail[];
+  recommendations: string[];
+  overall_assessment: string;
+}
+
+/**
+ * Hook to fetch AI-powered explanation for a visual comparison.
+ * Calls the backend's Claude-powered AI explanation endpoint.
+ * Results are cached by comparison ID to avoid repeated API calls.
+ */
+export function useAIExplain(comparisonId: string | null, comparison: VisualComparison | null) {
+  const { fetchJson } = useAuthApi();
+
+  return useQuery({
+    queryKey: ['ai-explain', comparisonId],
+    queryFn: async (): Promise<AIExplainResponse | null> => {
+      if (!comparisonId || !comparison) return null;
+
+      // Only fetch AI explanation for mismatches with visual differences
+      if (comparison.status !== 'mismatch' || comparison.match_percentage === null) {
+        return null;
+      }
+
+      const response = await fetchJson<AIExplainResponse>('/api/v1/visual/ai/explain', {
+        method: 'POST',
+        body: JSON.stringify({
+          comparison_id: comparisonId,
+          baseline_url: comparison.baseline_url,
+          current_url: comparison.current_url,
+          diff_url: comparison.diff_url,
+          match_percentage: comparison.match_percentage,
+          name: comparison.name,
+        }),
+      });
+
+      if (response.error) {
+        throw new Error(`AI explanation failed: ${response.error}`);
+      }
+
+      return response.data;
+    },
+    enabled: !!comparisonId && !!comparison && comparison.status === 'mismatch',
+    staleTime: 1000 * 60 * 30, // Cache for 30 minutes
+    gcTime: 1000 * 60 * 60, // Keep in garbage collection cache for 1 hour
+    retry: 1, // Only retry once on failure
+  });
+}
+
+// Accessibility Analysis Types
+export interface AccessibilityIssue {
+  criterion: string;
+  severity: 'critical' | 'major' | 'minor';
+  description: string;
+  location: string;
+  recommendation: string;
+}
+
+export interface AccessibilityAnalysisResult {
+  overall_score: number;
+  level_compliance: 'A' | 'AA' | 'AAA' | 'None';
+  issues: AccessibilityIssue[];
+  passed_criteria: string[];
+  summary: string;
+}
+
+export function useAccessibilityAnalysis() {
+  const queryClient = useQueryClient();
+  const { fetchJson } = useAuthApi();
+
+  return useMutation({
+    mutationFn: async ({
+      url,
+      projectId,
+    }: {
+      url: string;
+      projectId?: string;
+    }): Promise<AccessibilityAnalysisResult> => {
+      const response = await fetchJson<AccessibilityAnalysisResult>(
+        '/api/v1/visual/accessibility/analyze',
+        {
+          method: 'POST',
+          body: JSON.stringify({ url, project_id: projectId }),
+        }
+      );
+
+      if (response.error || !response.data) {
+        throw new Error(`Accessibility analysis failed: ${response.error || 'Unknown error'}`);
+      }
+
+      return response.data;
+    },
+    onSuccess: (_data, variables) => {
+      if (variables.projectId) {
+        queryClient.invalidateQueries({ queryKey: ['accessibility-analysis', variables.projectId] });
+      }
+    },
+  });
+}
+
 export function useUpdateBaseline() {
   const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
@@ -408,6 +636,149 @@ export function useUpdateBaseline() {
       queryClient.invalidateQueries({ queryKey: ['visual-baselines', projectId] });
       queryClient.invalidateQueries({ queryKey: ['visual-comparisons', projectId] });
       queryClient.invalidateQueries({ queryKey: ['visual-comparison', comparison.id] });
+    },
+  });
+}
+
+// =============================================================================
+// Cross-Browser Testing Types and Hooks
+// =============================================================================
+
+export interface BrowserCaptureResult {
+  id?: string;
+  browser: string;
+  success: boolean;
+  screenshot_url?: string;
+  error?: string;
+}
+
+export interface CrossBrowserCaptureResponse {
+  success: boolean;
+  url: string;
+  results: BrowserCaptureResult[];
+  captured_at: string;
+}
+
+export interface BrowserDifference {
+  type: string;
+  severity: string;
+  description: string;
+  location?: string;
+}
+
+export interface BrowserCompareResult {
+  browser: string;
+  is_reference: boolean;
+  reference_browser?: string;
+  match?: boolean;
+  match_percentage?: number;
+  differences?: BrowserDifference[];
+  error?: string;
+}
+
+export interface CrossBrowserCompareResponse {
+  success: boolean;
+  url: string;
+  reference_browser: string;
+  results: BrowserCompareResult[];
+  compared_at: string;
+}
+
+export interface CrossBrowserTestResult {
+  captureResults: CrossBrowserCaptureResponse;
+  compareResults: CrossBrowserCompareResponse | null;
+}
+
+/**
+ * Hook for running cross-browser visual tests.
+ * Captures screenshots in multiple browsers and compares them.
+ */
+export function useCrossBrowserTest() {
+  const queryClient = useQueryClient();
+  const { fetchJson } = useAuthApi();
+
+  return useMutation({
+    mutationFn: async ({
+      url,
+      browsers = ['chromium', 'firefox', 'webkit'],
+      viewport,
+      projectId,
+      name,
+      compareAfterCapture = true,
+    }: {
+      url: string;
+      browsers?: string[];
+      viewport?: { width: number; height: number };
+      projectId?: string;
+      name?: string;
+      compareAfterCapture?: boolean;
+    }): Promise<CrossBrowserTestResult> => {
+      // Build request payload
+      const requestPayload: {
+        url: string;
+        browsers: string[];
+        viewport?: { width: number; height: number };
+        project_id?: string;
+        name?: string;
+      } = {
+        url,
+        browsers,
+      };
+
+      if (viewport) {
+        requestPayload.viewport = viewport;
+      }
+      if (projectId) {
+        requestPayload.project_id = projectId;
+      }
+      if (name) {
+        requestPayload.name = name;
+      }
+
+      // Step 1: Capture screenshots in multiple browsers using authenticated API
+      const captureResponse = await fetchJson<CrossBrowserCaptureResponse>(
+        '/api/v1/visual/browsers/capture',
+        {
+          method: 'POST',
+          body: JSON.stringify(requestPayload),
+          timeout: 120000, // 2 minute timeout for multi-browser capture
+        }
+      );
+
+      if (captureResponse.error || !captureResponse.data) {
+        throw new Error(captureResponse.error || 'Cross-browser capture failed');
+      }
+
+      const captureResults = captureResponse.data;
+
+      // Step 2: Compare browsers if requested and capture was successful
+      let compareResults: CrossBrowserCompareResponse | null = null;
+
+      if (compareAfterCapture && captureResults.success) {
+        const compareResponse = await fetchJson<CrossBrowserCompareResponse>(
+          '/api/v1/visual/browsers/compare',
+          {
+            method: 'POST',
+            body: JSON.stringify(requestPayload),
+            timeout: 120000,
+          }
+        );
+
+        if (compareResponse.data) {
+          compareResults = compareResponse.data;
+        }
+      }
+
+      return {
+        captureResults,
+        compareResults,
+      };
+    },
+    onSuccess: (_data, variables) => {
+      if (variables.projectId) {
+        queryClient.invalidateQueries({ queryKey: ['cross-browser-tests', variables.projectId] });
+        queryClient.invalidateQueries({ queryKey: ['visual-baselines', variables.projectId] });
+      }
     },
   });
 }

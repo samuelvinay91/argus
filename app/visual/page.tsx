@@ -65,6 +65,20 @@ import {
   useApproveComparison,
   useRunVisualTest,
   useUpdateBaseline,
+  useRunResponsiveTest,
+  useCrossBrowserTest,
+  useAIExplain,
+  useAccessibilityAnalysis,
+  type ResponsiveCompareResult,
+  type ResponsiveViewportResult,
+  type ViewportConfig,
+  type CrossBrowserTestResult,
+  type BrowserCompareResult,
+  type BrowserCaptureResult,
+  type AIExplainResponse,
+  type AIExplainChangeDetail,
+  type AccessibilityAnalysisResult,
+  type AccessibilityIssue,
 } from '@/lib/hooks/use-visual';
 import { Badge } from '@/components/ui/data-table';
 import { cn } from '@/lib/utils';
@@ -597,49 +611,143 @@ function ChangesList({ comparison }: { comparison: VisualComparison }) {
   );
 }
 
-// AI Insights Panel Component
-function AIInsightsPanel({ comparison }: { comparison: VisualComparison }) {
-  const insights = useMemo(() => {
-    const items = [];
+// AI Insights Panel Component - Uses backend Claude AI for intelligent analysis
+function AIInsightsPanel({ comparisonId, comparison }: { comparisonId: string | null; comparison: VisualComparison }) {
+  const { data: aiExplanation, isLoading, error } = useAIExplain(comparisonId, comparison);
 
-    if (comparison.status === 'mismatch' && comparison.match_percentage !== null) {
-      if (comparison.match_percentage < 50) {
-        items.push({
-          type: 'critical',
-          title: 'Major Visual Regression',
-          description: 'Significant changes detected. This may indicate a breaking change in the UI.',
-          action: 'Review changes carefully before approving.',
-        });
-      } else if (comparison.match_percentage < 90) {
-        items.push({
-          type: 'warning',
-          title: 'Notable Changes',
-          description: 'Moderate visual differences detected. Likely intentional changes.',
-          action: 'Verify changes are expected.',
-        });
-      } else {
-        items.push({
-          type: 'info',
-          title: 'Minor Differences',
-          description: 'Small visual variations detected. Could be anti-aliasing or sub-pixel rendering differences.',
-          action: 'Consider adjusting threshold if acceptable.',
-        });
-      }
-    }
-
+  // Fallback insights for non-mismatch statuses (AI only analyzes mismatches)
+  const fallbackInsights = useMemo(() => {
     if (comparison.status === 'new') {
-      items.push({
-        type: 'success',
+      return [{
+        type: 'success' as const,
         title: 'Baseline Established',
         description: 'This screenshot will be used as the reference for future comparisons.',
         action: 'Verify the baseline looks correct.',
-      });
+      }];
     }
+    if (comparison.status === 'match') {
+      return [{
+        type: 'success' as const,
+        title: 'Visual Match',
+        description: 'No visual differences detected between baseline and current screenshot.',
+        action: 'No action required.',
+      }];
+    }
+    return [];
+  }, [comparison.status]);
 
-    return items;
-  }, [comparison]);
+  // Show loading state for AI analysis
+  if (comparison.status === 'mismatch' && isLoading) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+          AI Analysis
+        </div>
+        <div className="p-4 rounded-lg border bg-card flex items-center gap-3">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">Analyzing visual changes with AI...</span>
+        </div>
+      </div>
+    );
+  }
 
-  if (insights.length === 0) return null;
+  // Show AI-powered analysis for mismatches
+  if (comparison.status === 'mismatch' && aiExplanation) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Sparkles className="h-4 w-4 text-primary" />
+          AI Analysis
+        </div>
+
+        {/* Summary */}
+        <div className="p-3 rounded-lg border bg-card space-y-2">
+          <div className="flex items-center gap-2">
+            <Info className="h-4 w-4 text-info" />
+            <span className="font-medium text-sm">Summary</span>
+          </div>
+          <p className="text-sm text-muted-foreground">{aiExplanation.summary}</p>
+        </div>
+
+        {/* Overall Assessment */}
+        <div className="p-3 rounded-lg border bg-card space-y-2">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <span className="font-medium text-sm">Overall Assessment</span>
+          </div>
+          <p className="text-sm text-muted-foreground">{aiExplanation.overall_assessment}</p>
+        </div>
+
+        {/* Changes Explained */}
+        {aiExplanation.changes_explained.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Changes Detected
+            </div>
+            {aiExplanation.changes_explained.map((change, index) => (
+              <div key={index} className="p-3 rounded-lg border bg-card space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm">{change.change}</span>
+                  <div className="flex gap-1">
+                    <Badge variant={change.risk_level === 'high' ? 'error' : change.risk_level === 'medium' ? 'warning' : 'success'}>
+                      {change.risk_level} risk
+                    </Badge>
+                    <Badge variant={change.intentional_likelihood === 'high' ? 'success' : change.intentional_likelihood === 'medium' ? 'info' : 'warning'}>
+                      {change.intentional_likelihood === 'high' ? 'Likely intentional' : change.intentional_likelihood === 'medium' ? 'Maybe intentional' : 'Check this'}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">{change.likely_cause}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Recommendations */}
+        {aiExplanation.recommendations.length > 0 && (
+          <div className="p-3 rounded-lg border bg-card space-y-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-success" />
+              <span className="font-medium text-sm">Recommendations</span>
+            </div>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              {aiExplanation.recommendations.map((rec, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  {rec}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Show error state
+  if (comparison.status === 'mismatch' && error) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Sparkles className="h-4 w-4 text-primary" />
+          AI Analysis
+        </div>
+        <div className="p-3 rounded-lg border bg-card space-y-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <span className="font-medium text-sm">Analysis Unavailable</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Could not fetch AI analysis. The visual comparison is still available for manual review.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show fallback insights for non-mismatch statuses
+  if (fallbackInsights.length === 0) return null;
 
   return (
     <div className="space-y-3">
@@ -648,16 +756,13 @@ function AIInsightsPanel({ comparison }: { comparison: VisualComparison }) {
         AI Analysis
       </div>
 
-      {insights.map((insight, index) => (
+      {fallbackInsights.map((insight, index) => (
         <div
           key={index}
           className="p-3 rounded-lg border bg-card space-y-2"
         >
           <div className="flex items-center gap-2">
-            {insight.type === 'critical' && <AlertCircle className="h-4 w-4 text-error" />}
-            {insight.type === 'warning' && <AlertTriangle className="h-4 w-4 text-warning" />}
-            {insight.type === 'info' && <Info className="h-4 w-4 text-info" />}
-            {insight.type === 'success' && <CheckCircle2 className="h-4 w-4 text-success" />}
+            <CheckCircle2 className="h-4 w-4 text-success" />
             <span className="font-medium text-sm">{insight.title}</span>
           </div>
           <p className="text-sm text-muted-foreground">{insight.description}</p>
@@ -700,10 +805,60 @@ function BaselineCard({ baseline }: { baseline: VisualBaseline }) {
 function ResponsiveMatrix({
   baselines,
   comparisons,
+  projectId,
 }: {
   baselines: VisualBaseline[];
   comparisons: VisualComparison[];
+  projectId: string | null;
 }) {
+  const [showTestInput, setShowTestInput] = useState(false);
+  const [testUrl, setTestUrl] = useState('');
+  const [selectedViewports, setSelectedViewports] = useState<string[]>(['Mobile M', 'Tablet', 'Desktop']);
+  const [testResults, setTestResults] = useState<ResponsiveCompareResult | null>(null);
+
+  const runResponsiveTest = useRunResponsiveTest();
+  const isRunning = runResponsiveTest.isPending;
+
+  // Handle running a responsive test
+  const handleRunTest = useCallback(async () => {
+    if (!projectId || !testUrl || selectedViewports.length === 0) return;
+    try {
+      const viewportsToTest: ViewportConfig[] = selectedViewports
+        .map((name) => VIEWPORTS.find((v) => v.name === name))
+        .filter((v): v is typeof VIEWPORTS[number] => v !== undefined)
+        .map((v) => ({ name: v.name, width: v.width, height: v.height }));
+      const result = await runResponsiveTest.mutateAsync({
+        projectId,
+        url: testUrl,
+        viewports: viewportsToTest,
+      });
+      setTestResults(result);
+    } catch (error) {
+      console.error('Responsive test failed:', error);
+    }
+  }, [projectId, testUrl, selectedViewports, runResponsiveTest]);
+
+  // Get status color for viewport result
+  const getStatusColor = (status: ResponsiveViewportResult['status']) => {
+    switch (status) {
+      case 'match': return 'border-success bg-success/10';
+      case 'mismatch': return 'border-error bg-error/10';
+      case 'new': return 'border-primary bg-primary/10';
+      case 'error': return 'border-warning bg-warning/10';
+      default: return 'border-muted';
+    }
+  };
+
+  const getStatusIcon = (status: ResponsiveViewportResult['status']) => {
+    switch (status) {
+      case 'match': return <CheckCircle2 className="h-4 w-4 text-success" />;
+      case 'mismatch': return <XCircle className="h-4 w-4 text-error" />;
+      case 'new': return <Sparkles className="h-4 w-4 text-primary" />;
+      case 'error': return <AlertCircle className="h-4 w-4 text-warning" />;
+      default: return null;
+    }
+  };
+
   // Group by URL
   const urlGroups = useMemo(() => {
     const groups: Record<string, { baselines: VisualBaseline[]; comparisons: VisualComparison[] }> = {};
@@ -727,51 +882,126 @@ function ResponsiveMatrix({
 
   return (
     <div className="space-y-6">
-      {Object.entries(urlGroups).length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <Smartphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>No responsive tests yet</p>
-          <p className="text-sm mt-1">Run visual tests at different viewports to see the matrix</p>
-        </div>
-      ) : (
-        Object.entries(urlGroups).map(([url, data]) => (
-          <div key={url} className="border rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Globe className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm truncate">{url}</span>
+      {/* Run Test Section */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Run Responsive Test</CardTitle>
+              <CardDescription>Test your website across multiple viewport sizes</CardDescription>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-              {VIEWPORTS.map((viewport) => {
-                const baseline = data.baselines.find(
-                  (b) => b.viewport === `${viewport.width}x${viewport.height}`
-                );
-                const Icon = viewport.icon;
+            {!showTestInput && (
+              <Button variant="outline" onClick={() => setShowTestInput(true)} className="gap-2">
+                <Play className="h-4 w-4" />
+                Run Responsive Test
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        {showTestInput && (
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="responsive-url" className="text-sm font-medium">URL to Test</label>
+              <Input id="responsive-url" type="url" value={testUrl} onChange={(e) => setTestUrl(e.target.value)} placeholder="https://example.com" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Viewports</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                {VIEWPORTS.map((vp) => {
+                  const isSelected = selectedViewports.includes(vp.name);
+                  const Icon = vp.icon;
+                  return (
+                    <button key={vp.name} onClick={() => isSelected ? setSelectedViewports(selectedViewports.filter((v) => v !== vp.name)) : setSelectedViewports([...selectedViewports, vp.name])} className={cn('flex flex-col items-center gap-1 p-2 rounded-lg border transition-colors', isSelected ? 'border-primary bg-primary/10' : 'border-muted hover:bg-muted/50')}>
+                      <Icon className={cn('h-5 w-5', isSelected ? 'text-primary' : 'text-muted-foreground')} />
+                      <span className="text-xs font-medium">{vp.name}</span>
+                      <span className="text-xs text-muted-foreground">{vp.width}x{vp.height}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleRunTest} disabled={isRunning || !testUrl || selectedViewports.length === 0 || !projectId}>
+                {isRunning ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Running...</>) : (<><Play className="h-4 w-4 mr-2" />Run ({selectedViewports.length})</>)}
+              </Button>
+              <Button variant="ghost" onClick={() => { setShowTestInput(false); setTestUrl(''); setTestResults(null); }}>Cancel</Button>
+            </div>
+          </CardContent>
+        )}
+      </Card>
 
+      {/* Test Results */}
+      {testResults && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Test Results</CardTitle>
+                <CardDescription className="flex items-center gap-2"><Globe className="h-4 w-4" />{testResults.url}</CardDescription>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4 text-success" /><span>{testResults.summary.passed} passed</span></div>
+                <div className="flex items-center gap-1"><XCircle className="h-4 w-4 text-error" /><span>{testResults.summary.failed} failed</span></div>
+                {testResults.summary.new_baselines > 0 && (<div className="flex items-center gap-1"><Sparkles className="h-4 w-4 text-primary" /><span>{testResults.summary.new_baselines} new</span></div>)}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+              {testResults.results.map((result) => {
+                const viewport = VIEWPORTS.find((v) => v.name === result.viewport || `${v.width}x${v.height}` === result.viewport);
+                const Icon = viewport?.icon || Monitor;
                 return (
-                  <div key={viewport.name} className="text-center">
-                    <div className={cn(
-                      'aspect-video rounded-lg border-2 border-dashed flex items-center justify-center',
-                      baseline ? 'border-success bg-success/5' : 'border-muted'
-                    )}>
-                      {baseline ? (
-                        <img
-                          src={baseline.screenshot_url}
-                          alt={viewport.name}
-                          className="w-full h-full object-cover rounded-md"
-                        />
-                      ) : (
-                        <Icon className="h-6 w-6 text-muted-foreground/50" />
-                      )}
+                  <div key={result.viewport} className="text-center">
+                    <div className={cn('aspect-video rounded-lg border-2 flex flex-col items-center justify-center relative overflow-hidden', getStatusColor(result.status))}>
+                      {result.current_url ? (<><img src={result.current_url} alt={result.viewport} className="w-full h-full object-cover" /><div className="absolute top-1 right-1">{getStatusIcon(result.status)}</div>{result.match_percentage !== null && result.status === 'mismatch' && (<div className="absolute bottom-1 left-1 bg-error/90 text-white text-xs px-1.5 py-0.5 rounded-full">{result.match_percentage.toFixed(1)}%</div>)}</>) : (<><Icon className="h-6 w-6 text-muted-foreground/50" />{result.error && <p className="text-xs text-error mt-1 px-1">{result.error}</p>}</>)}
                     </div>
-                    <p className="text-xs mt-2 font-medium">{viewport.name}</p>
-                    <p className="text-xs text-muted-foreground">{viewport.width}x{viewport.height}</p>
+                    <div className="flex items-center justify-center gap-1 mt-2">{getStatusIcon(result.status)}<p className="text-xs font-medium">{result.viewport}</p></div>
+                    <p className="text-xs text-muted-foreground">{result.width}x{result.height}</p>
+                    {result.match_percentage !== null && (<p className={cn('text-xs font-medium', result.status === 'match' ? 'text-success' : result.status === 'mismatch' ? 'text-error' : 'text-muted-foreground')}>{result.match_percentage.toFixed(1)}% match</p>)}
+                    {result.status === 'new' && <Badge variant="info" className="mt-1 text-xs">New baseline</Badge>}
                   </div>
                 );
               })}
             </div>
-          </div>
-        ))
+          </CardContent>
+        </Card>
       )}
+
+      {/* Existing Baselines */}
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-4">Existing Baselines</h3>
+        {Object.entries(urlGroups).length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground border rounded-lg">
+            <Smartphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No responsive baselines yet</p>
+            <p className="text-sm mt-1">Run a responsive test above to create baselines</p>
+          </div>
+        ) : (
+          Object.entries(urlGroups).map(([url, data]) => (
+            <div key={url} className="border rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-2 mb-4"><Globe className="h-4 w-4 text-muted-foreground" /><span className="font-medium text-sm truncate">{url}</span></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                {VIEWPORTS.map((viewport) => {
+                  const baseline = data.baselines.find((b) => b.viewport === `${viewport.width}x${viewport.height}`);
+                  const recentComparison = data.comparisons.find((c) => c.baseline_id === baseline?.id);
+                  const Icon = viewport.icon;
+                  return (
+                    <div key={viewport.name} className="text-center">
+                      <div className={cn('aspect-video rounded-lg border-2 flex items-center justify-center relative overflow-hidden', baseline ? (recentComparison?.status === 'match' ? 'border-success bg-success/5' : recentComparison?.status === 'mismatch' ? 'border-error bg-error/5' : 'border-success bg-success/5') : 'border-dashed border-muted')}>
+                        {baseline ? (<><img src={baseline.screenshot_url} alt={viewport.name} className="w-full h-full object-cover rounded-md" />{recentComparison && (<div className="absolute top-1 right-1">{recentComparison.status === 'match' && <CheckCircle2 className="h-4 w-4 text-success" />}{recentComparison.status === 'mismatch' && <XCircle className="h-4 w-4 text-error" />}</div>)}</>) : (<Icon className="h-6 w-6 text-muted-foreground/50" />)}
+                      </div>
+                      <p className="text-xs mt-2 font-medium">{viewport.name}</p>
+                      <p className="text-xs text-muted-foreground">{viewport.width}x{viewport.height}</p>
+                      {recentComparison?.match_percentage !== null && recentComparison?.match_percentage !== undefined && (<p className={cn('text-xs', recentComparison.status === 'match' ? 'text-success' : 'text-error')}>{recentComparison.match_percentage.toFixed(1)}% match</p>)}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -780,36 +1010,438 @@ function ResponsiveMatrix({
 function CrossBrowserMatrix({
   baselines,
   comparisons,
+  projectId,
 }: {
   baselines: VisualBaseline[];
   comparisons: VisualComparison[];
+  projectId: string | null;
 }) {
+  const [testUrl, setTestUrl] = useState('');
+  const [lastResult, setLastResult] = useState<CrossBrowserTestResult | null>(null);
+  const [showScreenshots, setShowScreenshots] = useState(true);
+  const crossBrowserTest = useCrossBrowserTest();
+
+  const browserDisplayInfo: Record<string, { name: string; icon: string }> = {
+    chromium: { name: 'Chrome', icon: '🌐' },
+    chrome: { name: 'Chrome', icon: '🌐' },
+    firefox: { name: 'Firefox', icon: '🦊' },
+    webkit: { name: 'Safari', icon: '🧭' },
+    safari: { name: 'Safari', icon: '🧭' },
+    edge: { name: 'Edge', icon: '🔵' },
+  };
+
+  const handleRunTest = async () => {
+    if (!testUrl || !projectId) return;
+    try {
+      const result = await crossBrowserTest.mutateAsync({
+        url: testUrl,
+        browsers: ['chromium', 'firefox', 'webkit'],
+        projectId,
+        viewport: { width: 1920, height: 1080 },
+      });
+      setLastResult(result);
+    } catch (error) {
+      console.error('Cross-browser test failed:', error);
+    }
+  };
+
+  const getMatchBadgeVariant = (percentage: number | undefined): 'default' | 'success' | 'warning' | 'error' => {
+    if (percentage === undefined) return 'default';
+    if (percentage >= 98) return 'success';
+    if (percentage >= 90) return 'warning';
+    return 'error';
+  };
+
   return (
     <div className="space-y-6">
-      <div className="text-center py-12 text-muted-foreground">
-        <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p>Cross-browser testing coming soon</p>
-        <p className="text-sm mt-1">Compare screenshots across Chrome, Firefox, Safari, and Edge</p>
-        <div className="flex items-center justify-center gap-4 mt-6">
-          {BROWSERS.map((browser) => (
-            <div key={browser.key} className="text-center">
-              <div className="text-2xl">{browser.icon}</div>
-              <p className="text-xs mt-1">{browser.name}</p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Cross-Browser Testing
+          </CardTitle>
+          <CardDescription>
+            Compare how your page renders across different browsers (Chrome, Firefox, Safari)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Enter URL to test (e.g., https://example.com)"
+              value={testUrl}
+              onChange={(e) => setTestUrl(e.target.value)}
+              disabled={crossBrowserTest.isPending}
+              className="flex-1"
+            />
+            <Button onClick={handleRunTest} disabled={!testUrl || !projectId || crossBrowserTest.isPending}>
+              {crossBrowserTest.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Testing...</>
+              ) : (
+                <><Play className="h-4 w-4 mr-2" />Run Cross-Browser Test</>
+              )}
+            </Button>
+          </div>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>Browsers:</span>
+            {BROWSERS.filter(b => ['chrome', 'firefox', 'safari'].includes(b.key)).map((browser) => (
+              <div key={browser.key} className="flex items-center gap-1">
+                <span>{browser.icon}</span>
+                <span>{browser.name}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {crossBrowserTest.isPending && (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center">
+              <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-primary" />
+              <p className="text-lg font-medium">Running cross-browser test...</p>
+              <p className="text-sm text-muted-foreground mt-1">Capturing screenshots in Chrome, Firefox, and Safari</p>
             </div>
-          ))}
-        </div>
-      </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {crossBrowserTest.isError && (
+        <Card className="border-destructive">
+          <CardContent className="py-6">
+            <div className="flex items-center gap-3 text-destructive">
+              <XCircle className="h-5 w-5" />
+              <div>
+                <p className="font-medium">Test failed</p>
+                <p className="text-sm">{crossBrowserTest.error?.message || 'An error occurred'}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {lastResult && !crossBrowserTest.isPending && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                Test Results
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setShowScreenshots(!showScreenshots)}>
+                {showScreenshots ? 'Hide' : 'Show'} Screenshots
+              </Button>
+            </CardTitle>
+            <CardDescription>Tested URL: {lastResult.captureResults.url}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {lastResult.compareResults && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <Info className="h-4 w-4" />
+                  Reference browser: {browserDisplayInfo[lastResult.compareResults.reference_browser]?.name || lastResult.compareResults.reference_browser}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {lastResult.compareResults.results.map((result: BrowserCompareResult) => {
+                    const browserInfo = browserDisplayInfo[result.browser] || { name: result.browser, icon: '🌐' };
+                    const captureResult = lastResult.captureResults.results.find((c: BrowserCaptureResult) => c.browser === result.browser);
+                    return (
+                      <Card key={result.browser} className={cn("overflow-hidden", result.is_reference && "ring-2 ring-primary")}>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">{browserInfo.icon}</span>
+                              <span className="font-medium">{browserInfo.name}</span>
+                            </div>
+                            {result.is_reference ? (
+                              <Badge variant="default">Reference</Badge>
+                            ) : (
+                              <Badge variant={getMatchBadgeVariant(result.match_percentage)}>
+                                {result.match_percentage !== undefined ? `${result.match_percentage.toFixed(1)}% match` : 'N/A'}
+                              </Badge>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {showScreenshots && captureResult?.screenshot_url && (
+                            <div className="aspect-video bg-muted rounded-md overflow-hidden">
+                              <img src={captureResult.screenshot_url} alt={`${browserInfo.name} screenshot`} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          {!result.is_reference && (
+                            <div className="space-y-2">
+                              {result.match !== undefined && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  {result.match ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <AlertCircle className="h-4 w-4 text-yellow-500" />}
+                                  <span>{result.match ? 'Matches reference' : 'Differences detected'}</span>
+                                </div>
+                              )}
+                              {result.differences && result.differences.length > 0 && (
+                                <div className="text-xs space-y-1">
+                                  {result.differences.slice(0, 3).map((diff, idx) => (
+                                    <div key={idx} className="flex items-start gap-1 text-muted-foreground">
+                                      <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                      <span>{diff.description}</span>
+                                    </div>
+                                  ))}
+                                  {result.differences.length > 3 && <p className="text-muted-foreground">+{result.differences.length - 3} more differences</p>}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {result.error && (
+                            <div className="text-sm text-destructive flex items-center gap-1">
+                              <XCircle className="h-4 w-4" />
+                              {result.error}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {!lastResult.compareResults && lastResult.captureResults.results.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {lastResult.captureResults.results.map((result: BrowserCaptureResult) => {
+                  const browserInfo = browserDisplayInfo[result.browser] || { name: result.browser, icon: '🌐' };
+                  return (
+                    <Card key={result.browser}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{browserInfo.icon}</span>
+                          <span className="font-medium">{browserInfo.name}</span>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {result.success && result.screenshot_url ? (
+                          <div className="aspect-video bg-muted rounded-md overflow-hidden">
+                            <img src={result.screenshot_url} alt={`${browserInfo.name} screenshot`} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
+                            <div className="text-center text-muted-foreground">
+                              <XCircle className="h-8 w-8 mx-auto mb-2" />
+                              <p className="text-sm">{result.error || 'Capture failed'}</p>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {!lastResult && !crossBrowserTest.isPending && (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center text-muted-foreground">
+              <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium">No cross-browser tests yet</p>
+              <p className="text-sm mt-1">Enter a URL above to compare how it renders across browsers</p>
+              <div className="flex items-center justify-center gap-6 mt-6">
+                {BROWSERS.filter(b => ['chrome', 'firefox', 'safari'].includes(b.key)).map((browser) => (
+                  <div key={browser.key} className="text-center">
+                    <div className="text-3xl mb-1">{browser.icon}</div>
+                    <p className="text-xs">{browser.name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
 
 // Accessibility Tab Component
-function AccessibilityTab() {
+function AccessibilityTab({ projectId }: { projectId: string | null }) {
+  const [url, setUrl] = useState('');
+  const accessibilityAnalysis = useAccessibilityAnalysis();
+  const [result, setResult] = useState<AccessibilityAnalysisResult | null>(null);
+
+  const handleAnalyze = useCallback(async () => {
+    if (!url.trim()) return;
+
+    try {
+      const analysisResult = await accessibilityAnalysis.mutateAsync({
+        url: url.trim(),
+        projectId: projectId || undefined,
+      });
+      setResult(analysisResult);
+    } catch (error) {
+      console.error('Accessibility analysis failed:', error);
+    }
+  }, [url, projectId, accessibilityAnalysis]);
+
+  const getSeverityColor = (severity: AccessibilityIssue['severity']) => {
+    switch (severity) {
+      case 'critical': return 'text-error';
+      case 'major': return 'text-warning';
+      case 'minor': return 'text-muted-foreground';
+    }
+  };
+
+  const getComplianceBadgeVariant = (level: AccessibilityAnalysisResult['level_compliance']) => {
+    switch (level) {
+      case 'AAA': return 'success' as const;
+      case 'AA': return 'success' as const;
+      case 'A': return 'warning' as const;
+      case 'None': return 'error' as const;
+    }
+  };
+
   return (
-    <div className="text-center py-12 text-muted-foreground">
-      <Accessibility className="h-12 w-12 mx-auto mb-4 opacity-50" />
-      <p>Visual accessibility analysis coming soon</p>
-      <p className="text-sm mt-1">Check color contrast, text readability, and more</p>
+    <div className="space-y-6">
+      {/* URL Input */}
+      <div className="flex gap-2">
+        <Input
+          placeholder="Enter URL to analyze (e.g., https://example.com)"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="flex-1"
+          onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
+        />
+        <Button
+          onClick={handleAnalyze}
+          disabled={!url.trim() || accessibilityAnalysis.isPending}
+        >
+          {accessibilityAnalysis.isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <Accessibility className="h-4 w-4 mr-2" />
+              Analyze
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Error State */}
+      {accessibilityAnalysis.isError && (
+        <div className="p-4 rounded-lg border border-error/50 bg-error/10">
+          <div className="flex items-center gap-2 text-error">
+            <AlertCircle className="h-5 w-5" />
+            <span className="font-medium">Analysis Failed</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            {accessibilityAnalysis.error instanceof Error
+              ? accessibilityAnalysis.error.message
+              : 'An unexpected error occurred'}
+          </p>
+        </div>
+      )}
+
+      {/* Results */}
+      {result && (
+        <div className="space-y-6">
+          {/* Score Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Accessibility Score</CardTitle>
+                <Badge variant={getComplianceBadgeVariant(result.level_compliance)}>
+                  WCAG {result.level_compliance}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-6">
+                <div className="text-5xl font-bold">
+                  {result.overall_score}
+                  <span className="text-2xl text-muted-foreground">/100</span>
+                </div>
+                <div className="flex-1">
+                  <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        'h-full rounded-full transition-all',
+                        result.overall_score >= 90 ? 'bg-success' :
+                        result.overall_score >= 70 ? 'bg-warning' : 'bg-error'
+                      )}
+                      style={{ width: `${result.overall_score}%` }}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">{result.summary}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Issues */}
+          {result.issues.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-warning" />
+                  Issues Found ({result.issues.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {result.issues.map((issue, index) => (
+                  <div key={index} className="p-3 rounded-lg border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{issue.criterion}</span>
+                      <Badge variant={issue.severity === 'critical' ? 'error' : issue.severity === 'major' ? 'warning' : 'default'}>
+                        {issue.severity}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{issue.description}</p>
+                    <div className="text-xs">
+                      <span className="text-muted-foreground">Location: </span>
+                      <code className="bg-muted px-1 rounded">{issue.location}</code>
+                    </div>
+                    <div className="text-xs">
+                      <span className="text-primary font-medium">Recommendation: </span>
+                      {issue.recommendation}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Passed Criteria */}
+          {result.passed_criteria.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-success" />
+                  Passed Criteria ({result.passed_criteria.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {result.passed_criteria.map((criterion, index) => (
+                    <Badge key={index} variant="outline" className="text-success border-success/30">
+                      {criterion}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!result && !accessibilityAnalysis.isPending && !accessibilityAnalysis.isError && (
+        <div className="text-center py-12 text-muted-foreground">
+          <Accessibility className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="font-medium">Analyze Page Accessibility</p>
+          <p className="text-sm mt-1">
+            Enter a URL above to check WCAG compliance, color contrast, and more
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1437,14 +2069,14 @@ export default function VisualPage() {
           )}
 
           {activeTab === 'responsive' && (
-            <ResponsiveMatrix baselines={baselines} comparisons={comparisons} />
+            <ResponsiveMatrix baselines={baselines} comparisons={comparisons} projectId={currentProject || null} />
           )}
 
           {activeTab === 'cross-browser' && (
-            <CrossBrowserMatrix baselines={baselines} comparisons={comparisons} />
+            <CrossBrowserMatrix baselines={baselines} comparisons={comparisons} projectId={currentProject || null} />
           )}
 
-          {activeTab === 'accessibility' && <AccessibilityTab />}
+          {activeTab === 'accessibility' && <AccessibilityTab projectId={selectedProjectId} />}
 
           {activeTab === 'history' && <HistoryTimeline comparisons={comparisons} />}
         </div>
@@ -1489,7 +2121,7 @@ export default function VisualPage() {
                   </div>
 
                   {/* AI Insights */}
-                  <AIInsightsPanel comparison={selectedComparisonData} />
+                  <AIInsightsPanel comparisonId={selectedComparison} comparison={selectedComparisonData} />
                 </div>
 
                 <SheetFooter className="mt-6 pt-6 border-t">
