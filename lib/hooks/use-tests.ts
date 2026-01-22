@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Test, TestRun, TestResult, InsertTables } from '@/lib/supabase/types';
-import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { BACKEND_URL } from '@/lib/config/api-endpoints';
 
 // ============================================
 // TESTS
@@ -247,7 +247,7 @@ export function useRunTest() {
           : [];
 
         try {
-          const response = await fetch(`${WORKER_URL}/test`, {
+          const response = await fetch(`${BACKEND_URL}/api/v1/browser/test`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -368,7 +368,7 @@ export function useRunSingleTest() {
       if (runError) throw runError;
 
       // Execute via Worker
-      const response = await fetch(`${WORKER_URL}/test`, {
+      const response = await fetch(`${BACKEND_URL}/api/v1/browser/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Json } from '@/lib/supabase/types';
-import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { BACKEND_URL } from '@/lib/config/api-endpoints';
 
 // ============================================
 // TYPES
@@ -557,8 +557,8 @@ export function useRunParameterizedTest() {
             return instruction;
           });
 
-          // Execute via Worker
-          const response = await fetch(`${WORKER_URL}/test`, {
+          // Execute via Backend Browser Pool
+          const response = await fetch(`${BACKEND_URL}/api/v1/browser/test`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

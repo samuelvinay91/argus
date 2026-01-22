@@ -278,13 +278,12 @@ MULTIMODAL SUPPORT:
           }),
           execute: async ({ url, instruction }) => {
             try {
-              const response = await fetchWithTimeout(`${WORKER_URL}/act`, {
+              const response = await fetchWithTimeout(`${BACKEND_URL}/api/v1/browser/act`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   url,
                   instruction,
-                  selfHeal: true,
                   screenshot: true,
                 }),
               }, 60000);
@@ -325,7 +324,7 @@ MULTIMODAL SUPPORT:
             const timeout = Math.max(180000, steps.length * 45000 + 60000);
 
             try {
-              const response = await fetchWithTimeout(`${WORKER_URL}/test`, {
+              const response = await fetchWithTimeout(`${BACKEND_URL}/api/v1/browser/test`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -333,7 +332,6 @@ MULTIMODAL SUPPORT:
                   steps,
                   browser: browser || 'chrome',
                   screenshot: true,
-                  captureScreenshots: true,
                 }),
               }, timeout);
 
@@ -385,7 +383,7 @@ MULTIMODAL SUPPORT:
           }),
           execute: async ({ url, instruction }) => {
             try {
-              const response = await fetchWithTimeout(`${WORKER_URL}/observe`, {
+              const response = await fetchWithTimeout(`${BACKEND_URL}/api/v1/browser/observe`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -522,12 +520,12 @@ MULTIMODAL SUPPORT:
                 status: ok ? 'connected' : 'disconnected',
                 capabilities: ok ? ['orchestration', 'code-analysis', 'nlp-tests', 'visual-ai', 'auto-discovery', 'durable-execution', 'memory'] : [],
               })),
-              fetchWithTimeout(`${WORKER_URL}/health`, { method: 'GET' }, 5000)
+              fetchWithTimeout(`${BACKEND_URL}/api/v1/browser/health`, { method: 'GET' }, 5000)
                 .then(r => r.ok)
                 .catch(() => false)
                 .then(ok => ({
-                  name: 'Argus Worker (Cloudflare/Browser)',
-                  url: WORKER_URL,
+                  name: 'Browser Pool (Vultr K8s)',
+                  url: `${BACKEND_URL}/api/v1/browser`,
                   status: ok ? 'connected' : 'disconnected',
                   capabilities: ok ? ['browser-automation', 'self-healing', 'screenshots', 'extraction'] : [],
                 })),

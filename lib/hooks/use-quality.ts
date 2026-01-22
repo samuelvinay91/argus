@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { QualityAudit, AccessibilityIssue } from '@/lib/supabase/types';
-import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { BACKEND_URL } from '@/lib/config/api-endpoints';
 
 export function useQualityAudits(projectId: string | null, limit = 10) {
   const supabase = getSupabaseClient();
@@ -117,11 +117,11 @@ export function useStartQualityAudit() {
       if (auditError) throw auditError;
 
       try {
-        // 2. Call worker to observe the page
+        // 2. Call backend browser pool to observe the page
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-        const response = await fetch(`${WORKER_URL}/observe`, {
+        const response = await fetch(`${BACKEND_URL}/api/v1/browser/observe`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

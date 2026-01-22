@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { GlobalTest, GlobalTestResult } from '@/lib/supabase/types';
-import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { BACKEND_URL } from '@/lib/config/api-endpoints';
 
 // Simulated edge regions for testing
 const EDGE_REGIONS = [
@@ -108,12 +108,12 @@ export function useStartGlobalTest() {
       if (testError) throw testError;
 
       try {
-        // 2. Test the URL from our worker (single location, but we'll simulate regional variance)
+        // 2. Test the URL from our backend browser pool (single location, but we'll simulate regional variance)
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
         const startTime = performance.now();
-        const response = await fetch(`${WORKER_URL}/health`, {
+        const response = await fetch(`${BACKEND_URL}/api/v1/browser/health`, {
           method: 'GET',
           signal: controller.signal,
         });

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Test } from '@/lib/supabase/types';
-import { WORKER_URL } from '@/lib/config/api-endpoints';
+import { BACKEND_URL } from '@/lib/config/api-endpoints';
 
 interface StepResult {
   instruction: string;
@@ -90,11 +90,11 @@ export function LiveExecutionModal({
     }));
 
     try {
-      // Execute test via Worker with extended timeout
+      // Execute test via Backend Browser Pool with extended timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout for browser pool
 
-      const response = await fetch(`${WORKER_URL}/test`, {
+      const response = await fetch(`${BACKEND_URL}/api/v1/browser/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -103,7 +103,7 @@ export function LiveExecutionModal({
           browser: 'chrome',
           screenshot: true,
           verbose: true,
-          timeout: 45000, // Give worker 45s per step
+          timeout: 60000, // Give browser pool 60s per step
         }),
         signal: controller.signal,
       });
@@ -125,7 +125,7 @@ export function LiveExecutionModal({
         status: result.success ? 'completed' : 'failed',
         currentStep: steps.length,
         steps: stepResults,
-        screenshot: result.browsers?.[0]?.screenshot,
+        screenshot: result.final_screenshot || stepResults[stepResults.length - 1]?.screenshot,
         error: result.error,
         startTime: execution.startTime,
         endTime: Date.now(),
@@ -136,7 +136,7 @@ export function LiveExecutionModal({
       let errorMessage = 'Unknown error';
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          errorMessage = 'Test timed out after 60 seconds. The page may be slow or elements not found.';
+          errorMessage = 'Test timed out after 120 seconds. The page may be slow or elements not found.';
         } else {
           errorMessage = error.message;
         }
@@ -304,7 +304,7 @@ export function LiveExecutionModal({
 
               <div className="text-xs text-muted-foreground">
                 <p><strong>URL:</strong> {appUrl}</p>
-                <p><strong>Browser:</strong> Chrome (Cloudflare)</p>
+                <p><strong>Browser:</strong> Chrome (Vultr Browser Pool)</p>
               </div>
             </div>
           </div>
