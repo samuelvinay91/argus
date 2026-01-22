@@ -301,6 +301,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
     if (href === '/projects') return pathname.startsWith('/projects');
+    // For /tests, only match exact path to avoid conflict with /tests/library
+    if (href === '/tests') return pathname === '/tests';
     return pathname === href || pathname.startsWith(href + '/');
   };
 
