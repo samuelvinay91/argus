@@ -15,6 +15,14 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   Eye,
   Loader2,
   Check,
@@ -902,6 +910,13 @@ export default function VisualPage() {
   const [selectedComparison, setSelectedComparison] = useState<string | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 
+  // Quick Actions modal state
+  const [visualTestModalOpen, setVisualTestModalOpen] = useState(false);
+  const [responsiveModalOpen, setResponsiveModalOpen] = useState(false);
+  const [crossBrowserModalOpen, setCrossBrowserModalOpen] = useState(false);
+  const [selectedViewports, setSelectedViewports] = useState<string[]>(['Mobile M', 'Tablet', 'Desktop']);
+  const [selectedBrowsers, setSelectedBrowsers] = useState<string[]>(['chrome', 'firefox', 'safari']);
+
   // Filters
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -1026,6 +1041,49 @@ export default function VisualPage() {
       setShowUrlInput(false);
     } catch (error) {
       console.error('Visual test failed:', error);
+    }
+  }, [currentProject, testUrl, runVisualTest]);
+
+  // Run responsive test across selected viewports
+  const handleRunResponsiveTest = useCallback(async () => {
+    if (!currentProject || !testUrl) return;
+
+    try {
+      // Run tests for each selected viewport sequentially
+      for (const viewportName of selectedViewports) {
+        const viewport = VIEWPORTS.find(v => v.name === viewportName);
+        if (viewport) {
+          await runVisualTest.mutateAsync({
+            projectId: currentProject,
+            url: testUrl,
+            name: `${testUrl.replace(/https?:\/\//, '').split('/')[0]}-${viewportName.toLowerCase().replace(/\s+/g, '-')}`,
+            viewport: `${viewport.width}x${viewport.height}`,
+          });
+        }
+      }
+      setTestUrl('');
+      setResponsiveModalOpen(false);
+    } catch (error) {
+      console.error('Responsive test failed:', error);
+    }
+  }, [currentProject, testUrl, selectedViewports, runVisualTest]);
+
+  // Run cross-browser test (placeholder - backend supports this via /api/v1/visual/browsers/capture)
+  const handleRunCrossBrowserTest = useCallback(async () => {
+    if (!currentProject || !testUrl) return;
+
+    try {
+      // For now, run the test once - full cross-browser would need backend integration
+      // TODO: Connect to /api/v1/visual/browsers/capture endpoint
+      await runVisualTest.mutateAsync({
+        projectId: currentProject,
+        url: testUrl,
+        name: `${testUrl.replace(/https?:\/\//, '').split('/')[0]}-cross-browser`,
+      });
+      setTestUrl('');
+      setCrossBrowserModalOpen(false);
+    } catch (error) {
+      console.error('Cross-browser test failed:', error);
     }
   }, [currentProject, testUrl, runVisualTest]);
 
@@ -1238,15 +1296,27 @@ export default function VisualPage() {
                   <CardDescription>Run visual testing suites</CardDescription>
                 </CardHeader>
                 <CardContent className="flex gap-3">
-                  <Button variant="outline" className="gap-2">
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setVisualTestModalOpen(true)}
+                  >
                     <Play className="h-4 w-4" />
                     Run Visual Test
                   </Button>
-                  <Button variant="outline" className="gap-2">
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setResponsiveModalOpen(true)}
+                  >
                     <Smartphone className="h-4 w-4" />
                     Run Responsive Suite
                   </Button>
-                  <Button variant="outline" className="gap-2">
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setCrossBrowserModalOpen(true)}
+                  >
                     <Globe className="h-4 w-4" />
                     Run Cross-Browser Suite
                   </Button>
@@ -1465,6 +1535,221 @@ export default function VisualPage() {
             )}
           </SheetContent>
         </Sheet>
+
+        {/* Visual Test Modal */}
+        <Dialog open={visualTestModalOpen} onOpenChange={setVisualTestModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Run Visual Test</DialogTitle>
+              <DialogDescription>
+                Capture a screenshot and compare against the baseline.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="test-url" className="text-sm font-medium">
+                  URL to Test
+                </label>
+                <Input
+                  id="test-url"
+                  type="url"
+                  value={testUrl}
+                  onChange={(e) => setTestUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && testUrl) {
+                      handleRunVisualTest();
+                      setVisualTestModalOpen(false);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setVisualTestModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  handleRunVisualTest();
+                  setVisualTestModalOpen(false);
+                }}
+                disabled={isRunning || !testUrl}
+              >
+                {isRunning ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Running...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Run Test
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Responsive Test Modal */}
+        <Dialog open={responsiveModalOpen} onOpenChange={setResponsiveModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Run Responsive Suite</DialogTitle>
+              <DialogDescription>
+                Test across multiple viewport sizes.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="responsive-url" className="text-sm font-medium">
+                  URL to Test
+                </label>
+                <Input
+                  id="responsive-url"
+                  type="url"
+                  value={testUrl}
+                  onChange={(e) => setTestUrl(e.target.value)}
+                  placeholder="https://example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Viewports</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {VIEWPORTS.map((vp) => (
+                    <label
+                      key={vp.name}
+                      className={cn(
+                        'flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors',
+                        selectedViewports.includes(vp.name)
+                          ? 'border-primary bg-primary/5'
+                          : 'hover:bg-muted'
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedViewports.includes(vp.name)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedViewports([...selectedViewports, vp.name]);
+                          } else {
+                            setSelectedViewports(selectedViewports.filter(v => v !== vp.name));
+                          }
+                        }}
+                        className="sr-only"
+                      />
+                      <vp.icon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{vp.name}</span>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {vp.width}×{vp.height}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setResponsiveModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRunResponsiveTest}
+                disabled={isRunning || !testUrl || selectedViewports.length === 0}
+              >
+                {isRunning ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Running...
+                  </>
+                ) : (
+                  <>
+                    <Smartphone className="h-4 w-4 mr-2" />
+                    Run Suite ({selectedViewports.length})
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Cross-Browser Test Modal */}
+        <Dialog open={crossBrowserModalOpen} onOpenChange={setCrossBrowserModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Run Cross-Browser Suite</DialogTitle>
+              <DialogDescription>
+                Test across multiple browsers.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="browser-url" className="text-sm font-medium">
+                  URL to Test
+                </label>
+                <Input
+                  id="browser-url"
+                  type="url"
+                  value={testUrl}
+                  onChange={(e) => setTestUrl(e.target.value)}
+                  placeholder="https://example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Browsers</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {BROWSERS.map((browser) => (
+                    <label
+                      key={browser.key}
+                      className={cn(
+                        'flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors',
+                        selectedBrowsers.includes(browser.key)
+                          ? 'border-primary bg-primary/5'
+                          : 'hover:bg-muted'
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedBrowsers.includes(browser.key)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedBrowsers([...selectedBrowsers, browser.key]);
+                          } else {
+                            setSelectedBrowsers(selectedBrowsers.filter(b => b !== browser.key));
+                          }
+                        }}
+                        className="sr-only"
+                      />
+                      <span className="text-lg">{browser.icon}</span>
+                      <span className="text-sm">{browser.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCrossBrowserModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRunCrossBrowserTest}
+                disabled={isRunning || !testUrl || selectedBrowsers.length === 0}
+              >
+                {isRunning ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Running...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="h-4 w-4 mr-2" />
+                    Run Suite ({selectedBrowsers.length})
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
