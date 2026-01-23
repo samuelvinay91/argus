@@ -24,17 +24,17 @@ export function VantaBackground({
 
   const initVanta = useCallback(() => {
     if (!vantaRef.current) return;
-    // @ts-ignore
+    // @ts-expect-error - Vanta.js adds VANTA and THREE to window
     if (!window.VANTA || !window.THREE) return;
 
     try {
-      // @ts-ignore
+      // @ts-expect-error - Vanta.js RINGS effect
       const VantaEffect = window.VANTA.RINGS;
       if (!VantaEffect) return;
 
       const effectInstance = VantaEffect({
         el: vantaRef.current,
-        // @ts-ignore
+        // @ts-expect-error - THREE.js global
         THREE: window.THREE,
         mouseControls: true,
         touchControls: true,
