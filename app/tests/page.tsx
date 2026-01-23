@@ -245,7 +245,7 @@ export default function TestsPage() {
       accessorKey: 'created_at',
       header: 'Created',
       cell: ({ row }) => (
-        <span className="text-muted-foreground">
+        <span className="text-muted-foreground" suppressHydrationWarning>
           {formatDistanceToNow(new Date(row.original.created_at), { addSuffix: true })}
         </span>
       ),
@@ -518,7 +518,7 @@ export default function TestsPage() {
                       <StatusDot status={run.status} />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{run.name || 'Test Run'}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-muted-foreground" suppressHydrationWarning>
                           {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
                         </div>
                       </div>
