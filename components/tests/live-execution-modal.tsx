@@ -62,8 +62,15 @@ export function LiveExecutionModal({
     steps: [],
   });
 
+  // Extract step instructions - handle multiple formats:
+  // - string[] (plain strings)
+  // - {instruction: string}[] (object with instruction)
+  // - {action: string}[] (object with action)
   const steps = test?.steps
-    ? (test.steps as { instruction: string }[]).map((s) => s.instruction)
+    ? (test.steps as Array<string | { instruction?: string; action?: string }>).map((s) => {
+        if (typeof s === 'string') return s;
+        return s.instruction || s.action || '';
+      }).filter(Boolean)
     : [];
 
   // Reset state when modal opens with new test

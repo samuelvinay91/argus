@@ -243,7 +243,10 @@ export function useRunTest() {
 
       for (const test of tests) {
         const steps = Array.isArray(test.steps)
-          ? (test.steps as { instruction: string }[]).map((s) => s.instruction)
+          ? (test.steps as Array<string | { instruction?: string; action?: string }>).map((s) => {
+              if (typeof s === 'string') return s;
+              return s.instruction || s.action || '';
+            }).filter(Boolean)
           : [];
 
         try {
@@ -347,7 +350,10 @@ export function useRunSingleTest() {
       browser?: string;
     }) => {
       const steps = Array.isArray(test.steps)
-        ? (test.steps as { instruction: string }[]).map((s) => s.instruction)
+        ? (test.steps as Array<string | { instruction?: string; action?: string }>).map((s) => {
+            if (typeof s === 'string') return s;
+            return s.instruction || s.action || '';
+          }).filter(Boolean)
         : [];
 
       // Create test run
