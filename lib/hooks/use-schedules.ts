@@ -1,8 +1,10 @@
 'use client';
 
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useProjects } from './use-projects';
+import { fetchJson, BACKEND_URL, getAuthToken } from '@/lib/api-client';
 import type { Json } from '@/lib/supabase/types';
 
 // Types for schedules based on the database schema
@@ -108,6 +110,7 @@ export function useSchedules() {
 }
 
 // Fetch schedule runs for a specific schedule
+// Automatically polls every 2s when there are active runs
 export function useScheduleRuns(scheduleId: string | null) {
   const supabase = getSupabaseClient();
 
@@ -127,6 +130,12 @@ export function useScheduleRuns(scheduleId: string | null) {
       return data as ScheduleRun[];
     },
     enabled: !!scheduleId,
+    // Poll every 2 seconds when there are running or pending runs
+    refetchInterval: (query) => {
+      const data = query.state.data as ScheduleRun[] | undefined;
+      const hasActiveRuns = data?.some(r => r.status === 'running' || r.status === 'pending' || r.status === 'queued');
+      return hasActiveRuns ? 2000 : false;
+    },
   });
 }
 
@@ -270,28 +279,31 @@ export function useDeleteSchedule() {
   });
 }
 
-// Trigger a schedule manually (creates a schedule run)
+// Trigger response from the backend API
+interface TriggerResponse {
+  success: boolean;
+  message: string;
+  run_id: string;
+  schedule_id: string;
+  started_at: string;
+}
+
+// Trigger a schedule manually - calls backend API to actually run tests
 export function useTriggerSchedule() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (scheduleId: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: run, error } = await (supabase.from('schedule_runs') as any)
-        .insert({
-          schedule_id: scheduleId,
-          trigger_type: 'manual',
-          status: 'queued',
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return run as ScheduleRun;
+      // Call the backend API to trigger the schedule
+      // This will actually execute tests via Selenium Grid
+      const response = await fetchJson<TriggerResponse>(
+        `/api/v1/schedules/${scheduleId}/trigger`,
+        { method: 'POST' }
+      );
+      return response;
     },
-    onSuccess: (_, scheduleId) => {
-      queryClient.invalidateQueries({ queryKey: ['schedule-runs', scheduleId] });
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['schedule-runs', data.schedule_id] });
       queryClient.invalidateQueries({ queryKey: ['schedule-stats'] });
     },
   });
@@ -318,4 +330,156 @@ export function useTestsForSchedule(projectId: string | null) {
     },
     enabled: !!projectId,
   });
+}
+
+// SSE Event types for schedule run streaming
+export interface ScheduleRunEvent {
+  type:
+    | 'run_started'
+    | 'tests_fetched'
+    | 'test_started'
+    | 'step_started'
+    | 'step_completed'
+    | 'test_completed'
+    | 'progress'
+    | 'run_completed'
+    | 'run_already_completed'
+    | 'heartbeat'
+    | 'timeout'
+    | 'error';
+  data?: {
+    schedule_id?: string;
+    run_id?: string;
+    schedule_name?: string;
+    test_id?: string;
+    test_name?: string;
+    test_count?: number;
+    step_index?: number;
+    instruction?: string;
+    success?: boolean;
+    duration_ms?: number;
+    error?: string;
+    tests_total?: number;
+    tests_passed?: number;
+    tests_failed?: number;
+    current_test?: number;
+    total_tests?: number;
+    percent?: number;
+    status?: string;
+    message?: string;
+  };
+  timestamp?: string;
+}
+
+// Hook to subscribe to schedule run events via SSE
+export function useScheduleRunStream(
+  scheduleId: string | null,
+  runId: string | null,
+  options?: {
+    onEvent?: (event: ScheduleRunEvent) => void;
+    onComplete?: () => void;
+    onError?: (error: Error) => void;
+  }
+) {
+  const [isConnected, setIsConnected] = useState(false);
+  const [lastEvent, setLastEvent] = useState<ScheduleRunEvent | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const queryClient = useQueryClient();
+
+  const connect = useCallback(async () => {
+    if (!scheduleId || !runId) return;
+
+    // Close existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    try {
+      // Get auth token for the connection
+      const token = await getAuthToken();
+
+      // Build URL with auth token as query param (EventSource doesn't support headers)
+      const baseUrl = BACKEND_URL || '';
+      const url = new URL(`${baseUrl}/api/v1/schedules/${scheduleId}/runs/${runId}/stream`, window.location.origin);
+      if (token) {
+        url.searchParams.set('token', token);
+      }
+
+      const eventSource = new EventSource(url.toString());
+      eventSourceRef.current = eventSource;
+
+      eventSource.onopen = () => {
+        setIsConnected(true);
+        setError(null);
+      };
+
+      eventSource.onmessage = (event) => {
+        try {
+          const parsedEvent = JSON.parse(event.data) as ScheduleRunEvent;
+          setLastEvent(parsedEvent);
+          options?.onEvent?.(parsedEvent);
+
+          // Invalidate queries on completion
+          if (parsedEvent.type === 'run_completed' || parsedEvent.type === 'run_already_completed') {
+            queryClient.invalidateQueries({ queryKey: ['schedule-runs', scheduleId] });
+            queryClient.invalidateQueries({ queryKey: ['schedule-stats'] });
+            options?.onComplete?.();
+            eventSource.close();
+            setIsConnected(false);
+          }
+
+          if (parsedEvent.type === 'error' || parsedEvent.type === 'timeout') {
+            const err = new Error(parsedEvent.data?.message || 'Stream error');
+            setError(err);
+            options?.onError?.(err);
+            eventSource.close();
+            setIsConnected(false);
+          }
+        } catch (e) {
+          console.error('Failed to parse SSE event:', e);
+        }
+      };
+
+      eventSource.onerror = (e) => {
+        console.error('SSE connection error:', e);
+        setIsConnected(false);
+        const err = new Error('Connection lost');
+        setError(err);
+        options?.onError?.(err);
+        eventSource.close();
+      };
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error('Failed to connect');
+      setError(err);
+      options?.onError?.(err);
+    }
+  }, [scheduleId, runId, options, queryClient]);
+
+  const disconnect = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+      setIsConnected(false);
+    }
+  }, []);
+
+  // Auto-connect when IDs are provided
+  useEffect(() => {
+    if (scheduleId && runId) {
+      connect();
+    }
+
+    return () => {
+      disconnect();
+    };
+  }, [scheduleId, runId, connect, disconnect]);
+
+  return {
+    isConnected,
+    lastEvent,
+    error,
+    connect,
+    disconnect,
+  };
 }
