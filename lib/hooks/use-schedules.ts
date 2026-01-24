@@ -85,9 +85,43 @@ export interface ScheduleFormData {
   app_url_override?: string;
 }
 
-// Fetch all schedules for current projects
+// Backend API response type for schedules list
+interface SchedulesResponse {
+  schedules: Array<{
+    id: string;
+    project_id: string;
+    name: string;
+    description: string | null;
+    cron_expression: string;
+    cron_readable: string;
+    test_ids: string[];
+    app_url: string;
+    enabled: boolean;
+    status: string;
+    notify_on_failure: boolean;
+    notification_channels: Record<string, boolean>;
+    timeout_minutes: number;
+    retry_count: number;
+    environment_variables: Record<string, string> | null;
+    tags: string[] | null;
+    next_run_at: string | null;
+    last_run_at: string | null;
+    last_run_status: string | null;
+    run_count: number;
+    success_count: number;
+    failure_count: number;
+    avg_duration_seconds: number | null;
+    created_at: string;
+    updated_at: string;
+    created_by: string | null;
+  }>;
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+// Fetch all schedules for current projects via backend API
 export function useSchedules() {
-  const supabase = getSupabaseClient();
   const { data: projects = [] } = useProjects();
   const projectIds = projects.map(p => p.id);
 
@@ -96,38 +130,104 @@ export function useSchedules() {
     queryFn: async () => {
       if (projectIds.length === 0) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('test_schedules') as any)
-        .select('*')
-        .in('project_id', projectIds)
-        .order('created_at', { ascending: false });
+      // Fetch schedules from backend API (handles auth and RLS properly)
+      const response = await fetchJson<SchedulesResponse>('/api/v1/schedules');
 
-      if (error) throw error;
-      return data as TestSchedule[];
+      // Map backend response to TestSchedule type
+      return response.schedules.map(s => ({
+        id: s.id,
+        project_id: s.project_id,
+        organization_id: null,
+        name: s.name,
+        description: s.description,
+        cron_expression: s.cron_expression,
+        timezone: 'UTC', // Backend doesn't return timezone separately
+        enabled: s.enabled,
+        is_recurring: true,
+        test_ids: s.test_ids,
+        test_filter: {},
+        next_run_at: s.next_run_at,
+        last_run_at: s.last_run_at,
+        run_count: s.run_count,
+        failure_count: s.failure_count,
+        success_rate: s.run_count > 0 ? (s.success_count / s.run_count) * 100 : 0,
+        notification_config: {
+          on_failure: s.notify_on_failure,
+          on_success: false,
+          channels: Object.keys(s.notification_channels || {}).filter(k => s.notification_channels[k]),
+        },
+        max_parallel_tests: 1,
+        timeout_ms: s.timeout_minutes * 60 * 1000,
+        retry_failed_tests: s.retry_count > 0,
+        retry_count: s.retry_count,
+        environment: 'production',
+        browser: 'chrome',
+        app_url_override: s.app_url,
+        created_by: s.created_by,
+        created_at: s.created_at,
+        updated_at: s.updated_at,
+      })) as TestSchedule[];
     },
     enabled: projectIds.length > 0,
   });
 }
 
-// Fetch schedule runs for a specific schedule
+// Backend API response type for schedule runs
+interface ScheduleRunApiResponse {
+  id: string;
+  schedule_id: string;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  duration_seconds: number | null;
+  trigger_type: string;
+  triggered_by: string | null;
+  test_results: {
+    total: number;
+    passed: number;
+    failed: number;
+    skipped: number;
+  };
+  error_message: string | null;
+  retry_attempt: number;
+  logs_url: string | null;
+}
+
+// Fetch schedule runs for a specific schedule via backend API
 // Automatically polls every 2s when there are active runs
 export function useScheduleRuns(scheduleId: string | null) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['schedule-runs', scheduleId],
     queryFn: async () => {
       if (!scheduleId) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('schedule_runs') as any)
-        .select('*')
-        .eq('schedule_id', scheduleId)
-        .order('triggered_at', { ascending: false })
-        .limit(20);
+      // Fetch from backend API
+      const data = await fetchJson<ScheduleRunApiResponse[]>(
+        `/api/v1/schedules/${scheduleId}/runs`
+      );
 
-      if (error) throw error;
-      return data as ScheduleRun[];
+      // Map to ScheduleRun type
+      return data.map(r => ({
+        id: r.id,
+        schedule_id: r.schedule_id,
+        test_run_id: null,
+        triggered_at: r.started_at,
+        started_at: r.started_at,
+        completed_at: r.completed_at,
+        status: r.status as ScheduleRun['status'],
+        trigger_type: r.trigger_type as ScheduleRun['trigger_type'],
+        triggered_by: r.triggered_by,
+        tests_total: r.test_results?.total ?? 0,
+        tests_passed: r.test_results?.passed ?? 0,
+        tests_failed: r.test_results?.failed ?? 0,
+        tests_skipped: r.test_results?.skipped ?? 0,
+        duration_ms: r.duration_seconds ? r.duration_seconds * 1000 : null,
+        error_message: r.error_message,
+        error_details: {},
+        logs: [],
+        metadata: {},
+        created_at: r.started_at,
+      })) as ScheduleRun[];
     },
     enabled: !!scheduleId,
     // Poll every 2 seconds when there are running or pending runs
