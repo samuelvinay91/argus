@@ -81,9 +81,9 @@ describe('Sidebar Component', () => {
       expect(screen.getByText('Argus')).toBeInTheDocument();
     });
 
-    it('renders AI Testing Platform subtitle', () => {
+    it('renders AI Quality Intelligence subtitle', () => {
       render(<Sidebar />);
-      expect(screen.getByText('AI Testing Platform')).toBeInTheDocument();
+      expect(screen.getByText('AI Quality Intelligence')).toBeInTheDocument();
     });
 
     it('renders organization switcher', () => {

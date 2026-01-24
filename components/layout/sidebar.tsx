@@ -333,7 +333,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <div>
           <span className="font-bold text-lg tracking-tight">Argus</span>
-          <p className="text-[10px] text-muted-foreground -mt-0.5">AI Testing Platform</p>
+          <p className="text-[10px] text-muted-foreground -mt-0.5">AI Quality Intelligence</p>
         </div>
       </div>
 

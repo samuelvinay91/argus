@@ -35,7 +35,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Argus is an AI-powered end-to-end testing platform that provides:
+              Argus is an agentic AI quality intelligence platform that provides:
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-2 text-muted-foreground">
               <li>Autonomous browser automation and testing</li>

@@ -58,7 +58,7 @@ describe('version', () => {
 
       const versionInfo = getVersionInfo();
 
-      expect(versionInfo.description).toBe('Argus - AI-Powered E2E Testing Platform');
+      expect(versionInfo.description).toBe('Argus - Agentic AI Quality Intelligence');
     });
 
     it('should return a valid ISO date string for buildDate', async () => {

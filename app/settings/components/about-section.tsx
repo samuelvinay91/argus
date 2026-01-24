@@ -40,7 +40,7 @@ export function AboutSection() {
           <div>
             <div className="text-2xl font-bold">Argus</div>
             <div className="text-sm text-muted-foreground">
-              AI-powered E2E Testing Platform
+              Agentic AI Quality Intelligence
             </div>
           </div>
           <VersionBadge variant="full" />

@@ -1910,7 +1910,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
               </div>
               <h2 className="text-xl sm:text-2xl font-bold">Hey Argus</h2>
               <p className="text-sm sm:text-base text-muted-foreground max-w-md">
-                Your AI testing companion. Describe what you want to test in plain English.
+                Your autonomous quality companion. Describe what you want to test in plain English.
               </p>
             </div>
 

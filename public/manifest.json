@@ -1,7 +1,7 @@
 {
-  "name": "Argus E2E Testing",
+  "name": "Argus",
   "short_name": "Argus",
-  "description": "AI-powered end-to-end testing platform with visual regression, discovery, and quality audits",
+  "description": "Agentic AI quality intelligence - autonomous agents that understand, test, heal, and report",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A0A0B",

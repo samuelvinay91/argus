@@ -13,10 +13,10 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   metadataBase: new URL('https://heyargus.ai'),
   title: {
-    default: 'Argus | AI-Powered E2E Testing Platform',
+    default: 'Argus | Agentic AI Quality Intelligence',
     template: '%s | Argus',
   },
-  description: 'Hey Argus - Your AI testing companion. Generate tests from production errors, predict bugs before they ship, and ship quality software faster. Autonomous E2E testing with self-healing capabilities.',
+  description: 'Autonomous AI agents that understand, test, heal, and report - without human intervention. Generate tests from production errors, predict bugs before they ship, and ship quality software faster.',
   keywords: [
     'e2e testing',
     'ai testing',
@@ -53,8 +53,8 @@ export const metadata: Metadata = {
     title: 'Argus',
   },
   openGraph: {
-    title: 'Argus | AI-Powered E2E Testing Platform',
-    description: 'Generate tests from production errors. Predict bugs before they ship. Self-healing tests that adapt to your UI. Autonomous E2E testing powered by Claude AI.',
+    title: 'Argus | Agentic AI Quality Intelligence',
+    description: 'Autonomous AI agents that understand, test, heal, and report. Generate tests from production errors. Predict bugs before they ship. Self-healing tests powered by Claude AI.',
     url: 'https://heyargus.ai',
     siteName: 'Argus',
     images: [
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Argus - AI-Powered E2E Testing Platform',
+        alt: 'Argus - Agentic AI Quality Intelligence',
       },
     ],
     locale: 'en_US',
@@ -70,8 +70,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Argus | AI-Powered E2E Testing Platform',
-    description: 'Generate tests from production errors. Predict bugs before they ship. Self-healing tests powered by Claude AI.',
+    title: 'Argus | Agentic AI Quality Intelligence',
+    description: 'Autonomous AI agents that understand, test, heal, and report. Self-healing tests powered by Claude AI.',
     creator: '@heyargus',
     site: '@heyargus',
     images: ['/og-image.png'],
@@ -126,7 +126,7 @@ const jsonLd = {
     ratingCount: '127',
   },
   description:
-    'AI-powered E2E testing platform that generates tests from production errors, predicts bugs before they ship, and provides self-healing test capabilities.',
+    'Autonomous AI agents that understand, test, heal, and report - without human intervention. Self-healing tests that generate from production errors.',
   url: 'https://heyargus.ai',
   screenshot: 'https://heyargus.ai/og-image.png',
   author: {
@@ -162,7 +162,7 @@ const organizationJsonLd = {
   url: 'https://heyargus.ai',
   logo: 'https://heyargus.ai/argus-logo.png',
   description:
-    'AI-powered E2E testing platform for modern development teams',
+    'Agentic AI quality intelligence for modern development teams',
   sameAs: [
     'https://twitter.com/heyargus',
     'https://github.com/argus-labs',
