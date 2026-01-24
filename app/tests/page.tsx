@@ -328,11 +328,13 @@ export default function TestsPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 min-w-0 overflow-x-hidden">
         {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
+        <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-sm px-4 lg:px-6 py-3">
+          {/* Top row - Project selector and actions */}
+          <div className="flex flex-wrap items-center gap-3">
             {/* Project Selector */}
             <select
               value={currentProject || ''}
@@ -341,7 +343,7 @@ export default function TestsPage() {
                 const project = projects.find((p) => p.id === e.target.value);
                 if (project) setAppUrl(project.app_url);
               }}
-              className="h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[120px]"
             >
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
@@ -350,21 +352,21 @@ export default function TestsPage() {
               ))}
             </select>
 
-            {/* Stats Pills */}
-            <div className="flex items-center gap-3 ml-4">
+            {/* Stats Pills - hidden on small screens */}
+            <div className="hidden md:flex items-center gap-3">
               <div className="flex items-center gap-2 text-sm">
                 <Activity className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">{stats.totalTests}</span>
-                <span className="text-muted-foreground">tests</span>
+                <span className="text-muted-foreground hidden lg:inline">tests</span>
               </div>
               <div className="h-4 w-px bg-border" />
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-success" />
                 <span className="font-medium">{stats.passRate}%</span>
-                <span className="text-muted-foreground">pass rate</span>
+                <span className="text-muted-foreground hidden lg:inline">pass rate</span>
               </div>
-              <div className="h-4 w-px bg-border" />
-              <div className="flex items-center gap-2 text-sm">
+              <div className="h-4 w-px bg-border hidden lg:block" />
+              <div className="hidden lg:flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">{stats.avgDuration}s</span>
                 <span className="text-muted-foreground">avg</span>
@@ -376,13 +378,13 @@ export default function TestsPage() {
                   <div className="flex items-center gap-2 text-sm">
                     <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
                     <span className="font-medium text-blue-500">{stats.runningCount}</span>
-                    <span className="text-muted-foreground">running</span>
+                    <span className="text-muted-foreground hidden lg:inline">running</span>
                   </div>
                 </>
               )}
             </div>
 
-            <div className="flex-1" />
+            <div className="flex-1 min-w-0" />
 
             {/* Realtime Status Indicator */}
             <div className="flex items-center gap-2">
@@ -391,14 +393,14 @@ export default function TestsPage() {
                 isRealtimeSubscribed ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
               )}>
                 <Radio className="h-3 w-3" />
-                {isRealtimeSubscribed ? 'Live' : 'Offline'}
+                <span className="hidden sm:inline">{isRealtimeSubscribed ? 'Live' : 'Offline'}</span>
               </div>
 
               {/* Online users indicator */}
               {onlineUsers.length > 0 && (
                 <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-500">
                   <Users className="h-3 w-3" />
-                  {onlineUsers.length} online
+                  <span className="hidden sm:inline">{onlineUsers.length} online</span>
                 </div>
               )}
             </div>
@@ -410,16 +412,24 @@ export default function TestsPage() {
               onClick={() => setShowActivityFeed(!showActivityFeed)}
               className="h-9"
             >
-              <Activity className="h-4 w-4 mr-1" />
-              Activity
+              <Activity className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Activity</span>
             </Button>
 
+            <Button size="sm" onClick={() => setShowNewTest(true)}>
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">New Test</span>
+            </Button>
+          </div>
+
+          {/* Bottom row - App URL and Run buttons */}
+          <div className="flex flex-wrap items-center gap-3 mt-3">
             {/* App URL */}
             <Input
               value={appUrl}
               onChange={(e) => setAppUrl(e.target.value)}
-              placeholder="App URL to test (e.g., https://example.com)"
-              className="w-72 h-9"
+              placeholder="App URL (e.g., https://example.com)"
+              className="flex-1 min-w-[200px] max-w-md h-9"
             />
 
             <Button
@@ -435,22 +445,18 @@ export default function TestsPage() {
               disabled={runTest.isPending || tests.length === 0}
             >
               {runTest.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
               ) : (
-                <Play className="h-4 w-4 mr-2" />
+                <Play className="h-4 w-4 sm:mr-2" />
               )}
-              Run All
+              <span className="hidden sm:inline">Run All</span>
             </Button>
-
-            <Button size="sm" onClick={() => setShowNewTest(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Test
-            </Button>
+          </div>
         </header>
 
-        <div className="flex">
+        <div className="flex min-w-0">
           {/* Main Content */}
-          <div className={cn('flex-1 p-6', showActivityFeed && 'pr-0')}>
+          <div className={cn('flex-1 min-w-0 p-4 lg:p-6 overflow-x-hidden', showActivityFeed && 'pr-0')}>
             {/* New Test Form */}
             {showNewTest && (
               <div className="mb-6 p-4 rounded-lg border bg-card animate-fade-up">

@@ -13,6 +13,14 @@ const isPublicRoute = createRouteMatcher([
   '/favicon.ico',
   '/robots.txt',
   '/sitemap.xml',
+  // Static assets
+  '/(.*)\\.png',
+  '/(.*)\\.jpg',
+  '/(.*)\\.jpeg',
+  '/(.*)\\.gif',
+  '/(.*)\\.svg',
+  '/(.*)\\.webp',
+  '/(.*)\\.ico',
 ]);
 
 // API routes that need auth but shouldn't redirect (return 401 instead)
