@@ -237,9 +237,9 @@ export default function APIKeysPage() {
   // Show loading state
   if (!isLoaded || loading) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-muted-foreground">Loading API keys...</p>
@@ -252,9 +252,9 @@ export default function APIKeysPage() {
   // Show sign-in prompt if not authenticated
   if (!isSignedIn) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
               <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -280,9 +280,9 @@ export default function APIKeysPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 min-w-0">
         {/* Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
           <div className="flex-1">

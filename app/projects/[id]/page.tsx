@@ -59,9 +59,9 @@ export default function ProjectDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </main>
       </div>
@@ -70,9 +70,9 @@ export default function ProjectDetailPage() {
 
   if (!project) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">Project not found</h2>
             <p className="text-muted-foreground mb-4">
@@ -89,9 +89,9 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 min-w-0">
         {/* Header */}
         <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-sm">
           <div className="px-6 py-4">

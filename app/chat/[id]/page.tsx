@@ -259,9 +259,9 @@ function ChatPageContent() {
   // Invalid UUID in URL
   if (!isValidUUID(conversationId)) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
           <div className="text-center space-y-4">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
             <h2 className="text-lg font-medium">Invalid conversation ID</h2>
@@ -275,9 +275,9 @@ function ChatPageContent() {
   // Conversation not found
   if (notFound) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
           <div className="text-center space-y-4">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
             <h2 className="text-lg font-medium">Conversation not found</h2>
@@ -292,9 +292,9 @@ function ChatPageContent() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64 flex flex-col lg:flex-row">
+      <main className="flex-1 lg:ml-64 min-w-0 flex flex-col lg:flex-row">
         {/* Mobile Header */}
         <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between h-14 px-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center gap-3">

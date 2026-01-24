@@ -163,9 +163,9 @@ export default function IntelligencePage() {
 
   if (!projectsLoading && projects.length === 0) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
           <NoProjectsEmptyState />
         </main>
       </div>
@@ -173,9 +173,9 @@ export default function IntelligencePage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 min-w-0">
         {/* Header */}
         <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-sm">
           <div className="flex h-16 items-center gap-4 px-6">

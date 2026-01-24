@@ -345,9 +345,9 @@ export default function OrganizationSettingsPage() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-muted-foreground">Loading organization settings...</p>
@@ -359,9 +359,9 @@ export default function OrganizationSettingsPage() {
 
   if (!organization) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
           <Card className="max-w-md">
             <CardContent className="pt-6 text-center">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -384,9 +384,9 @@ export default function OrganizationSettingsPage() {
   const PlanIcon = planConfig.icon;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 min-w-0">
         {/* Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
           <Button variant="ghost" size="sm" onClick={() => router.push('/organizations')}>

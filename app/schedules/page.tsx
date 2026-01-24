@@ -247,11 +247,11 @@ export default function SchedulesPage() {
   }));
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 min-w-0 overflow-x-hidden">
         {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
+        <header className="sticky top-0 z-30 flex flex-wrap h-auto min-h-[4rem] items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 lg:px-6 py-3">
           <div className="flex-1">
             <h1 className="text-xl font-semibold flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
@@ -267,7 +267,7 @@ export default function SchedulesPage() {
           </Button>
         </header>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 lg:p-6 space-y-6 overflow-x-hidden">
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>

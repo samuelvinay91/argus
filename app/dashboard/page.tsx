@@ -191,9 +191,9 @@ export default function DashboardPage() {
   // No projects state
   if (!projectsLoading && projects.length === 0) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
           <div className="text-center max-w-md px-6">
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
               <TestTube className="h-8 w-8 text-primary" />
@@ -212,9 +212,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 min-w-0">
         {/* Main Content */}
         <div className="p-6 space-y-6">
           {/* Dashboard Hero */}
