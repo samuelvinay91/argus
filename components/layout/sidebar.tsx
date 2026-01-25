@@ -40,6 +40,8 @@ import {
   Search,
   HeartPulse,
   Server,
+  Puzzle,
+  Network,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
@@ -90,9 +92,10 @@ const testingNavigation = [
 const insightsNavigation = [
   { name: 'Quality Score', href: '/quality', icon: Shield },
   { name: 'AI Insights', href: '/insights', icon: Brain },
+  { name: 'Correlations', href: '/correlations', icon: Network, badge: 'NEW' },
   { name: 'Test Health', href: '/flaky', icon: HeartPulse },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Infrastructure', href: '/infra', icon: Server, badge: 'NEW' },
+  { name: 'Infrastructure', href: '/infra', icon: Server },
 ];
 
 const workspaceNavigation = [
@@ -100,6 +103,7 @@ const workspaceNavigation = [
   { name: 'Organizations', href: '/organizations', icon: Building2 },
   { name: 'API Keys', href: '/api-keys', icon: Key },
   { name: 'MCP Sessions', href: '/mcp-sessions', icon: Monitor },
+  { name: 'Plugin Monitor', href: '/plugin', icon: Puzzle, badge: 'NEW' },
   { name: 'Activity', href: '/activity', icon: Activity },
 ];
 
