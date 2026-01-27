@@ -15,7 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { TestResult } from '@/lib/supabase/types';
 
-interface TestResultsListViewProps {
+export interface TestResultsListViewProps {
   results: TestResult[];
   onResultClick?: (result: TestResult) => void;
   isLoading?: boolean;

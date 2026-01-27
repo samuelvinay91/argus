@@ -70,7 +70,7 @@ interface EnvironmentInfo {
   environment?: string;
 }
 
-interface CIContextPanelProps {
+export interface CIContextPanelProps {
   ciMetadata?: Json | null;
   environment?: EnvironmentInfo;
   className?: string;
@@ -343,7 +343,7 @@ export function CIContextPanel({ ciMetadata, environment, className }: CIContext
 /**
  * Compact version of CIContextPanel for inline display
  */
-interface CIContextBadgesProps {
+export interface CIContextBadgesProps {
   ciMetadata?: Json | null;
   className?: string;
 }

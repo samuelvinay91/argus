@@ -26,7 +26,7 @@ interface StepResultItem {
   error_message?: string;
 }
 
-interface TestResultCardProps {
+export interface TestResultCardProps {
   result: TestResult;
   className?: string;
   defaultExpanded?: boolean;

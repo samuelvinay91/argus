@@ -23,7 +23,7 @@ export interface TestNode {
   durationMs?: number;
 }
 
-interface TestExecutionTimelineProps {
+export interface TestExecutionTimelineProps {
   tests: TestNode[];
   onTestClick?: (testId: string, index: number) => void;
   className?: string;

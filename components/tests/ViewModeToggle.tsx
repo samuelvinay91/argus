@@ -9,7 +9,7 @@ export type ViewMode = 'timeline' | 'grid' | 'list';
 
 const STORAGE_KEY = 'argus-test-results-view-mode';
 
-interface ViewModeToggleProps {
+export interface ViewModeToggleProps {
   value?: ViewMode;
   onChange: (mode: ViewMode) => void;
   className?: string;

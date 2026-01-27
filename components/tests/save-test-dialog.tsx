@@ -19,7 +19,7 @@ import { useProjects } from '@/lib/hooks/use-projects';
 import { toast } from '@/lib/hooks/useToast';
 import { cn } from '@/lib/utils';
 
-interface SaveTestDialogProps {
+export interface SaveTestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   testData: {

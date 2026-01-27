@@ -49,7 +49,7 @@ interface ExecutionState {
   endTime?: number;
 }
 
-interface LiveExecutionModalProps {
+export interface LiveExecutionModalProps {
   test: Test | null;
   appUrl: string;
   open: boolean;

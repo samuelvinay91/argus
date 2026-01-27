@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { useTestRunHistory, useTestRun } from '@/lib/hooks/use-tests';
 import type { TestRun } from '@/lib/supabase/types';
 
-interface RunHistorySidebarProps {
+export interface RunHistorySidebarProps {
   projectId: string | null;
   currentRunId: string | null;
   onCompare?: (runId: string) => void;

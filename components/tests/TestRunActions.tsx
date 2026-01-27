@@ -26,7 +26,7 @@ import { useRerunTest } from '@/lib/hooks/use-tests';
 import type { TestRun, TestResult } from '@/lib/supabase/types';
 import { cn } from '@/lib/utils';
 
-interface TestRunActionsProps {
+export interface TestRunActionsProps {
   testRun: TestRun;
   testResults?: TestResult[];
   onRerunComplete?: (newRun: TestRun) => void;

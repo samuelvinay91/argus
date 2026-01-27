@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { TestResult } from '@/lib/supabase/types';
 
-interface TestResultsGridViewProps {
+export interface TestResultsGridViewProps {
   results: TestResult[];
   onResultClick?: (result: TestResult) => void;
   isLoading?: boolean;
