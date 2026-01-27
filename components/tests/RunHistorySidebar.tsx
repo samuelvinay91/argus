@@ -75,7 +75,7 @@ function RunHistoryItem({
                 </Badge>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5" suppressHydrationWarning>
               {formatRelativeTime(run.created_at)}
             </p>
           </div>
@@ -205,7 +205,7 @@ function SidebarContent({
       {projectId && historyRuns.length > 0 && (
         <div className="p-4 border-t">
           <Link
-            href={`/projects/${projectId}/runs`}
+            href={`/projects/${projectId}`}
             className="flex items-center justify-center gap-2 text-sm text-primary hover:underline"
           >
             View All History
