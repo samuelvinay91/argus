@@ -490,19 +490,26 @@ export function useAIUsageSummary(period: 'day' | 'week' | 'month' = 'month') {
   return useQuery({
     queryKey: ['ai-usage-summary', period],
     queryFn: async () => {
-      const response = await fetchJson<UsageSummary>(
-        `/api/v1/users/me/ai-usage/summary?period=${period}`
-      );
+      try {
+        const response = await fetchJson<UsageSummary>(
+          `/api/v1/users/me/ai-usage/summary?period=${period}`
+        );
 
-      if (response.error) {
-        throw new Error(response.error);
+        if (response.error) {
+          console.warn('Failed to fetch AI usage summary:', response.error);
+          return null;
+        }
+
+        return response.data;
+      } catch (error) {
+        console.warn('AI usage summary API unavailable:', error);
+        return null;
       }
-
-      return response.data;
     },
     enabled: isLoaded && isSignedIn,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    retry: false,
   });
 }
 
@@ -620,17 +627,26 @@ export function useProviders() {
   return useQuery({
     queryKey: ['providers'],
     queryFn: async () => {
-      const response = await fetchJson<ProviderInfo[]>('/api/v1/providers');
+      try {
+        const response = await fetchJson<ProviderInfo[]>('/api/v1/providers');
 
-      if (response.error) {
-        throw new Error(response.error);
+        if (response.error) {
+          // Return empty array on error instead of throwing
+          console.warn('Failed to fetch providers:', response.error);
+          return [];
+        }
+
+        return response.data || [];
+      } catch (error) {
+        // Gracefully handle network/API errors
+        console.warn('Provider API unavailable:', error);
+        return [];
       }
-
-      return response.data || [];
     },
     enabled: isLoaded && isSignedIn,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 15 * 60 * 1000, // 15 minutes
+    retry: false, // Don't retry on failure
   });
 }
 
