@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sidebar } from '@/components/layout/sidebar';
+// Note: Sidebar is provided by the AI Hub layout, not needed here
 import { useAIUsage, type UsageRecord } from '@/lib/hooks/use-ai-settings';
 import { cn } from '@/lib/utils';
 
@@ -705,22 +705,19 @@ export default function AIUsageAnalyticsPage() {
   };
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 min-w-0">
-        {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold">Usage Analytics</h1>
-            <p className="text-sm text-muted-foreground">
-              Monitor your AI usage and spending over time
-            </p>
-          </div>
-          <TimeRangeToggle value={timeRange} onChange={setTimeRange} />
-        </header>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Usage Analytics</h2>
+          <p className="text-sm text-muted-foreground">
+            Monitor your AI usage and spending over time
+          </p>
+        </div>
+        <TimeRangeToggle value={timeRange} onChange={setTimeRange} />
+      </div>
 
-        <div className="p-6 space-y-6">
-          {isLoading ? (
+      {isLoading ? (
             <LoadingState />
           ) : error ? (
             <Card>
@@ -883,8 +880,6 @@ export default function AIUsageAnalyticsPage() {
               </Card>
             </>
           )}
-        </div>
-      </main>
     </div>
   );
 }

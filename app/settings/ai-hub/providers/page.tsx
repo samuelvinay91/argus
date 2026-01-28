@@ -18,7 +18,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-import { Sidebar } from '@/components/layout/sidebar';
+// Note: Sidebar is provided by the AI Hub layout, not needed here
 import {
   Card,
   CardContent,
@@ -970,31 +970,22 @@ export default function ProvidersPage() {
   const isLoading = providersLoading || keysLoading;
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 min-w-0">
-        {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
-          <Link
-            href="/settings"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm">Back to Settings</span>
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold">AI Provider Status</h1>
-            <p className="text-sm text-muted-foreground">
-              Monitor and manage your AI provider connections
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        </header>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">AI Provider Status</h2>
+          <p className="text-sm text-muted-foreground">
+            Monitor and manage your AI provider connections
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleRefresh}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
 
-        <div className="p-6 space-y-8">
+      <div className="space-y-8">
           {/* Error State */}
           {providersError && (
             <Card className="border-red-500/50 bg-red-500/5">
@@ -1085,7 +1076,6 @@ export default function ProvidersPage() {
             )}
           </section>
         </div>
-      </main>
 
       {/* Add Key Sheet (for standard providers) */}
       <AddKeySheet

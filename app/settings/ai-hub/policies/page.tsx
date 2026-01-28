@@ -21,7 +21,7 @@ import {
   CheckCircle,
   HelpCircle,
 } from 'lucide-react';
-import { Sidebar } from '@/components/layout/sidebar';
+// Note: Sidebar is provided by the AI Hub layout, not needed here
 import {
   Card,
   CardContent,
@@ -186,41 +186,25 @@ function HelpTooltip({ text }: { text: string }) {
 // Access Denied component
 function AccessDenied() {
   return (
-    <div className="flex min-h-screen overflow-x-hidden">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 min-w-0">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold">Enterprise Policies</h1>
-            <p className="text-sm text-muted-foreground">
-              AI Hub governance and compliance settings
-            </p>
+    <Card className="max-w-lg mx-auto mt-12">
+      <CardContent className="pt-6">
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
+            <Lock className="h-8 w-8 text-red-500" />
           </div>
-        </header>
-
-        <div className="p-6">
-          <Card className="max-w-lg mx-auto mt-12">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
-                  <Lock className="h-8 w-8 text-red-500" />
-                </div>
-                <h2 className="text-xl font-semibold">Access Denied</h2>
-                <p className="text-muted-foreground">
-                  You do not have permission to access Enterprise Policies. This page is restricted to organization administrators only.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Contact your organization admin if you believe you should have access.
-                </p>
-                <Button variant="outline" onClick={() => window.history.back()}>
-                  Go Back
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <h2 className="text-xl font-semibold">Access Denied</h2>
+          <p className="text-muted-foreground">
+            You do not have permission to access Enterprise Policies. This page is restricted to organization administrators only.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Contact your organization admin if you believe you should have access.
+          </p>
+          <Button variant="outline" onClick={() => window.history.back()}>
+            Go Back
+          </Button>
         </div>
-      </main>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -250,11 +234,8 @@ export default function EnterprisePoliciesPage() {
   // Loading state for admin check
   if (isCheckingAdmin) {
     return (
-      <div className="flex min-h-screen overflow-x-hidden">
-        <Sidebar />
-        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
-          <LoadingSpinner />
-        </main>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner />
       </div>
     );
   }
@@ -267,11 +248,8 @@ export default function EnterprisePoliciesPage() {
   // Loading policies
   if (isLoading || !localPolicies) {
     return (
-      <div className="flex min-h-screen overflow-x-hidden">
-        <Sidebar />
-        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
-          <LoadingSpinner />
-        </main>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner />
       </div>
     );
   }
@@ -349,43 +327,41 @@ export default function EnterprisePoliciesPage() {
   };
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 min-w-0">
-        {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold">Enterprise Policies</h1>
-              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600">
-                Admin Only
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Configure organization-wide AI governance and compliance settings
-            </p>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Enterprise Policies</h2>
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600">
+              Admin Only
+            </span>
           </div>
-          <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : hasChanges ? (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </>
-            ) : (
-              <>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Saved
-              </>
-            )}
-          </Button>
-        </header>
+          <p className="text-sm text-muted-foreground">
+            Configure organization-wide AI governance and compliance settings
+          </p>
+        </div>
+        <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : hasChanges ? (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
+            </>
+          ) : (
+            <>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Saved
+            </>
+          )}
+        </Button>
+      </div>
 
-        <div className="p-6 space-y-6">
+      <div className="space-y-6">
           {/* Provider Restrictions Section */}
           <Card>
             <CardHeader>
@@ -770,8 +746,7 @@ export default function EnterprisePoliciesPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
