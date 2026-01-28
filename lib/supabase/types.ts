@@ -576,6 +576,107 @@ export interface Database {
           created_at?: string;
         };
       };
+      performance_tests: {
+        Row: {
+          id: string;
+          project_id: string;
+          url: string;
+          device: 'mobile' | 'desktop';
+          status: 'pending' | 'running' | 'completed' | 'failed';
+          lcp_ms: number | null;
+          fid_ms: number | null;
+          cls: number | null;
+          inp_ms: number | null;
+          ttfb_ms: number | null;
+          fcp_ms: number | null;
+          speed_index: number | null;
+          tti_ms: number | null;
+          tbt_ms: number | null;
+          total_requests: number | null;
+          total_transfer_size_kb: number | null;
+          js_execution_time_ms: number | null;
+          dom_content_loaded_ms: number | null;
+          load_time_ms: number | null;
+          performance_score: number | null;
+          accessibility_score: number | null;
+          best_practices_score: number | null;
+          seo_score: number | null;
+          overall_grade: 'excellent' | 'good' | 'needs_work' | 'poor' | null;
+          recommendations: string[];
+          issues: Json;
+          summary: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          triggered_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          url: string;
+          device?: 'mobile' | 'desktop';
+          status?: 'pending' | 'running' | 'completed' | 'failed';
+          lcp_ms?: number | null;
+          fid_ms?: number | null;
+          cls?: number | null;
+          inp_ms?: number | null;
+          ttfb_ms?: number | null;
+          fcp_ms?: number | null;
+          speed_index?: number | null;
+          tti_ms?: number | null;
+          tbt_ms?: number | null;
+          total_requests?: number | null;
+          total_transfer_size_kb?: number | null;
+          js_execution_time_ms?: number | null;
+          dom_content_loaded_ms?: number | null;
+          load_time_ms?: number | null;
+          performance_score?: number | null;
+          accessibility_score?: number | null;
+          best_practices_score?: number | null;
+          seo_score?: number | null;
+          overall_grade?: 'excellent' | 'good' | 'needs_work' | 'poor' | null;
+          recommendations?: string[];
+          issues?: Json;
+          summary?: string | null;
+          started_at?: string | null;
+          completed_at?: string | null;
+          triggered_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          url?: string;
+          device?: 'mobile' | 'desktop';
+          status?: 'pending' | 'running' | 'completed' | 'failed';
+          lcp_ms?: number | null;
+          fid_ms?: number | null;
+          cls?: number | null;
+          inp_ms?: number | null;
+          ttfb_ms?: number | null;
+          fcp_ms?: number | null;
+          speed_index?: number | null;
+          tti_ms?: number | null;
+          tbt_ms?: number | null;
+          total_requests?: number | null;
+          total_transfer_size_kb?: number | null;
+          js_execution_time_ms?: number | null;
+          dom_content_loaded_ms?: number | null;
+          load_time_ms?: number | null;
+          performance_score?: number | null;
+          accessibility_score?: number | null;
+          best_practices_score?: number | null;
+          seo_score?: number | null;
+          overall_grade?: 'excellent' | 'good' | 'needs_work' | 'poor' | null;
+          recommendations?: string[];
+          issues?: Json;
+          summary?: string | null;
+          started_at?: string | null;
+          completed_at?: string | null;
+          triggered_by?: string | null;
+          created_at?: string;
+        };
+      };
       global_tests: {
         Row: {
           id: string;
@@ -1471,6 +1572,7 @@ export type VisualComparison = Tables<'visual_comparisons'>;
 export type AIInsight = Tables<'ai_insights'>;
 export type QualityAudit = Tables<'quality_audits'>;
 export type AccessibilityIssue = Tables<'accessibility_issues'>;
+export type PerformanceTest = Tables<'performance_tests'>;
 export type GlobalTest = Tables<'global_tests'>;
 export type GlobalTestResult = Tables<'global_test_results'>;
 export type Integration = Tables<'integrations'>;
@@ -1490,6 +1592,61 @@ export type QualityIntelligenceStats = Tables<'quality_intelligence_stats'>;
 export type PluginEvent = Tables<'plugin_events'>;
 export type PluginSession = Tables<'plugin_sessions'>;
 export type PluginMetrics = Tables<'plugin_metrics'>;
+
+// Security Scan types (used by frontend, backed by API)
+export type VulnerabilitySeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+export type VulnerabilityCategory =
+  | 'A01:2021-Broken Access Control'
+  | 'A02:2021-Cryptographic Failures'
+  | 'A03:2021-Injection'
+  | 'A05:2021-Security Misconfiguration'
+  | 'A06:2021-Vulnerable and Outdated Components'
+  | 'A07:2021-Identification and Authentication Failures'
+  | 'A08:2021-Software and Data Integrity Failures'
+  | 'A09:2021-Security Logging and Monitoring Failures'
+  | 'A10:2021-Server-Side Request Forgery';
+
+export interface Vulnerability {
+  id: string;
+  category: VulnerabilityCategory;
+  severity: VulnerabilitySeverity;
+  title: string;
+  description: string;
+  location: string;
+  evidence: string;
+  cvss_score: number;
+  cwe_id: string | null;
+  remediation: string;
+  references: string[];
+}
+
+export interface SecurityHeaders {
+  content_security_policy: string | null;
+  x_frame_options: string | null;
+  x_content_type_options: string | null;
+  strict_transport_security: string | null;
+  x_xss_protection: string | null;
+  referrer_policy: string | null;
+  permissions_policy: string | null;
+}
+
+export interface SecurityScanResult {
+  id: string;
+  project_id: string;
+  url: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  vulnerabilities: Vulnerability[];
+  headers: SecurityHeaders;
+  risk_score: number;
+  summary: string;
+  scan_duration_ms: number;
+  recommendations: string[];
+  scan_type: 'quick' | 'standard' | 'deep';
+  started_at: string | null;
+  completed_at: string | null;
+  triggered_by: string | null;
+  created_at: string;
+}
 
 // Activity System types (for live session tracking)
 export interface ActivityLog {

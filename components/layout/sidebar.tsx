@@ -16,6 +16,7 @@ import {
   Zap,
   Brain,
   Shield,
+  ShieldAlert,
   HelpCircle,
   ExternalLink,
   Wrench,
@@ -42,6 +43,14 @@ import {
   Server,
   Puzzle,
   Network,
+  Workflow,
+  Database,
+  Accessibility,
+  Gauge,
+  GitBranch,
+  Globe,
+  Rocket,
+  Container,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
@@ -84,18 +93,30 @@ const mainNavigation = [
 const testingNavigation = [
   { name: 'Test Runner', href: '/tests', icon: TestTube },
   { name: 'Test Library', href: '/tests/library', icon: BookOpen },
+  { name: 'API Testing', href: '/api-tests', icon: Globe },
   { name: 'Discovery', href: '/discovery', icon: Compass },
   { name: 'Visual AI', href: '/visual', icon: Eye },
+  { name: 'Database', href: '/database', icon: Database },
   { name: 'Schedules', href: '/schedules', icon: Calendar },
 ];
 
 const insightsNavigation = [
   { name: 'Quality Score', href: '/quality', icon: Shield },
+  { name: 'Performance', href: '/performance', icon: Gauge },
+  { name: 'Accessibility', href: '/accessibility', icon: Accessibility, badge: 'NEW' },
+  { name: 'Security Testing', href: '/security', icon: ShieldAlert },
   { name: 'AI Insights', href: '/insights', icon: Brain },
-  { name: 'Correlations', href: '/correlations', icon: Network, badge: 'NEW' },
+  { name: 'Orchestrator', href: '/orchestrator', icon: Workflow },
+  { name: 'Correlations', href: '/correlations', icon: Network },
   { name: 'Test Health', href: '/flaky', icon: HeartPulse },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Infrastructure', href: '/infra', icon: Server },
+];
+
+const cicdNavigation = [
+  { name: 'CI/CD Overview', href: '/cicd', icon: GitBranch, badge: 'NEW' },
+  { name: 'Deployments', href: '/cicd?tab=deployments', icon: Rocket },
+  { name: 'Containers', href: '/cicd?tab=containers', icon: Container },
 ];
 
 const workspaceNavigation = [
@@ -303,11 +324,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   const isActive = (href: string) => {
+    // Extract base path (without query params)
+    const basePath = href.split('?')[0];
     if (href === '/') return pathname === '/';
     if (href === '/projects') return pathname.startsWith('/projects');
     // For /tests, only match exact path to avoid conflict with /tests/library
-    if (href === '/tests') return pathname === '/tests';
-    return pathname === href || pathname.startsWith(href + '/');
+    if (basePath === '/tests') return pathname === '/tests';
+    // For /cicd, match the base path for all cicd routes
+    if (basePath === '/cicd') return pathname === '/cicd' || pathname.startsWith('/cicd/');
+    return pathname === basePath || pathname.startsWith(basePath + '/');
   };
 
   // Scroll to active menu item on mount and pathname change
@@ -394,6 +419,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <SectionHeader title="Insights" />
           <div className="space-y-0.5">
             {insightsNavigation.map((item) => (
+              <NavItem
+                key={item.name}
+                item={item}
+                isActive={isActive(item.href)}
+                onClick={handleClick}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* CI/CD & DevOps Section */}
+        <div className="space-y-1">
+          <SectionHeader title="CI/CD" />
+          <div className="space-y-0.5">
+            {cicdNavigation.map((item) => (
               <NavItem
                 key={item.name}
                 item={item}

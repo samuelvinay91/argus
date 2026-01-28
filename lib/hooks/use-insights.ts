@@ -509,3 +509,269 @@ function formatTimeAgo(date: Date): string {
   if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString();
 }
+
+// =============================================================================
+// AI-Powered Analysis Hooks (Backend API)
+// =============================================================================
+
+import { apiClient } from '@/lib/api-client';
+
+// Types for AI-powered failure clustering
+export interface AIFailureCluster {
+  id: string;
+  name: string;
+  description: string;
+  count: number;
+  percentage: number;
+  errorType: string;
+  rootCauseAnalysis: string;
+  affectedTests: string[];
+  affectedTestCount: number;
+  suggestedFix: string;
+  severity: string;
+  trend: 'up' | 'down' | 'stable';
+  sampleErrors: Array<{ testName: string; errorMessage: string }>;
+}
+
+export interface AIFailureClusterResponse {
+  clusters: AIFailureCluster[];
+  totalFailures: number;
+  analysisSummary: string;
+  generatedAt: string;
+}
+
+// Types for AI-powered coverage gap analysis
+export interface AICoverageGap {
+  id: string;
+  area: string;
+  areaType: 'page' | 'flow' | 'api' | 'component';
+  currentCoverage: number;
+  riskLevel: 'critical' | 'high' | 'medium' | 'low';
+  riskAnalysis: string;
+  impactDescription: string;
+  suggestedTests: Array<{ name: string; priority: string }>;
+  suggestedTestCount: number;
+  priorityScore: number;
+  relatedFailures: string[];
+}
+
+export interface AICoverageGapResponse {
+  gaps: AICoverageGap[];
+  overallCoverage: number;
+  criticalGaps: number;
+  highGaps: number;
+  totalSuggestedTests: number;
+  analysisSummary: string;
+  generatedAt: string;
+}
+
+// Types for AI-powered resolution
+export interface AIResolutionSuggestion {
+  summary: string;
+  rootCause: string;
+  steps: Array<{ step: number; action: string; details: string }>;
+  codeChanges?: Array<{ file: string; change: string; reason: string }>;
+  testImprovements: string[];
+  preventionMeasures: string[];
+  estimatedEffort: string;
+  confidence: number;
+}
+
+export interface AIInsightResolutionResponse {
+  insightId: string;
+  resolution: AIResolutionSuggestion;
+  generatedAt: string;
+}
+
+// Types for AI insight generation
+export interface GeneratedAIInsight {
+  id: string;
+  projectId: string;
+  insightType: string;
+  severity: string;
+  title: string;
+  description: string;
+  confidence: number;
+  affectedArea?: string;
+  suggestedAction?: string;
+  relatedTestIds?: string[];
+  isResolved: boolean;
+  createdAt: string;
+}
+
+export interface GenerateInsightsResponse {
+  insights: GeneratedAIInsight[];
+  totalGenerated: number;
+  analysisDurationMs: number;
+  generatedAt: string;
+}
+
+/**
+ * Hook for AI-powered semantic failure clustering.
+ * Uses Claude to group failures by their underlying root cause.
+ */
+export function useAIFailureClusters(projectId: string | null, days: number = 7) {
+  return useQuery({
+    queryKey: ['ai-failure-clusters', projectId, days],
+    queryFn: async () => {
+      if (!projectId) return null;
+
+      const response = await apiClient.post<AIFailureClusterResponse>(
+        '/api/v1/insights/cluster',
+        { projectId, days, minClusterSize: 2 }
+      );
+
+      // Convert snake_case response to camelCase
+      return {
+        clusters: response.clusters.map((c) => ({
+          ...c,
+          errorType: c.errorType || (c as unknown as { error_type?: string }).error_type || 'unknown',
+          rootCauseAnalysis: c.rootCauseAnalysis || (c as unknown as { root_cause_analysis?: string }).root_cause_analysis || '',
+          affectedTests: c.affectedTests || (c as unknown as { affected_tests?: string[] }).affected_tests || [],
+          affectedTestCount: c.affectedTestCount || (c as unknown as { affected_test_count?: number }).affected_test_count || 0,
+          suggestedFix: c.suggestedFix || (c as unknown as { suggested_fix?: string }).suggested_fix || '',
+          sampleErrors: c.sampleErrors || (c as unknown as { sample_errors?: Array<{ testName: string; errorMessage: string }> }).sample_errors || [],
+        })),
+        totalFailures: response.totalFailures || (response as unknown as { total_failures?: number }).total_failures || 0,
+        analysisSummary: response.analysisSummary || (response as unknown as { analysis_summary?: string }).analysis_summary || '',
+        generatedAt: response.generatedAt || (response as unknown as { generated_at?: string }).generated_at || new Date().toISOString(),
+      } as AIFailureClusterResponse;
+    },
+    enabled: !!projectId,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+}
+
+/**
+ * Hook for AI-powered coverage gap detection.
+ * Uses Claude to identify high-risk areas lacking test coverage.
+ */
+export function useAICoverageGaps(projectId: string | null) {
+  return useQuery({
+    queryKey: ['ai-coverage-gaps', projectId],
+    queryFn: async () => {
+      if (!projectId) return null;
+
+      const response = await apiClient.post<AICoverageGapResponse>(
+        '/api/v1/insights/coverage-gaps',
+        { projectId, includeApiGaps: true, includeUiGaps: true, includeFlowGaps: true }
+      );
+
+      // Convert snake_case response to camelCase
+      return {
+        gaps: response.gaps.map((g) => ({
+          ...g,
+          areaType: g.areaType || (g as unknown as { area_type?: string }).area_type || 'page',
+          currentCoverage: g.currentCoverage ?? (g as unknown as { current_coverage?: number }).current_coverage ?? 0,
+          riskLevel: g.riskLevel || (g as unknown as { risk_level?: string }).risk_level || 'medium',
+          riskAnalysis: g.riskAnalysis || (g as unknown as { risk_analysis?: string }).risk_analysis || '',
+          impactDescription: g.impactDescription || (g as unknown as { impact_description?: string }).impact_description || '',
+          suggestedTests: g.suggestedTests || (g as unknown as { suggested_tests?: Array<{ name: string; priority: string }> }).suggested_tests || [],
+          suggestedTestCount: g.suggestedTestCount ?? (g as unknown as { suggested_test_count?: number }).suggested_test_count ?? 0,
+          priorityScore: g.priorityScore ?? (g as unknown as { priority_score?: number }).priority_score ?? 0.5,
+          relatedFailures: g.relatedFailures || (g as unknown as { related_failures?: string[] }).related_failures || [],
+        })),
+        overallCoverage: response.overallCoverage ?? (response as unknown as { overall_coverage?: number }).overall_coverage ?? 0,
+        criticalGaps: response.criticalGaps ?? (response as unknown as { critical_gaps?: number }).critical_gaps ?? 0,
+        highGaps: response.highGaps ?? (response as unknown as { high_gaps?: number }).high_gaps ?? 0,
+        totalSuggestedTests: response.totalSuggestedTests ?? (response as unknown as { total_suggested_tests?: number }).total_suggested_tests ?? 0,
+        analysisSummary: response.analysisSummary || (response as unknown as { analysis_summary?: string }).analysis_summary || '',
+        generatedAt: response.generatedAt || (response as unknown as { generated_at?: string }).generated_at || new Date().toISOString(),
+      } as AICoverageGapResponse;
+    },
+    enabled: !!projectId,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+}
+
+/**
+ * Hook for getting AI-powered resolution suggestions for an insight.
+ * Uses Claude to generate detailed fix recommendations.
+ */
+export function useAIResolveInsight() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      insightId,
+      projectId,
+      context,
+    }: {
+      insightId: string;
+      projectId: string;
+      context?: string;
+    }) => {
+      const response = await apiClient.post<AIInsightResolutionResponse>(
+        `/api/v1/insights/${insightId}/resolve`,
+        context ? { context } : {}
+      );
+
+      // Convert snake_case response to camelCase
+      const resolution = response.resolution;
+      return {
+        insightId: response.insightId || (response as unknown as { insight_id?: string }).insight_id || insightId,
+        resolution: {
+          summary: resolution.summary || '',
+          rootCause: resolution.rootCause || (resolution as unknown as { root_cause?: string }).root_cause || '',
+          steps: resolution.steps || [],
+          codeChanges: resolution.codeChanges || (resolution as unknown as { code_changes?: Array<{ file: string; change: string; reason: string }> }).code_changes,
+          testImprovements: resolution.testImprovements || (resolution as unknown as { test_improvements?: string[] }).test_improvements || [],
+          preventionMeasures: resolution.preventionMeasures || (resolution as unknown as { prevention_measures?: string[] }).prevention_measures || [],
+          estimatedEffort: resolution.estimatedEffort || (resolution as unknown as { estimated_effort?: string }).estimated_effort || 'Unknown',
+          confidence: resolution.confidence ?? 0.7,
+        },
+        projectId,
+        generatedAt: response.generatedAt || (response as unknown as { generated_at?: string }).generated_at || new Date().toISOString(),
+      };
+    },
+    onSuccess: ({ projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['ai-insights', projectId] });
+    },
+  });
+}
+
+/**
+ * Hook for generating new AI-powered insights for a project.
+ * Triggers Claude to analyze test results and generate actionable insights.
+ */
+export function useGenerateAIInsights() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      insightTypes = ['failure_pattern', 'coverage_gap', 'risk_alert', 'optimization'],
+      forceRefresh = false,
+    }: {
+      projectId: string;
+      insightTypes?: string[];
+      forceRefresh?: boolean;
+    }) => {
+      const response = await apiClient.post<GenerateInsightsResponse>(
+        '/api/v1/insights/generate',
+        { projectId, insightTypes, forceRefresh }
+      );
+
+      return {
+        insights: response.insights.map((i) => ({
+          ...i,
+          projectId: i.projectId || (i as unknown as { project_id?: string }).project_id || projectId,
+          insightType: i.insightType || (i as unknown as { insight_type?: string }).insight_type || 'suggestion',
+          affectedArea: i.affectedArea || (i as unknown as { affected_area?: string }).affected_area,
+          suggestedAction: i.suggestedAction || (i as unknown as { suggested_action?: string }).suggested_action,
+          relatedTestIds: i.relatedTestIds || (i as unknown as { related_test_ids?: string[] }).related_test_ids,
+          isResolved: i.isResolved ?? (i as unknown as { is_resolved?: boolean }).is_resolved ?? false,
+          createdAt: i.createdAt || (i as unknown as { created_at?: string }).created_at || new Date().toISOString(),
+        })),
+        totalGenerated: response.totalGenerated ?? (response as unknown as { total_generated?: number }).total_generated ?? 0,
+        analysisDurationMs: response.analysisDurationMs ?? (response as unknown as { analysis_duration_ms?: number }).analysis_duration_ms ?? 0,
+        generatedAt: response.generatedAt || (response as unknown as { generated_at?: string }).generated_at || new Date().toISOString(),
+        projectId,
+      };
+    },
+    onSuccess: ({ projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['ai-insights', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['insight-stats', projectId] });
+    },
+  });
+}

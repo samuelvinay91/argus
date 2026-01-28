@@ -23,6 +23,15 @@ import {
   XCircle,
   CheckCircle2,
   PieChart,
+  Link2,
+  ArrowRight,
+  Shield,
+  Database,
+  Server,
+  Gauge,
+  FileText,
+  Bell,
+  ChevronRight,
 } from 'lucide-react';
 import { useProjects } from '@/lib/hooks/use-projects';
 import {
@@ -32,14 +41,25 @@ import {
   useFailureClusters,
   useCoverageGaps,
   useFlakyTests,
+  useGenerateAIInsights,
+  useAIFailureClusters,
+  useAICoverageGaps,
+  useAIResolveInsight,
 } from '@/lib/hooks/use-insights';
+import {
+  useCrossDomainCorrelations,
+  useProactiveAlerts,
+  useExecutiveSummary,
+  type CrossDomainCorrelation,
+  type ProactiveAlert,
+} from '@/lib/hooks/use-intelligence';
 import { Badge } from '@/components/ui/data-table';
 import { cn } from '@/lib/utils';
 import { NoProjectsEmptyState } from '@/components/ui/empty-state';
 
 export default function InsightsPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'insights' | 'patterns' | 'coverage' | 'flaky'>('insights');
+  const [activeTab, setActiveTab] = useState<'insights' | 'patterns' | 'coverage' | 'flaky' | 'intelligence'>('insights');
 
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const currentProject = selectedProjectId || projects[0]?.id;
@@ -48,10 +68,26 @@ export default function InsightsPage() {
   const { data: stats } = useInsightStats(currentProject || null);
   const resolveInsight = useResolveInsight();
 
-  // Real data hooks
+  // AI-powered generation mutation
+  const generateInsights = useGenerateAIInsights();
+  const aiResolveInsight = useAIResolveInsight();
+
+  // Real data hooks (SQL-based fallback)
   const { data: failureData, isLoading: failuresLoading } = useFailureClusters(currentProject || null);
   const { data: coverageData, isLoading: coverageLoading } = useCoverageGaps(currentProject || null);
   const { data: flakyData, isLoading: flakyLoading } = useFlakyTests(currentProject || null);
+
+  // AI-powered data hooks (Claude-based analysis)
+  const { data: aiFailureData, isLoading: aiFailuresLoading } = useAIFailureClusters(currentProject || null);
+  const { data: aiCoverageData, isLoading: aiCoverageLoading } = useAICoverageGaps(currentProject || null);
+
+  // Cross-domain intelligence hooks
+  const { data: correlationsData, isLoading: correlationsLoading } = useCrossDomainCorrelations(currentProject || null);
+  const { data: alertsData, isLoading: alertsLoading } = useProactiveAlerts(currentProject || null);
+  const { data: executiveSummary, isLoading: summaryLoading } = useExecutiveSummary(currentProject || null);
+
+  // State for showing AI vs simple analysis
+  const [useAIAnalysis, setUseAIAnalysis] = useState(true);
 
   const failureClusters = failureData?.clusters || [];
   const totalFailures = failureData?.totalFailures || 0;
@@ -122,10 +158,29 @@ export default function InsightsPage() {
               )}
             </div>
             <div className="flex-1" />
-            <Button size="sm" variant="outline">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Generate Insights
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant={useAIAnalysis ? 'default' : 'outline'}
+                onClick={() => setUseAIAnalysis(!useAIAnalysis)}
+              >
+                <Brain className="h-4 w-4 mr-2" />
+                {useAIAnalysis ? 'AI Analysis' : 'Simple Analysis'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => currentProject && generateInsights.mutate({ projectId: currentProject })}
+                disabled={!currentProject || generateInsights.isPending}
+              >
+                {generateInsights.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                {generateInsights.isPending ? 'Analyzing...' : 'Generate Insights'}
+              </Button>
+            </div>
           </div>
 
           {/* Tabs */}
@@ -184,6 +239,25 @@ export default function InsightsPage() {
               <span className="flex items-center gap-1">
                 <RefreshCcw className="h-4 w-4" />
                 Flaky Tests
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('intelligence')}
+              className={cn(
+                'py-3 text-sm font-medium border-b-2 transition-colors',
+                activeTab === 'intelligence'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <span className="flex items-center gap-1">
+                <Link2 className="h-4 w-4" />
+                Cross-Domain Intelligence
+                {(correlationsData?.total_count || 0) > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">
+                    {correlationsData?.total_count}
+                  </span>
+                )}
               </span>
             </button>
           </div>
@@ -717,6 +791,382 @@ export default function InsightsPage() {
                               </div>
                             </div>
                           ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Cross-Domain Intelligence Tab */}
+          {activeTab === 'intelligence' && (
+            <div className="space-y-6">
+              {correlationsLoading || alertsLoading || summaryLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <>
+                  {/* Executive Summary Card */}
+                  {executiveSummary && (
+                    <Card className={cn(
+                      'border-l-4',
+                      executiveSummary.overall_health === 'excellent' && 'border-l-green-500',
+                      executiveSummary.overall_health === 'good' && 'border-l-green-400',
+                      executiveSummary.overall_health === 'fair' && 'border-l-yellow-500',
+                      executiveSummary.overall_health === 'poor' && 'border-l-orange-500',
+                      executiveSummary.overall_health === 'critical' && 'border-l-red-500'
+                    )}>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-primary" />
+                          Executive Summary
+                          <Badge variant={
+                            executiveSummary.overall_health === 'excellent' || executiveSummary.overall_health === 'good' ? 'success' :
+                            executiveSummary.overall_health === 'fair' ? 'warning' : 'error'
+                          }>
+                            {executiveSummary.overall_health.charAt(0).toUpperCase() + executiveSummary.overall_health.slice(1)} Health
+                          </Badge>
+                        </CardTitle>
+                        <CardDescription>
+                          {executiveSummary.period.days}-day analysis from {new Date(executiveSummary.period.start).toLocaleDateString()} to {new Date(executiveSummary.period.end).toLocaleDateString()}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-4 gap-4 mb-6">
+                          <div className="p-3 rounded-lg bg-muted/50">
+                            <div className="text-2xl font-bold">{executiveSummary.key_metrics.total_tests_run.toLocaleString()}</div>
+                            <div className="text-sm text-muted-foreground">Tests Run</div>
+                          </div>
+                          <div className="p-3 rounded-lg bg-muted/50">
+                            <div className={cn(
+                              'text-2xl font-bold',
+                              executiveSummary.key_metrics.pass_rate >= 90 ? 'text-green-500' :
+                              executiveSummary.key_metrics.pass_rate >= 70 ? 'text-yellow-500' : 'text-red-500'
+                            )}>
+                              {executiveSummary.key_metrics.pass_rate.toFixed(1)}%
+                            </div>
+                            <div className="text-sm text-muted-foreground">Pass Rate</div>
+                          </div>
+                          <div className="p-3 rounded-lg bg-muted/50">
+                            <div className="text-2xl font-bold">{executiveSummary.cross_domain_summary.total_correlations}</div>
+                            <div className="text-sm text-muted-foreground">Cross-Domain Issues</div>
+                          </div>
+                          <div className="p-3 rounded-lg bg-muted/50">
+                            <div className={cn(
+                              'text-2xl font-bold',
+                              executiveSummary.key_metrics.critical_issues === 0 ? 'text-green-500' : 'text-red-500'
+                            )}>
+                              {executiveSummary.key_metrics.critical_issues}
+                            </div>
+                            <div className="text-sm text-muted-foreground">Critical Alerts</div>
+                          </div>
+                        </div>
+
+                        {/* Top Issues */}
+                        {executiveSummary.top_issues.length > 0 && (
+                          <div className="mb-6">
+                            <h4 className="text-sm font-medium mb-3">Top Issues</h4>
+                            <div className="space-y-2">
+                              {executiveSummary.top_issues.slice(0, 3).map((issue, idx) => (
+                                <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+                                  <Badge variant={
+                                    issue.severity === 'critical' ? 'error' :
+                                    issue.severity === 'high' ? 'warning' : 'info'
+                                  }>
+                                    {issue.severity}
+                                  </Badge>
+                                  <span className="flex-1 text-sm">{issue.title}</span>
+                                  <span className="text-xs text-muted-foreground">{issue.impact}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Recommendations */}
+                        {executiveSummary.recommendations.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-3">Recommendations</h4>
+                            <div className="space-y-2">
+                              {executiveSummary.recommendations.map((rec, idx) => (
+                                <div key={idx} className="flex items-start gap-3 p-2 rounded-lg bg-primary/5">
+                                  <div className={cn(
+                                    'px-2 py-0.5 text-xs font-medium rounded',
+                                    rec.priority === 'high' ? 'bg-red-500/10 text-red-500' :
+                                    rec.priority === 'medium' ? 'bg-yellow-500/10 text-yellow-500' :
+                                    'bg-blue-500/10 text-blue-500'
+                                  )}>
+                                    {rec.priority}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="text-sm">{rec.action}</div>
+                                    <div className="text-xs text-muted-foreground mt-1">{rec.expected_impact}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Correlation Chains */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Link2 className="h-5 w-5 text-primary" />
+                        Cross-Domain Correlation Chains
+                      </CardTitle>
+                      <CardDescription>
+                        Causal relationships between failures across different test domains
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {!correlationsData?.correlations || correlationsData.correlations.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Link2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No cross-domain correlations detected.</p>
+                          <p className="text-sm">Run more tests across different domains to enable correlation analysis.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {/* Domain Breakdown */}
+                          <div className="grid grid-cols-6 gap-2 mb-4">
+                            {Object.entries(correlationsData.domain_breakdown).map(([domain, count]) => (
+                              <div key={domain} className="p-2 rounded-lg bg-muted/50 text-center">
+                                <div className="mb-1">
+                                  {domain === 'api' && <Server className="h-4 w-4 mx-auto text-blue-500" />}
+                                  {domain === 'ui' && <Layers className="h-4 w-4 mx-auto text-purple-500" />}
+                                  {domain === 'db' && <Database className="h-4 w-4 mx-auto text-green-500" />}
+                                  {domain === 'infra' && <Server className="h-4 w-4 mx-auto text-orange-500" />}
+                                  {domain === 'performance' && <Gauge className="h-4 w-4 mx-auto text-yellow-500" />}
+                                  {domain === 'security' && <Shield className="h-4 w-4 mx-auto text-red-500" />}
+                                </div>
+                                <div className="text-sm font-medium">{count}</div>
+                                <div className="text-xs text-muted-foreground capitalize">{domain}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Correlation Cards */}
+                          {correlationsData.correlations.map((correlation) => (
+                            <div
+                              key={correlation.id}
+                              className={cn(
+                                'p-4 rounded-lg border',
+                                correlation.severity === 'critical' && 'border-red-500/30 bg-red-500/5',
+                                correlation.severity === 'high' && 'border-orange-500/30 bg-orange-500/5'
+                              )}
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium">{correlation.title}</span>
+                                    <Badge variant={
+                                      correlation.severity === 'critical' ? 'error' :
+                                      correlation.severity === 'high' ? 'warning' : 'info'
+                                    }>
+                                      {correlation.severity}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {(correlation.confidence * 100).toFixed(0)}% confidence
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">{correlation.summary}</p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-lg font-bold">{correlation.affected_test_count}</div>
+                                  <div className="text-xs text-muted-foreground">tests affected</div>
+                                </div>
+                              </div>
+
+                              {/* Chain Visualization */}
+                              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 overflow-x-auto">
+                                {correlation.chain_steps.map((step, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <div className={cn(
+                                      'flex-shrink-0 p-2 rounded-lg',
+                                      step.domain === 'api' && 'bg-blue-500/10',
+                                      step.domain === 'ui' && 'bg-purple-500/10',
+                                      step.domain === 'db' && 'bg-green-500/10',
+                                      step.domain === 'infra' && 'bg-orange-500/10',
+                                      step.domain === 'performance' && 'bg-yellow-500/10',
+                                      step.domain === 'security' && 'bg-red-500/10'
+                                    )}>
+                                      <div className="flex items-center gap-2">
+                                        {step.domain === 'api' && <Server className="h-4 w-4 text-blue-500" />}
+                                        {step.domain === 'ui' && <Layers className="h-4 w-4 text-purple-500" />}
+                                        {step.domain === 'db' && <Database className="h-4 w-4 text-green-500" />}
+                                        {step.domain === 'infra' && <Server className="h-4 w-4 text-orange-500" />}
+                                        {step.domain === 'performance' && <Gauge className="h-4 w-4 text-yellow-500" />}
+                                        {step.domain === 'security' && <Shield className="h-4 w-4 text-red-500" />}
+                                        <span className="text-xs font-medium capitalize">{step.domain}</span>
+                                      </div>
+                                      <div className="text-xs text-muted-foreground mt-1 max-w-[150px] truncate">
+                                        {step.description}
+                                      </div>
+                                    </div>
+                                    {idx < correlation.chain_steps.length - 1 && (
+                                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Suggested Fixes */}
+                              {correlation.suggested_fixes.length > 0 && (
+                                <div className="mt-3">
+                                  <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground mb-2">
+                                    <Lightbulb className="h-3 w-3" />
+                                    Suggested Fixes
+                                  </div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {correlation.suggested_fixes.slice(0, 3).map((fix, idx) => (
+                                      <span key={idx} className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                                        {fix}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+
+                          {/* Top Chain Patterns */}
+                          {correlationsData.top_chain_patterns.length > 0 && (
+                            <div className="p-4 rounded-lg bg-muted/30">
+                              <h4 className="text-sm font-medium mb-3">Most Common Patterns</h4>
+                              <div className="space-y-2">
+                                {correlationsData.top_chain_patterns.map((pattern, idx) => (
+                                  <div key={idx} className="flex items-center justify-between">
+                                    <code className="text-xs px-2 py-1 rounded bg-muted">{pattern.pattern}</code>
+                                    <div className="flex items-center gap-4">
+                                      <span className="text-sm">{pattern.count} occurrences</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        avg impact: {pattern.avg_impact_score.toFixed(1)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Proactive Alerts */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Bell className="h-5 w-5 text-primary" />
+                        Proactive Alerts
+                        {alertsData?.critical_count ? (
+                          <Badge variant="error">{alertsData.critical_count} critical</Badge>
+                        ) : null}
+                      </CardTitle>
+                      <CardDescription>
+                        Predicted issues based on trend analysis before they cause failures
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {!alertsData?.alerts || alertsData.alerts.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-green-500 opacity-50" />
+                          <p>No concerning trends detected.</p>
+                          <p className="text-sm">Your test suite health appears stable.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {alertsData.alerts.map((alert) => (
+                            <div
+                              key={alert.id}
+                              className={cn(
+                                'p-4 rounded-lg border',
+                                alert.severity === 'critical' && 'border-red-500/30 bg-red-500/5',
+                                alert.severity === 'high' && 'border-orange-500/30 bg-orange-500/5',
+                                alert.severity === 'medium' && 'border-yellow-500/30 bg-yellow-500/5'
+                              )}
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  {alert.alert_type === 'trend' && <TrendingUp className="h-5 w-5 text-orange-500" />}
+                                  {alert.alert_type === 'anomaly' && <AlertTriangle className="h-5 w-5 text-yellow-500" />}
+                                  {alert.alert_type === 'prediction' && <Lightbulb className="h-5 w-5 text-blue-500" />}
+                                  {alert.alert_type === 'threshold' && <AlertCircle className="h-5 w-5 text-red-500" />}
+                                  <span className="font-medium">{alert.title}</span>
+                                  <Badge variant={
+                                    alert.severity === 'critical' ? 'error' :
+                                    alert.severity === 'high' ? 'warning' : 'info'
+                                  }>
+                                    {alert.severity}
+                                  </Badge>
+                                  <Badge variant="outline" className="capitalize">{alert.domain.replace('_', ' ')}</Badge>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {(alert.confidence * 100).toFixed(0)}% confidence
+                                </span>
+                              </div>
+
+                              <p className="text-sm text-muted-foreground mb-3">{alert.description}</p>
+
+                              <div className="flex items-center gap-4 mb-3">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Clock className="h-4 w-4 text-muted-foreground" />
+                                  <span>Time to impact: <strong>{alert.time_to_impact}</strong></span>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {alert.predicted_impact}
+                                </div>
+                              </div>
+
+                              {/* Trend Data Visualization (if available) */}
+                              {alert.trend_data.length > 0 && (
+                                <div className="p-3 rounded-lg bg-muted/50 mb-3">
+                                  <div className="flex items-end gap-1 h-12">
+                                    {alert.trend_data.slice(-10).map((point, idx) => (
+                                      <div
+                                        key={idx}
+                                        className={cn(
+                                          'flex-1 rounded-t',
+                                          point.threshold && point.value > point.threshold ? 'bg-red-500' : 'bg-primary/50'
+                                        )}
+                                        style={{ height: `${Math.min(100, (point.value / (Math.max(...alert.trend_data.map(p => p.value)) || 1)) * 100)}%` }}
+                                        title={`${point.date}: ${point.value.toFixed(1)}`}
+                                      />
+                                    ))}
+                                  </div>
+                                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                                    <span>{alert.trend_data[0]?.date}</span>
+                                    <span>{alert.trend_data[alert.trend_data.length - 1]?.date}</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Recommended Actions */}
+                              <div>
+                                <div className="text-xs font-medium text-muted-foreground mb-2">Recommended Actions</div>
+                                <div className="space-y-1">
+                                  {alert.recommended_actions.slice(0, 3).map((action, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 text-sm">
+                                      <ChevronRight className="h-3 w-3 text-primary" />
+                                      {action}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* Alert Summary */}
+                          <div className="p-4 rounded-lg bg-muted/30">
+                            <div className="text-sm text-muted-foreground">{alertsData.analysis_summary}</div>
+                          </div>
                         </div>
                       )}
                     </CardContent>

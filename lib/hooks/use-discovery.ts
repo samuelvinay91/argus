@@ -179,19 +179,25 @@ export function useStartDiscovery() {
 
       try {
         // 2. Call backend API to observe the page (authenticated)
+        // Note: Uses /api/v1/browser/observe endpoint which returns elements
         const observeResult = await apiClient.post<{
-          actions?: Array<{ selector?: string; description?: string }>;
-          pageTitle?: string;
+          elements?: Array<{ selector?: string; description?: string }>;
+          title?: string;
           screenshot?: string;
-        }>('/api/v1/discovery/observe', {
+        }>('/api/v1/browser/observe', {
           url: appUrl,
           instruction: 'Analyze this page and identify all interactive elements, forms, links, and possible user flows',
-          projectId,  // Pass for activity logging
-          activityType: 'discovery',
         });
 
-        // 3. Parse the observation results - worker returns 'actions' not 'elements'
-        const actions = observeResult.actions || [];
+        // Map browser observe response format to expected format
+        const mappedResult = {
+          actions: observeResult.elements || [],
+          pageTitle: observeResult.title,
+          screenshot: observeResult.screenshot,
+        };
+
+        // 3. Parse the observation results - use mappedResult from browser observe
+        const actions = mappedResult.actions || [];
 
         // Categorize actions by their description/selector
         const links = actions.filter((a: any) =>
@@ -226,14 +232,14 @@ export function useStartDiscovery() {
             discovery_session_id: session.id,
             project_id: projectId,
             url: appUrl,
-            title: observeResult.pageTitle || appUrl,
+            title: mappedResult.pageTitle || appUrl,
             page_type: 'landing',
             element_count: buttons.length + inputs.length,
             form_count: forms.length,
             link_count: links.length,
             metadata: {
               elements: elements.slice(0, 50), // Store first 50 elements
-              screenshot: observeResult.screenshot,
+              screenshot: mappedResult.screenshot,
             },
           }, {
             onConflict: 'project_id,url',

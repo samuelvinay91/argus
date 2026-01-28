@@ -32,6 +32,13 @@ import {
   ListTodo,
   XCircle,
   AlertCircle,
+  Plus,
+  Clock,
+  Users,
+  Play,
+  ChevronRight,
+  Wand2,
+  FlaskConical,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,6 +55,16 @@ import {
   type Integration,
   type ConnectIntegrationRequest,
 } from '@/lib/hooks/use-integrations';
+import {
+  useIntegrationErrors,
+  useIntegrationSessions,
+  useErrorToTest,
+  useSessionToTest,
+  useBulkGenerateTests,
+  type IntegrationError,
+  type IntegrationSession,
+  type GeneratedTest,
+} from '@/lib/hooks/use-integration-ai';
 
 // ============================================================================
 // Static Configuration Examples
@@ -402,15 +419,28 @@ export default function IntegrationsPage() {
   const syncMutation = useSyncIntegration();
   const syncAllMutation = useSyncAllIntegrations();
 
+  // AI Generation data and mutations
+  const { data: errorsData, isLoading: errorsLoading } = useIntegrationErrors();
+  const { data: sessionsData, isLoading: sessionsLoading } = useIntegrationSessions();
+  const errorToTestMutation = useErrorToTest();
+  const sessionToTestMutation = useSessionToTest();
+  const bulkGenerateMutation = useBulkGenerateTests();
+
   // Local UI state
   const [selectedPlatform, setSelectedPlatform] = useState<IntegrationPlatform | null>(null);
   const [selectedCicdPlatform, setSelectedCicdPlatform] = useState<IntegrationPlatform>('github');
   const [copied, setCopied] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [activeTab, setActiveTab] = useState<'cicd' | 'observability'>('observability');
+  const [activeTab, setActiveTab] = useState<'cicd' | 'observability' | 'ai-generation'>('observability');
 
   // Form state for connection
   const [formData, setFormData] = useState<ConnectIntegrationRequest>({});
+
+  // AI Generation state
+  const [selectedErrors, setSelectedErrors] = useState<Set<string>>(new Set());
+  const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
+  const [generatedTest, setGeneratedTest] = useState<GeneratedTest | null>(null);
+  const [showTestPreview, setShowTestPreview] = useState(false);
 
   // Get integration data for a platform
   const getIntegration = useCallback((platform: IntegrationPlatform): Integration | undefined => {
@@ -517,6 +547,104 @@ export default function IntegrationsPage() {
     }
   };
 
+  // AI Test Generation handlers
+  const handleGenerateFromError = async (error: IntegrationError) => {
+    try {
+      const result = await errorToTestMutation.mutateAsync({
+        error_id: error.id,
+        platform: error.platform,
+      });
+      setGeneratedTest(result);
+      setShowTestPreview(true);
+      toast.success({
+        title: 'Test generated',
+        description: `Created regression test: ${result.name}`,
+      });
+    } catch (err) {
+      toast.error({
+        title: 'Generation failed',
+        description: err instanceof Error ? err.message : 'Failed to generate test from error',
+      });
+    }
+  };
+
+  const handleGenerateFromSession = async (session: IntegrationSession) => {
+    try {
+      const result = await sessionToTestMutation.mutateAsync({
+        session_id: session.id,
+        platform: session.platform,
+      });
+      setGeneratedTest(result);
+      setShowTestPreview(true);
+      toast.success({
+        title: 'Test generated',
+        description: `Created E2E test: ${result.name}`,
+      });
+    } catch (err) {
+      toast.error({
+        title: 'Generation failed',
+        description: err instanceof Error ? err.message : 'Failed to generate test from session',
+      });
+    }
+  };
+
+  const handleBulkGenerate = async (type: 'error' | 'session') => {
+    const items = type === 'error'
+      ? Array.from(selectedErrors).map(id => {
+          const err = errorsData?.errors.find(e => e.id === id);
+          return { id, platform: err?.platform || '' };
+        })
+      : Array.from(selectedSessions).map(id => {
+          const sess = sessionsData?.sessions.find(s => s.id === id);
+          return { id, platform: sess?.platform || '' };
+        });
+
+    if (items.length === 0) {
+      toast.error({
+        title: 'No items selected',
+        description: `Please select at least one ${type} to generate tests from`,
+      });
+      return;
+    }
+
+    try {
+      const result = await bulkGenerateMutation.mutateAsync({
+        items,
+        source_type: type,
+      });
+      toast.success({
+        title: 'Bulk generation complete',
+        description: `${result.total_generated} tests generated, ${result.total_failed} failed`,
+      });
+      // Clear selections
+      if (type === 'error') setSelectedErrors(new Set());
+      else setSelectedSessions(new Set());
+    } catch (err) {
+      toast.error({
+        title: 'Bulk generation failed',
+        description: err instanceof Error ? err.message : 'Failed to generate tests',
+      });
+    }
+  };
+
+  const toggleErrorSelection = (id: string) => {
+    setSelectedErrors(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSessionSelection = (id: string) => {
+    setSelectedSessions(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   // Selected integration data for modals
   const selectedIntegration = selectedPlatform ? getIntegration(selectedPlatform) : null;
   const selectedDisplayInfo = selectedPlatform ? getPlatformDisplayInfo(selectedPlatform) : null;
@@ -606,6 +734,18 @@ export default function IntegrationsPage() {
             >
               <Github className="inline-block mr-2 h-4 w-4" />
               CI/CD & Notifications
+            </button>
+            <button
+              onClick={() => setActiveTab('ai-generation')}
+              className={cn(
+                'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                activeTab === 'ai-generation'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <Wand2 className="inline-block mr-2 h-4 w-4" />
+              AI Test Generation
             </button>
           </div>
 
@@ -1006,7 +1146,7 @@ export default function IntegrationsPage() {
                   </CardContent>
                 </Card>
               </motion.div>
-            ) : (
+            ) : activeTab === 'cicd' ? (
               <motion.div
                 key="cicd"
                 initial={{ opacity: 0, y: 10 }}
@@ -1482,7 +1622,510 @@ export default function IntegrationsPage() {
                   </CardContent>
                 </Card>
               </motion.div>
-            )}
+            ) : activeTab === 'ai-generation' ? (
+              <motion.div
+                key="ai-generation"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-6"
+              >
+                {/* AI Generation Header */}
+                <Card className="bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-green-500/5 border-purple-500/20">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                          <Wand2 className="h-5 w-5 text-purple-500" />
+                          AI-Powered Test Generation
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Automatically generate tests from production errors and real user sessions
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-purple-500">
+                          {(errorsData?.total || 0) + (sessionsData?.total || 0)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">items available</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 mt-4">
+                      <div className="flex items-center gap-2">
+                        <Bug className="h-4 w-4 text-red-500" />
+                        <span className="text-sm">{errorsData?.total || 0} errors</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Video className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm">{sessionsData?.total || 0} sessions</span>
+                      </div>
+                      {(errorsData?.platforms?.length || 0) > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-green-500" />
+                          <span className="text-sm">
+                            {[...new Set([...(errorsData?.platforms || []), ...(sessionsData?.platforms || [])])].length} platforms
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid lg:grid-cols-2 gap-6">
+                  {/* Error to Test Section */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="flex items-center gap-2">
+                            <Bug className="h-5 w-5 text-red-500" />
+                            Error to Test
+                          </CardTitle>
+                          <CardDescription>
+                            Convert production errors into regression tests
+                          </CardDescription>
+                        </div>
+                        {selectedErrors.size > 0 && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleBulkGenerate('error')}
+                            disabled={bulkGenerateMutation.isPending}
+                          >
+                            {bulkGenerateMutation.isPending ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Plus className="mr-2 h-4 w-4" />
+                            )}
+                            Generate {selectedErrors.size} Tests
+                          </Button>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {errorsLoading ? (
+                        <div className="space-y-3">
+                          {Array.from({ length: 3 }).map((_, i) => (
+                            <Skeleton key={i} className="h-20 rounded-lg" />
+                          ))}
+                        </div>
+                      ) : (errorsData?.errors?.length || 0) === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Bug className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                          <p>No errors found from connected platforms</p>
+                          <p className="text-sm mt-1">
+                            Connect Sentry, Datadog, or New Relic to see errors
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                          {errorsData?.errors.map((error) => (
+                            <div
+                              key={error.id}
+                              className={cn(
+                                'p-4 rounded-lg border transition-colors cursor-pointer',
+                                selectedErrors.has(error.id)
+                                  ? 'border-purple-500 bg-purple-500/5'
+                                  : 'hover:bg-accent/50'
+                              )}
+                              onClick={() => toggleErrorSelection(error.id)}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className={cn(
+                                      'px-2 py-0.5 rounded text-xs font-medium',
+                                      error.severity === 'error' || error.severity === 'fatal'
+                                        ? 'bg-red-500/10 text-red-500'
+                                        : error.severity === 'warning'
+                                        ? 'bg-yellow-500/10 text-yellow-500'
+                                        : 'bg-blue-500/10 text-blue-500'
+                                    )}>
+                                      {error.severity}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {error.platform}
+                                    </span>
+                                  </div>
+                                  <p className="font-medium text-sm line-clamp-2">
+                                    {error.message}
+                                  </p>
+                                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Activity className="h-3 w-3" />
+                                      {error.occurrence_count} occurrences
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Users className="h-3 w-3" />
+                                      {error.affected_users} users
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      {formatRelativeTime(error.last_seen)}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleGenerateFromError(error);
+                                  }}
+                                  disabled={errorToTestMutation.isPending}
+                                >
+                                  {errorToTestMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <FlaskConical className="h-4 w-4 mr-1" />
+                                      Generate
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                              {error.issue_url && (
+                                <a
+                                  href={error.issue_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  View in {error.platform}
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Session to Test Section */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="flex items-center gap-2">
+                            <Video className="h-5 w-5 text-blue-500" />
+                            Session to Test
+                          </CardTitle>
+                          <CardDescription>
+                            Convert user sessions into E2E tests
+                          </CardDescription>
+                        </div>
+                        {selectedSessions.size > 0 && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleBulkGenerate('session')}
+                            disabled={bulkGenerateMutation.isPending}
+                          >
+                            {bulkGenerateMutation.isPending ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Plus className="mr-2 h-4 w-4" />
+                            )}
+                            Generate {selectedSessions.size} Tests
+                          </Button>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {sessionsLoading ? (
+                        <div className="space-y-3">
+                          {Array.from({ length: 3 }).map((_, i) => (
+                            <Skeleton key={i} className="h-20 rounded-lg" />
+                          ))}
+                        </div>
+                      ) : (sessionsData?.sessions?.length || 0) === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Video className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                          <p>No sessions found from connected platforms</p>
+                          <p className="text-sm mt-1">
+                            Connect FullStory, PostHog, or Datadog RUM to see sessions
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                          {sessionsData?.sessions.map((session) => (
+                            <div
+                              key={session.id}
+                              className={cn(
+                                'p-4 rounded-lg border transition-colors cursor-pointer',
+                                selectedSessions.has(session.id)
+                                  ? 'border-blue-500 bg-blue-500/5'
+                                  : 'hover:bg-accent/50'
+                              )}
+                              onClick={() => toggleSessionSelection(session.id)}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs text-muted-foreground">
+                                      {session.platform}
+                                    </span>
+                                    {session.has_errors && (
+                                      <span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-500">
+                                        Has Errors
+                                      </span>
+                                    )}
+                                    {session.has_frustration && (
+                                      <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/10 text-yellow-500">
+                                        Frustration
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="font-medium text-sm">
+                                    Session {session.id.slice(0, 8)}...
+                                    {session.user_id && (
+                                      <span className="text-muted-foreground ml-1">
+                                        (User: {session.user_id.slice(0, 8)}...)
+                                      </span>
+                                    )}
+                                  </p>
+                                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      {Math.round(session.duration_ms / 1000)}s duration
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Activity className="h-3 w-3" />
+                                      {session.page_views} pages
+                                    </span>
+                                    <span>
+                                      {formatRelativeTime(session.started_at)}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {session.replay_url && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      asChild
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <a
+                                        href={session.replay_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <Play className="h-4 w-4" />
+                                      </a>
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleGenerateFromSession(session);
+                                    }}
+                                    disabled={sessionToTestMutation.isPending}
+                                  >
+                                    {sessionToTestMutation.isPending ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <>
+                                        <FlaskConical className="h-4 w-4 mr-1" />
+                                        Generate
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Generated Test Preview Modal */}
+                <AnimatePresence>
+                  {showTestPreview && generatedTest && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center"
+                      onClick={() => {
+                        setShowTestPreview(false);
+                        setGeneratedTest(null);
+                      }}
+                    >
+                      <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-card border rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6"
+                      >
+                        <div className="flex items-center gap-3 mb-6">
+                          <div className="p-3 rounded-lg bg-green-500/10">
+                            <CheckCircle className="h-6 w-6 text-green-500" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold">Test Generated Successfully</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {generatedTest.source_type === 'error' ? 'Regression test' : 'E2E test'} from {generatedTest.source_platform}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium mb-1">{generatedTest.name}</h4>
+                            <p className="text-sm text-muted-foreground">{generatedTest.description}</p>
+                          </div>
+
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className={cn(
+                              'px-2 py-1 rounded',
+                              generatedTest.priority === 'critical'
+                                ? 'bg-red-500/10 text-red-500'
+                                : generatedTest.priority === 'high'
+                                ? 'bg-orange-500/10 text-orange-500'
+                                : 'bg-blue-500/10 text-blue-500'
+                            )}>
+                              {generatedTest.priority} priority
+                            </span>
+                            <span className="text-muted-foreground">
+                              {Math.round(generatedTest.confidence * 100)}% confidence
+                            </span>
+                            <span className="text-muted-foreground">
+                              {generatedTest.steps.length} steps
+                            </span>
+                          </div>
+
+                          {generatedTest.preconditions.length > 0 && (
+                            <div>
+                              <h5 className="text-sm font-medium mb-2">Preconditions</h5>
+                              <ul className="list-disc list-inside text-sm text-muted-foreground">
+                                {generatedTest.preconditions.map((pre, i) => (
+                                  <li key={i}>{pre}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          <div>
+                            <h5 className="text-sm font-medium mb-2">Test Steps</h5>
+                            <div className="space-y-2">
+                              {generatedTest.steps.slice(0, 5).map((step, i) => (
+                                <div key={i} className="flex items-start gap-3 text-sm">
+                                  <span className="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">
+                                    {i + 1}
+                                  </span>
+                                  <div>
+                                    <span className="font-mono text-xs text-purple-500">{step.action}</span>
+                                    {step.target && <span className="text-muted-foreground ml-2">on {step.target}</span>}
+                                    {step.value && <span className="text-muted-foreground ml-1">= &quot;{step.value}&quot;</span>}
+                                  </div>
+                                </div>
+                              ))}
+                              {generatedTest.steps.length > 5 && (
+                                <p className="text-sm text-muted-foreground pl-9">
+                                  ... and {generatedTest.steps.length - 5} more steps
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {generatedTest.assertions.length > 0 && (
+                            <div>
+                              <h5 className="text-sm font-medium mb-2">Assertions</h5>
+                              <div className="space-y-1">
+                                {generatedTest.assertions.slice(0, 3).map((assertion, i) => (
+                                  <div key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                                    <span>{assertion.description || `${assertion.type}: ${assertion.target}`}</span>
+                                  </div>
+                                ))}
+                                {generatedTest.assertions.length > 3 && (
+                                  <p className="text-sm text-muted-foreground pl-6">
+                                    ... and {generatedTest.assertions.length - 3} more assertions
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="pt-4 border-t text-sm text-muted-foreground">
+                            <p>{generatedTest.rationale}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 mt-6">
+                          <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => {
+                              setShowTestPreview(false);
+                              setGeneratedTest(null);
+                            }}
+                          >
+                            Close
+                          </Button>
+                          {generatedTest.test_id && (
+                            <Button className="flex-1" asChild>
+                              <a href={`/tests/${generatedTest.test_id}`}>
+                                View Test
+                                <ChevronRight className="ml-2 h-4 w-4" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* How It Works */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      How AI Test Generation Works
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-purple-500 font-medium">
+                          <span className="w-6 h-6 rounded-full bg-purple-500/10 flex items-center justify-center text-sm">1</span>
+                          Connect Platforms
+                        </div>
+                        <p className="text-sm text-muted-foreground pl-8">
+                          Link your observability tools like Sentry, FullStory, or Datadog to import errors and sessions.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-blue-500 font-medium">
+                          <span className="w-6 h-6 rounded-full bg-blue-500/10 flex items-center justify-center text-sm">2</span>
+                          AI Analyzes Data
+                        </div>
+                        <p className="text-sm text-muted-foreground pl-8">
+                          Claude AI examines error stack traces and session recordings to understand user intent and failure patterns.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-green-500 font-medium">
+                          <span className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center text-sm">3</span>
+                          Tests Generated
+                        </div>
+                        <p className="text-sm text-muted-foreground pl-8">
+                          Intelligent tests are created with proper steps, assertions, and test data that you can run immediately.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ) : null}
           </AnimatePresence>
         </div>
       </main>
