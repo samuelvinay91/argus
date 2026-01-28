@@ -523,6 +523,13 @@ function BudgetProgressBar({
   const isWarning = percentage > 50;
   const isDanger = percentage > 80;
 
+  // Determine status message for screen readers
+  const statusMessage = isDanger
+    ? 'Budget warning: approaching limit'
+    : isWarning
+    ? 'Budget caution: over 50% used'
+    : 'Budget status: normal';
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-sm">
@@ -531,7 +538,14 @@ function BudgetProgressBar({
           {formatCurrency(spent)} / {formatCurrency(limit)}
         </span>
       </div>
-      <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+      <div
+        role="progressbar"
+        aria-valuenow={percentage}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${label}: ${formatPercent(percentage)} used`}
+        className="w-full h-2 bg-muted rounded-full overflow-hidden"
+      >
         <div
           className={cn(
             'h-full transition-all duration-300',
@@ -544,6 +558,10 @@ function BudgetProgressBar({
         <span>{formatPercent(percentage)} used</span>
         <span>{formatCurrency(limit - spent)} remaining</span>
       </div>
+      {/* Screen reader announcement for budget changes */}
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {statusMessage}. {formatPercent(percentage)} of budget used. {formatCurrency(limit - spent)} remaining.
+      </span>
     </div>
   );
 }

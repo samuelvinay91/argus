@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Component, type ReactNode } from 'react';
 import {
   TrendingUp,
   Calendar,
@@ -14,6 +14,7 @@ import {
   PieChart as PieChartIcon,
   Cpu,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import {
   LineChart,
@@ -107,6 +108,59 @@ function formatNumber(value: number): string {
     return `${(value / 1000).toFixed(1)}K`;
   }
   return value.toLocaleString();
+}
+
+// ============================================================================
+// Error Boundary for Charts
+// ============================================================================
+
+interface ChartErrorBoundaryProps {
+  children: ReactNode;
+  fallbackMessage?: string;
+}
+
+interface ChartErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+/**
+ * Error boundary specifically for chart components.
+ * Prevents chart rendering errors from crashing the entire page.
+ * This is important because Recharts can throw on malformed data.
+ */
+class ChartErrorBoundary extends Component<ChartErrorBoundaryProps, ChartErrorBoundaryState> {
+  constructor(props: ChartErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ChartErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Log error for debugging but don't break the page
+    console.error('Chart rendering error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[250px] border rounded-lg bg-muted/10 text-muted-foreground">
+          <AlertCircle className="h-8 w-8 mb-2 text-destructive/60" />
+          <p className="text-sm font-medium">
+            {this.props.fallbackMessage || 'Unable to render chart'}
+          </p>
+          <p className="text-xs mt-1">
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 // ============================================================================
@@ -754,7 +808,9 @@ export default function AIUsageAnalyticsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CostOverTimeChart data={costOverTimeData} timeRange={timeRange} />
+                  <ChartErrorBoundary fallbackMessage="Unable to load cost chart">
+                    <CostOverTimeChart data={costOverTimeData} timeRange={timeRange} />
+                  </ChartErrorBoundary>
                 </CardContent>
               </Card>
 
@@ -769,7 +825,9 @@ export default function AIUsageAnalyticsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <UsageByTaskTypeChart data={usageByTaskTypeData} />
+                    <ChartErrorBoundary fallbackMessage="Unable to load task type chart">
+                      <UsageByTaskTypeChart data={usageByTaskTypeData} />
+                    </ChartErrorBoundary>
                   </CardContent>
                 </Card>
 
@@ -782,7 +840,9 @@ export default function AIUsageAnalyticsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <UsageByProviderChart data={usageByProviderData} />
+                    <ChartErrorBoundary fallbackMessage="Unable to load provider chart">
+                      <UsageByProviderChart data={usageByProviderData} />
+                    </ChartErrorBoundary>
                   </CardContent>
                 </Card>
 

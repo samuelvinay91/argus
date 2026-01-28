@@ -68,6 +68,7 @@ export function ModeToggle({
   const handleMouseLeave = () => {
     if (tooltipTimeoutRef.current) {
       clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null; // Clear ref to prevent stale references
     }
     setShowTooltip(null);
   };
