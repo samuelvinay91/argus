@@ -18,3 +18,5 @@ export {
   DataLayerHealthPanelSkeleton,
   DataLayerHealthIndicator,
 } from './data-layer-health';
+
+export { MonitoringPanel, MonitoringPanelSkeleton } from './MonitoringPanel';

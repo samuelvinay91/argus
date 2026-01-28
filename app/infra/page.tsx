@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { RefreshCw, Server, DollarSign, Brain, Settings, Activity } from 'lucide-react';
+import { RefreshCw, Server, DollarSign, Brain, Settings, Activity, BarChart3 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +19,8 @@ import {
   DataLayerHealthPanel,
   DataLayerHealthPanelSkeleton,
   DataLayerHealthIndicator,
+  MonitoringPanel,
+  MonitoringPanelSkeleton,
 } from '@/components/infra';
 import {
   useInfraCostOverview,
@@ -31,7 +33,7 @@ import {
 } from '@/lib/hooks/use-infra';
 import { cn } from '@/lib/utils';
 
-type TabType = 'overview' | 'system-health' | 'browser-pool' | 'ai-costs' | 'recommendations';
+type TabType = 'overview' | 'system-health' | 'browser-pool' | 'ai-costs' | 'monitoring' | 'recommendations';
 
 export default function InfrastructurePage() {
   const { user, isLoaded: userLoaded } = useUser();
@@ -64,6 +66,7 @@ export default function InfrastructurePage() {
     { id: 'system-health', label: 'System Health', icon: <Activity className="h-4 w-4" /> },
     { id: 'browser-pool', label: 'Browser Pool', icon: <Server className="h-4 w-4" /> },
     { id: 'ai-costs', label: 'AI / LLM Costs', icon: <Brain className="h-4 w-4" /> },
+    { id: 'monitoring', label: 'Monitoring', icon: <BarChart3 className="h-4 w-4" /> },
     { id: 'recommendations', label: 'Recommendations', icon: <Settings className="h-4 w-4" /> },
   ];
 
@@ -218,6 +221,12 @@ export default function InfrastructurePage() {
               ) : (
                 <LLMCostTracker data={llmCosts.data || null} />
               )}
+            </div>
+          )}
+
+          {activeTab === 'monitoring' && (
+            <div className="space-y-6">
+              <MonitoringPanel />
             </div>
           )}
 

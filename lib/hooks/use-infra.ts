@@ -450,3 +450,228 @@ export function useComponentHealth(component: string) {
     refetchInterval: 15000, // Refresh individual component every 15 seconds
   });
 }
+
+// ============================================================================
+// Monitoring Stack Types and Hooks
+// ============================================================================
+
+export interface GrafanaHealthResponse {
+  status: 'healthy' | 'unhealthy';
+  grafana?: {
+    database?: string;
+    version?: string;
+  };
+  error?: string;
+}
+
+export interface PrometheusHealthResponse {
+  status: 'healthy' | 'unhealthy';
+  prometheus?: string;
+  error?: string;
+}
+
+export interface AlertManagerHealthResponse {
+  status: 'healthy' | 'unhealthy';
+  alertmanager?: string;
+  error?: string;
+}
+
+export interface PrometheusTargetsResponse {
+  status: string;
+  data: {
+    activeTargets: Array<{
+      labels: Record<string, string>;
+      health: 'up' | 'down' | 'unknown';
+      lastScrape: string;
+      lastError: string;
+    }>;
+    droppedTargets: Array<{
+      discoveredLabels: Record<string, string>;
+    }>;
+  };
+}
+
+export interface PrometheusAlertsResponse {
+  status: string;
+  data: {
+    alerts: Array<{
+      labels: Record<string, string>;
+      annotations: Record<string, string>;
+      state: 'pending' | 'firing' | 'inactive';
+      activeAt: string;
+      value: string;
+    }>;
+  };
+}
+
+export interface AlertManagerAlertsResponse {
+  alerts: Array<{
+    labels: Record<string, string>;
+    annotations: Record<string, string>;
+    startsAt: string;
+    endsAt: string;
+    status: {
+      state: 'active' | 'suppressed' | 'unprocessed';
+      silencedBy: string[];
+      inhibitedBy: string[];
+    };
+  }>;
+}
+
+export interface GrafanaDashboard {
+  uid: string;
+  title: string;
+  url: string;
+  tags: string[];
+}
+
+export interface GrafanaDashboardsResponse {
+  dashboards: GrafanaDashboard[];
+}
+
+/**
+ * Hook to fetch Grafana health status
+ */
+export function useGrafanaHealth() {
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
+
+  return useQuery({
+    queryKey: ['monitoring', 'grafana', 'health'],
+    queryFn: async (): Promise<GrafanaHealthResponse> => {
+      const response = await fetchJson<GrafanaHealthResponse>('/api/v1/monitoring/grafana/health');
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data || { status: 'unhealthy', error: 'No data returned' };
+    },
+    enabled: isLoaded && isSignedIn,
+    refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 1,
+  });
+}
+
+/**
+ * Hook to fetch Prometheus health status
+ */
+export function usePrometheusHealth() {
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
+
+  return useQuery({
+    queryKey: ['monitoring', 'prometheus', 'health'],
+    queryFn: async (): Promise<PrometheusHealthResponse> => {
+      const response = await fetchJson<PrometheusHealthResponse>('/api/v1/monitoring/prometheus/health');
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data || { status: 'unhealthy', error: 'No data returned' };
+    },
+    enabled: isLoaded && isSignedIn,
+    refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 1,
+  });
+}
+
+/**
+ * Hook to fetch AlertManager health status
+ */
+export function useAlertManagerHealth() {
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
+
+  return useQuery({
+    queryKey: ['monitoring', 'alertmanager', 'health'],
+    queryFn: async (): Promise<AlertManagerHealthResponse> => {
+      const response = await fetchJson<AlertManagerHealthResponse>('/api/v1/monitoring/alertmanager/health');
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data || { status: 'unhealthy', error: 'No data returned' };
+    },
+    enabled: isLoaded && isSignedIn,
+    refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 1,
+  });
+}
+
+/**
+ * Hook to fetch Prometheus targets (scrape endpoints)
+ */
+export function usePrometheusTargets() {
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
+
+  return useQuery({
+    queryKey: ['monitoring', 'prometheus', 'targets'],
+    queryFn: async (): Promise<PrometheusTargetsResponse> => {
+      const response = await fetchJson<PrometheusTargetsResponse>('/api/v1/monitoring/prometheus/targets');
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data || { status: 'error', data: { activeTargets: [], droppedTargets: [] } };
+    },
+    enabled: isLoaded && isSignedIn,
+    refetchInterval: 60000, // Refresh every minute
+    retry: 1,
+  });
+}
+
+/**
+ * Hook to fetch Prometheus alerts
+ */
+export function usePrometheusAlerts() {
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
+
+  return useQuery({
+    queryKey: ['monitoring', 'prometheus', 'alerts'],
+    queryFn: async (): Promise<PrometheusAlertsResponse> => {
+      const response = await fetchJson<PrometheusAlertsResponse>('/api/v1/monitoring/prometheus/alerts');
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data || { status: 'error', data: { alerts: [] } };
+    },
+    enabled: isLoaded && isSignedIn,
+    refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 1,
+  });
+}
+
+/**
+ * Hook to fetch AlertManager alerts
+ */
+export function useAlertManagerAlerts() {
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
+
+  return useQuery({
+    queryKey: ['monitoring', 'alertmanager', 'alerts'],
+    queryFn: async (): Promise<AlertManagerAlertsResponse> => {
+      const response = await fetchJson<AlertManagerAlertsResponse>('/api/v1/monitoring/alertmanager/alerts');
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data || { alerts: [] };
+    },
+    enabled: isLoaded && isSignedIn,
+    refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 1,
+  });
+}
+
+/**
+ * Hook to fetch Grafana dashboards list
+ */
+export function useGrafanaDashboards() {
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
+
+  return useQuery({
+    queryKey: ['monitoring', 'grafana', 'dashboards'],
+    queryFn: async (): Promise<GrafanaDashboardsResponse> => {
+      const response = await fetchJson<GrafanaDashboardsResponse>('/api/v1/monitoring/grafana/dashboards');
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data || { dashboards: [] };
+    },
+    enabled: isLoaded && isSignedIn,
+    refetchInterval: 300000, // Refresh every 5 minutes (dashboards don't change often)
+    retry: 1,
+  });
+}

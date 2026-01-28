@@ -34,7 +34,7 @@ import {
 import { Badge } from '@/components/ui/data-table';
 import { cn } from '@/lib/utils';
 import { NoProjectsEmptyState } from '@/components/ui/empty-state';
-import type { Vulnerability, VulnerabilitySeverity } from '@/lib/supabase/types';
+import type { SecurityScanResult, Vulnerability, VulnerabilitySeverity } from '@/lib/supabase/types';
 
 // Risk Score Gauge Component
 function RiskScoreGauge({ score, size = 'lg' }: { score: number | null; size?: 'sm' | 'lg' }) {
