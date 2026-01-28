@@ -167,7 +167,7 @@ export function DataSourceConfig({
         }
 
         const jsonData = await response.json();
-        let arrayData = Array.isArray(jsonData) ? jsonData : jsonData[config.response_path || 'data'] || [];
+        const arrayData = Array.isArray(jsonData) ? jsonData : jsonData[config.response_path || 'data'] || [];
 
         const data: ParameterSetInput[] = arrayData.slice(0, 10).map((item: any, index: number) => ({
           name: item.name || `API Item ${index + 1}`,

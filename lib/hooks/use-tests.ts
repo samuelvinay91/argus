@@ -346,7 +346,7 @@ export function useTestRunHistory(projectId: string | null, currentRunId: string
       if (!projectId) return [];
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (supabase.from('test_runs') as any)
+      const query = (supabase.from('test_runs') as any)
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })

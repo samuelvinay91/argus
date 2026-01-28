@@ -518,7 +518,7 @@ export function useRunParameterizedTest() {
       // 4. Execute each iteration
       let passed = 0;
       let failed = 0;
-      let skipped = 0;
+      const skipped = 0;
       let errorCount = 0;
 
       for (let i = 0; i < paramSets.length; i++) {
