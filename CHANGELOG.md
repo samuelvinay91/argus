@@ -1,5 +1,133 @@
 # Changelog
 
+## [1.6.0](https://github.com/RaphaEnterprises-AI/argus/compare/v1.5.0...v1.6.0) (2026-01-28)
+
+
+### Features
+
+* add signed URL support for authenticated screenshot access ([568e5cd](https://github.com/RaphaEnterprises-AI/argus/commit/568e5cd371ceefe2fd440f974cbcca1fde6a4957))
+* BYOK AI settings UI and chat enhancements ([c84751a](https://github.com/RaphaEnterprises-AI/argus/commit/c84751aed22e4b938cf024ddc88588f86e9a5949))
+* **ci:** add test workflow with coverage enforcement ([ba423f7](https://github.com/RaphaEnterprises-AI/argus/commit/ba423f739d11eb9562d70851c4ce9d87a0e8829c))
+* **correlations:** add SDLC correlation dashboard UI (RAP-87) ([b086a18](https://github.com/RaphaEnterprises-AI/argus/commit/b086a18c503823f279b1f8b7a8d71346516f4f23))
+* **dashboard:** add 7 new testing sections with AI-driven insights ([603cfa0](https://github.com/RaphaEnterprises-AI/argus/commit/603cfa088808940cc0f3640928243d4d5a5aa550))
+* **dashboard:** add AI Hub with multi-persona settings interface ([80187bc](https://github.com/RaphaEnterprises-AI/argus/commit/80187bcbc7102d6311cfe01ac464d19ffc55c5e3))
+* **dashboard:** add authenticated screenshot fetching ([5952e2c](https://github.com/RaphaEnterprises-AI/argus/commit/5952e2c670ca5c5326dea7d63539a97da57ce89a))
+* **dashboard:** add backend API migration foundation with feature flags ([3e82385](https://github.com/RaphaEnterprises-AI/argus/commit/3e82385f6154e29771cf406651e12b2055abb237))
+* **dashboard:** add debug logging for API migration paths ([db5dcaf](https://github.com/RaphaEnterprises-AI/argus/commit/db5dcafd30a0664bc3685ba2efddeef2578adbe5))
+* **dashboard:** Add Infrastructure & Costs page ([542b5f2](https://github.com/RaphaEnterprises-AI/argus/commit/542b5f26987688b29af16add38da2bcc111587d7))
+* **dashboard:** add plugin events, integrations, and fix TypeScript errors ([4bf60c7](https://github.com/RaphaEnterprises-AI/argus/commit/4bf60c77f77becc5843895b324c0609d3df41885))
+* **dashboard:** display AI analysis in Schedule Run History ([7160aab](https://github.com/RaphaEnterprises-AI/argus/commit/7160aabe5c40b1ba855a6c9fb894168578284b15))
+* **dashboard:** major frontend performance and UX improvements ([09e8ae9](https://github.com/RaphaEnterprises-AI/argus/commit/09e8ae944b941c4f1e837b47b01f5a44f2cbd5eb))
+* **design:** universal design language with light theme default ([7c0c91d](https://github.com/RaphaEnterprises-AI/argus/commit/7c0c91d6db570ad0a9b08963d408675d97ff0356))
+* **discovery:** fix SSE event handling and add cloud settings persistence ([a9e8bd7](https://github.com/RaphaEnterprises-AI/argus/commit/a9e8bd72ff021d7e80bb7fbf655eac542f03da3c))
+* improve dashboard robustness and test coverage ([1632543](https://github.com/RaphaEnterprises-AI/argus/commit/163254367793e2e279595eb9519742ca31aa37f7))
+* **infra:** add Monitoring tab with Grafana/Prometheus/AlertManager status ([0186dc7](https://github.com/RaphaEnterprises-AI/argus/commit/0186dc7e9b16a668917b17996452b65f5fe81708))
+* **infra:** add System Health tab with data layer health monitoring ([8b686c0](https://github.com/RaphaEnterprises-AI/argus/commit/8b686c0f3f0215262bb5a7e38c3d4fce681fc543))
+* **monitoring:** add direct links to Grafana, Prometheus, AlertManager ([7868601](https://github.com/RaphaEnterprises-AI/argus/commit/786860151d2d618eb89ebe8a41356b106823be74))
+* **schedules:** add real-time SSE streaming and backend API integration ([b1d5a2f](https://github.com/RaphaEnterprises-AI/argus/commit/b1d5a2f78aba86f5ff8506cf801f233d06495f91))
+* **sentry:** add Sentry error monitoring and performance tracking ([adbdd37](https://github.com/RaphaEnterprises-AI/argus/commit/adbdd372810c9cd1f16fb425b0d66b520a6f1327))
+* **tests:** add comprehensive test suite with 2,502 passing tests ([70f775b](https://github.com/RaphaEnterprises-AI/argus/commit/70f775bc91ddab707f59a9ed30e79aea4d2b5ffd))
+* **tests:** add session replay with video and screenshot slideshow ([9830c91](https://github.com/RaphaEnterprises-AI/argus/commit/9830c91c7d700928ca5b3efd0f13c16e453d4bda))
+* **tests:** enhance test run detail page with comprehensive UI components ([c65a03f](https://github.com/RaphaEnterprises-AI/argus/commit/c65a03f26af5ffc45489c9231aa0f2d2f4d146d5))
+* **tests:** integrate all new components into test run detail page ([5dbc0d7](https://github.com/RaphaEnterprises-AI/argus/commit/5dbc0d7477cdcf9f7720da86da58a6211e60566c))
+* **ux:** add loading.tsx skeletons to all pages for instant feedback ([45f63c1](https://github.com/RaphaEnterprises-AI/argus/commit/45f63c11ef475b1815da4b1454c394097e6b9f8e))
+* **visual-ai:** complete Visual AI feature with real backend integrations ([d9edd2a](https://github.com/RaphaEnterprises-AI/argus/commit/d9edd2a9d7540dab39559e79026e3d9ffbc30bcd))
+
+
+### Bug Fixes
+
+* **a11y:** add accessibility features to custom modals ([11bfbf7](https://github.com/RaphaEnterprises-AI/argus/commit/11bfbf7ad798e11fd965a1752bdd743c18ad20a4))
+* **a11y:** add missing DialogDescription and SheetDescription elements ([d9bba4a](https://github.com/RaphaEnterprises-AI/argus/commit/d9bba4a776cb2628f965e7152281a3df90a3af9a))
+* add centralized screenshot URL resolver for broken R2 URLs ([8e1d726](https://github.com/RaphaEnterprises-AI/argus/commit/8e1d726e54e749232074663d8c65f6160229f1fc))
+* add missing lucide-react imports (FileText, Activity) ([085e2ba](https://github.com/RaphaEnterprises-AI/argus/commit/085e2ba14d8fd18c6056e85261fff8b4c3c44e27))
+* **ai-hub:** fix layout issues and add missing Models page ([080123c](https://github.com/RaphaEnterprises-AI/argus/commit/080123cb9c3eb2a5819d4dc3a096acae94c41659))
+* **ai-hub:** improve accessibility, error handling, and memory management ([3377164](https://github.com/RaphaEnterprises-AI/argus/commit/33771645a6eadbd2071e3fa102f8beb76ab13f28))
+* **api:** add global camelCase to snake_case conversion for backend ([77ebcd6](https://github.com/RaphaEnterprises-AI/argus/commit/77ebcd632b8a5058e0f8cb9ba90cf3d35b7fce04))
+* **api:** properly handle Pydantic validation errors ([1318eba](https://github.com/RaphaEnterprises-AI/argus/commit/1318eba17d09db523a996b529a863a369dab80c2))
+* **auth-api:** add X-Organization-ID header to all API requests ([cb09d6a](https://github.com/RaphaEnterprises-AI/argus/commit/cb09d6a1bbe4737bfdbc831792d71231e8ed08d0))
+* **build:** ignore ESLint warnings during production build ([2a102ed](https://github.com/RaphaEnterprises-AI/argus/commit/2a102ed55158797bd387a4a5102e15b537608e02))
+* **chat:** add Clerk auth token to chat API requests ([d9f9c0d](https://github.com/RaphaEnterprises-AI/argus/commit/d9f9c0d114e3b582ba657994c3fc473dd827b4bb))
+* **chat:** handle validation errors and multimodal content ([9b2f442](https://github.com/RaphaEnterprises-AI/argus/commit/9b2f44204262b7e66c3d477fb6a05e51575fc8d7))
+* **chat:** improve error handling for auth errors in chat proxy ([f916633](https://github.com/RaphaEnterprises-AI/argus/commit/f9166335dc536db87ca90733183c079126da4c40))
+* **chat:** prevent message wobbling during streaming ([40f62f6](https://github.com/RaphaEnterprises-AI/argus/commit/40f62f6ad1af1f2efe8e21ae7a0966bfa20ecaff))
+* **chat:** show actual backend error messages instead of falling back ([30a8c02](https://github.com/RaphaEnterprises-AI/argus/commit/30a8c02ef5a2bd4ccf2237909dbad7fb31c25bbf))
+* **csp:** add clerk.heyargus.ai to Content-Security-Policy whitelist ([8093d36](https://github.com/RaphaEnterprises-AI/argus/commit/8093d36acf126b28cd26dcacdfec00385c4ea125))
+* **csp:** add media-src to allow video playback from worker ([6873b35](https://github.com/RaphaEnterprises-AI/argus/commit/6873b35a6aeca239294c0ccfb71cb63b816d1ce4))
+* **csp:** add worker-src, data fonts, and Vercel Live support ([caa0180](https://github.com/RaphaEnterprises-AI/argus/commit/caa0180ed738b5ddfd284d03f75166ab7366f63f))
+* **dashboard:** add missing /tests/[id] route for test run details (RAP-130) ([7556f20](https://github.com/RaphaEnterprises-AI/argus/commit/7556f20de60db652223cb2b1fa8607fd39e6b284))
+* **dashboard:** apply explicit router.push to all Link components ([4bfa238](https://github.com/RaphaEnterprises-AI/argus/commit/4bfa2388539eb06d6a78719b5c1d9b548458a948))
+* **dashboard:** Fix infra page layout to match template design ([3c9c54d](https://github.com/RaphaEnterprises-AI/argus/commit/3c9c54d82721c435e5b89f10c863c37622442649))
+* **dashboard:** resolve auth race condition causing 401 errors ([fcb98bd](https://github.com/RaphaEnterprises-AI/argus/commit/fcb98bd87eca3f565d6ceed63ee60acebf72eb34))
+* **dashboard:** suppress auth warning + security headers + type alignment ([5b2be31](https://github.com/RaphaEnterprises-AI/argus/commit/5b2be313bcf81b674b217a71a09539ad58443e67))
+* **dashboard:** use backend API for projects to sync with MCP ([6e01362](https://github.com/RaphaEnterprises-AI/argus/commit/6e01362c00216b23b1f02e4f19b4cb2e325dc3c1))
+* **discovery:** align type mappings with backend enum values ([41c2dd1](https://github.com/RaphaEnterprises-AI/argus/commit/41c2dd1260b5c8fee619c14ebc8ab4645322fe37))
+* **discovery:** fix cache invalidation and reduce stale times ([b31024e](https://github.com/RaphaEnterprises-AI/argus/commit/b31024e44791c744a08b7f1ecb0efce957521c93))
+* **discovery:** fix legacy hook discovered_flows inserts ([eccd59a](https://github.com/RaphaEnterprises-AI/argus/commit/eccd59afe85e91b9c23e4d51a820ef2fe3e351d5))
+* **discovery:** keep progress UI visible during session lifecycle ([d84d7de](https://github.com/RaphaEnterprises-AI/argus/commit/d84d7de1cba93be296b5f857a9d8d9a0cc7509f0))
+* **discovery:** prevent SSE reconnection loop after completion ([bfdf86d](https://github.com/RaphaEnterprises-AI/argus/commit/bfdf86d02c95c9a9e1f1ff3e7138e7f914405883))
+* **discovery:** resolve silent failure and snake_case bug ([877534b](https://github.com/RaphaEnterprises-AI/argus/commit/877534b61786f2e2ace0a2a3e45015e3f84ae0f9))
+* **discovery:** show progress for newly created sessions ([ae8aa25](https://github.com/RaphaEnterprises-AI/argus/commit/ae8aa25a55625d4f99f3e742c33ccf8999ea8577))
+* **discovery:** use project's toast system instead of sonner ([0cc3142](https://github.com/RaphaEnterprises-AI/argus/commit/0cc3142d7ab39408030ce3efedc27a7df04f58c8))
+* **e2e:** correct page.url() usage - returns string not Promise ([f3f8afa](https://github.com/RaphaEnterprises-AI/argus/commit/f3f8afab6faddccb9157498a06e0281926bf7d73))
+* fetch schedules from backend API instead of Supabase ([b1ef1f0](https://github.com/RaphaEnterprises-AI/argus/commit/b1ef1f03d20ca88087282553c3a6293eb44a592e))
+* **footer:** update links to valid routes and correct social URLs ([a6fd235](https://github.com/RaphaEnterprises-AI/argus/commit/a6fd235ce634a8c9e24385cf84a37fc8eaf5dc8e))
+* handle invalid URLs gracefully to prevent crashes ([3860051](https://github.com/RaphaEnterprises-AI/argus/commit/38600513440e3f9d6b448dcd9281e028de4294e0))
+* **infra:** correct AI usage API path and add response transformation ([bec5d32](https://github.com/RaphaEnterprises-AI/argus/commit/bec5d32f426b1ce2a041fd8564ff504052d43b3b))
+* **infra:** remove BrowserStack comparison, fix mock data fallback ([82c95e4](https://github.com/RaphaEnterprises-AI/argus/commit/82c95e47fa70da31e05839460924b70114d52756))
+* **landing:** remove non-existent step.color property ([312ec60](https://github.com/RaphaEnterprises-AI/argus/commit/312ec6065f0b04fcdb6dae8792945256b3baad41))
+* **lint:** add ESLint configuration for CI ([9e4fd9e](https://github.com/RaphaEnterprises-AI/argus/commit/9e4fd9e1db3f543c0ab7361dbe254f62e0e83e69))
+* **lint:** replace [@ts-ignore](https://github.com/ts-ignore) with [@ts-expect-error](https://github.com/ts-expect-error) in VantaBackground ([d10da05](https://github.com/RaphaEnterprises-AI/argus/commit/d10da05bcd16e8815e3fd7fb74ac8b79de4f530a))
+* **lint:** resolve all ESLint errors for CI ([69eb264](https://github.com/RaphaEnterprises-AI/argus/commit/69eb2644da7aeec4aec03244b2f4729fee1d07cf))
+* move slash command logic after useChat hook declaration ([8110f81](https://github.com/RaphaEnterprises-AI/argus/commit/8110f81126304c12f31447283b0c0111f5f9e261))
+* prevent horizontal overflow across all dashboard pages ([da64d92](https://github.com/RaphaEnterprises-AI/argus/commit/da64d9252e462d448504c99f47f9e4913c7e1d6b))
+* reorganize hooks to ensure variables declared before use ([4ac6a37](https://github.com/RaphaEnterprises-AI/argus/commit/4ac6a37d178593761fce527a6252adc530a67022))
+* **schedules:** add AI analysis fields to run history mapping ([c016b56](https://github.com/RaphaEnterprises-AI/argus/commit/c016b566d5090373674de1923ecbadecf0b9b81c))
+* **schedules:** convert null to undefined for TypeScript compatibility ([93e0759](https://github.com/RaphaEnterprises-AI/argus/commit/93e07593a81012c47cd228ae3a3ed1404746e600))
+* **screenshots:** resolve R2 references via backend API ([51c7c02](https://github.com/RaphaEnterprises-AI/argus/commit/51c7c02cae7b5a3f91202c41208cc2dd242e4645))
+* **sidebar:** prevent /tests and /tests/library from both being active ([37475cc](https://github.com/RaphaEnterprises-AI/argus/commit/37475cc7d0ae7c43a38603cae3bc8ba742f4d3eb))
+* **sidebar:** use explicit router.push to avoid navigation delays ([d2fe996](https://github.com/RaphaEnterprises-AI/argus/commit/d2fe996aea667a1983ffd7bd3dacb6a24b33f9ea))
+* **tests:** add authentication to LiveExecutionModal browser calls ([8bddbba](https://github.com/RaphaEnterprises-AI/argus/commit/8bddbba7cabca412fa9e80e6d9a78ba6fb10011e))
+* **tests:** add suppressHydrationWarning to time-relative elements ([202ea63](https://github.com/RaphaEnterprises-AI/argus/commit/202ea63d5dff9bc02ef84dbdd9874c000bb2c870))
+* **tests:** additional hook test assertions for disabled queries ([c2ffa97](https://github.com/RaphaEnterprises-AI/argus/commit/c2ffa97a70c97a8f10fdb55288d0c9a128f11f06))
+* **tests:** correct hook test assertions for disabled queries ([e858a70](https://github.com/RaphaEnterprises-AI/argus/commit/e858a70f0f17621b5210fca448fc85800fac6c70))
+* **tests:** fix additional hook test failures ([0493791](https://github.com/RaphaEnterprises-AI/argus/commit/049379174cf5f4070549cf7a6edde2998f39b90e))
+* **tests:** fix horizontal overflow and improve responsive layout ([813a3bd](https://github.com/RaphaEnterprises-AI/argus/commit/813a3bd7e5c148697b6e2c75290357711b1b981d))
+* **tests:** fix mcp-sessions loading state test ([d3bdc7c](https://github.com/RaphaEnterprises-AI/argus/commit/d3bdc7c79bc51ab51b453710b3d2420159b09c59))
+* **tests:** fix use-presence.test.ts mock setup and assertions ([d52f3d8](https://github.com/RaphaEnterprises-AI/argus/commit/d52f3d8b7c21e4bcca9d9ce61acada90c8018631))
+* **tests:** handle multiple step data formats in test execution ([7f4448e](https://github.com/RaphaEnterprises-AI/argus/commit/7f4448eb5f114b5eafdf16468785aae1b58aab20))
+* **tests:** improve vitest setup and hook test mocking ([e3c8dc5](https://github.com/RaphaEnterprises-AI/argus/commit/e3c8dc5007f0ae2f76c3e50fd277780ef44ee2f2))
+* **tests:** resolve hydration mismatch and broken route ([132897a](https://github.com/RaphaEnterprises-AI/argus/commit/132897a7fca53736078d7482cf7a6ba7d99e9c82))
+* **tests:** route browser automation to backend API instead of Cloudflare Worker ([478eb5b](https://github.com/RaphaEnterprises-AI/argus/commit/478eb5b262796ff18b866d8b244cf6efb1361de2))
+* **tests:** update toast test assertions to match component styles ([1071d54](https://github.com/RaphaEnterprises-AI/argus/commit/1071d541977d70d517f823bdf301da476a5634f8))
+* **tests:** use signed recording_url from backend for video playback ([51e5c89](https://github.com/RaphaEnterprises-AI/argus/commit/51e5c89c5bf45360ccfbfc7c77184ee8296b675a))
+* transform broken R2 URLs to Worker proxy for screenshots ([d73462b](https://github.com/RaphaEnterprises-AI/argus/commit/d73462b3e03ee46ebb12b93c0defe757a5e421b8))
+* **ui:** improve toast notification visibility and styling ([890d05d](https://github.com/RaphaEnterprises-AI/argus/commit/890d05db25e529edc5ba87c904c9d71131036d5b))
+* **ui:** prevent CommandPalette from blocking sidebar clicks ([f9fa3b1](https://github.com/RaphaEnterprises-AI/argus/commit/f9fa3b17a6f0cd25a459a37c6e101f2c54393f27))
+* update /chat welcome message to match branding ([1efa32f](https://github.com/RaphaEnterprises-AI/argus/commit/1efa32f5f6032811e303085a8aed5585af71afb0))
+* update worker URL to argus-api across all components ([a45c88f](https://github.com/RaphaEnterprises-AI/argus/commit/a45c88fb8641eb54a020a4d36c980f59dd82cef4))
+* use 'Hey Argus' instead of 'Argus Agent' for multi-agent system ([47ef480](https://github.com/RaphaEnterprises-AI/argus/commit/47ef4809c106fac9b322f4a53787e47799729fa6))
+* use onChange instead of onCheckedChange for ToggleRow ([c545d2a](https://github.com/RaphaEnterprises-AI/argus/commit/c545d2aaa511982e5e577ff66d0e59258f467dd9))
+* use production Railway URL fallback instead of localhost ([1716933](https://github.com/RaphaEnterprises-AI/argus/commit/17169330f88c4e4df1f8dcb11dfcd7cfa62aeafc))
+* use useAuthApi hook for authenticated infra requests ([b9596ce](https://github.com/RaphaEnterprises-AI/argus/commit/b9596ce3c32a64657a0c1e1bc0182566cc1c5ecc))
+* use Worker proxy for screenshots in chat interface ([b9ffab2](https://github.com/RaphaEnterprises-AI/argus/commit/b9ffab2befae3958207def5aa9edecf33ba1b684))
+* **visual-ai:** add onClick handlers to Quick Actions buttons ([9f5d5b9](https://github.com/RaphaEnterprises-AI/argus/commit/9f5d5b9c21ffe5f0fa89e47d7da71928203678f4))
+
+
+### Reverts
+
+* remove backend API migration changes ([6b813fe](https://github.com/RaphaEnterprises-AI/argus/commit/6b813fe2f73509fa52a12651288d8f43349f7077))
+
+
+### Documentation
+
+* update Clerk env vars to use new redirect props ([9967329](https://github.com/RaphaEnterprises-AI/argus/commit/99673291c56aa515b798e34c945f97eb91dc11ab))
+
+
+### Code Refactoring
+
+* rebrand from 'Testing Platform' to 'AI Quality Intelligence' ([953bccf](https://github.com/RaphaEnterprises-AI/argus/commit/953bccff3668086f2f6934dc4472ed93ac04678e))
+* **tests:** standardize barrel exports and Props interfaces ([7041f70](https://github.com/RaphaEnterprises-AI/argus/commit/7041f70bf7abe83f55b36e11a201ff5af5071d06))
+
 ## [1.5.0](https://github.com/RaphaEnterprises-AI/argus/compare/v1.4.0...v1.5.0) (2026-01-16)
 
 
