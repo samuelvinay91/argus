@@ -269,6 +269,16 @@ export function MonitoringPanel() {
                 )}
               </div>
             }
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('https://grafana-internal.heyargus.ai', '_blank')}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Open Grafana
+              </Button>
+            }
           />
 
           {/* Prometheus */}
@@ -333,6 +343,16 @@ export function MonitoringPanel() {
                 )}
               </div>
             }
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('https://prometheus-internal.heyargus.ai', '_blank')}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Open Prometheus
+              </Button>
+            }
           />
 
           {/* AlertManager */}
@@ -369,6 +389,16 @@ export function MonitoringPanel() {
                   <p className="text-sm text-red-500">{alertManagerHealth.data.error}</p>
                 )}
               </div>
+            }
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('https://alertmanager-internal.heyargus.ai', '_blank')}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Open AlertManager
+              </Button>
             }
           />
         </div>
