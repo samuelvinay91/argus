@@ -87,7 +87,6 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 const mainNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Chat', href: '/', icon: MessageSquare, badge: 'AI' },
-  { name: 'AI Hub', href: '/settings/ai-hub', icon: Sparkles, badge: 'NEW' },
   { name: 'Projects', href: '/projects', icon: FolderKanban },
 ];
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { type ReactNode } from 'react';
+import Link from 'next/link';
 import {
   Settings,
   Key,
@@ -10,6 +11,8 @@ import {
   User,
   Building,
   Cpu,
+  Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { cn } from '@/lib/utils';
@@ -97,6 +100,20 @@ export function SettingsLayout({
                   {section.name}
                 </button>
               ))}
+
+              {/* AI Hub Link - separate page */}
+              <div className="pt-2 mt-2 border-t border-border">
+                <Link
+                  href="/settings/ai-hub"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  AI Hub
+                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                    NEW
+                  </span>
+                </Link>
+              </div>
             </nav>
 
             {/* Settings Content */}
