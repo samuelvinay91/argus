@@ -17,6 +17,25 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+// Mock Clerk
+vi.mock('@clerk/nextjs', () => ({
+  useAuth: vi.fn(() => ({
+    isLoaded: true,
+    isSignedIn: true,
+    getToken: vi.fn().mockResolvedValue('mock-token'),
+  })),
+}));
+
+// Mock useAuthApi hook
+const mockFetchJson = vi.fn();
+vi.mock('@/lib/hooks/use-auth-api', () => ({
+  useAuthApi: vi.fn(() => ({
+    fetchJson: mockFetchJson,
+    isLoaded: true,
+    isSignedIn: true,
+  })),
+}));
+
 // Create a stable mock for organizationScopedFetch
 const mockOrganizationScopedFetch = vi.fn();
 
@@ -161,6 +180,7 @@ describe('use-infra', () => {
       },
     });
     mockOrganizationScopedFetch.mockReset();
+    mockFetchJson.mockReset();
   });
 
   afterEach(() => {
