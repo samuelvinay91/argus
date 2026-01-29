@@ -51,16 +51,21 @@ import {
   Globe,
   Rocket,
   Container,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/ui/version-badge';
 import { Button } from '@/components/ui/button';
+import { Tooltip } from '@/components/ui/tooltip';
 import { OrganizationSwitcher } from '@/components/layout/org-switcher';
 
 // Sidebar context for global state
 const SidebarContext = createContext<{
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  isCollapsed: boolean;
+  setIsCollapsed: (collapsed: boolean) => void;
 } | null>(null);
 
 export function useSidebar() {
@@ -73,52 +78,71 @@ export function useSidebar() {
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebar-collapsed') === 'true';
+  });
+
+  // Persist collapsed state to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', isCollapsed.toString());
+  }, [isCollapsed]);
+
   return (
-    <SidebarContext.Provider value={{ isOpen, setIsOpen }}>
+    <SidebarContext.Provider value={{ isOpen, setIsOpen, isCollapsed, setIsCollapsed }}>
       {children}
     </SidebarContext.Provider>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// NAVIGATION STRUCTURE - Clean & Organized
+// NAVIGATION STRUCTURE - Intent-Based Organization
 // ═══════════════════════════════════════════════════════════════════════════
 
-const mainNavigation = [
+// Core - Always visible, no header (essential navigation)
+const coreNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Chat', href: '/', icon: MessageSquare, badge: 'AI' },
   { name: 'Projects', href: '/projects', icon: FolderKanban },
 ];
 
+// Testing - Test execution and management
 const testingNavigation = [
   { name: 'Test Runner', href: '/tests', icon: TestTube },
   { name: 'Test Library', href: '/tests/library', icon: BookOpen },
   { name: 'API Testing', href: '/api-tests', icon: Globe },
-  { name: 'Discovery', href: '/discovery', icon: Compass },
   { name: 'Visual AI', href: '/visual', icon: Eye },
-  { name: 'Database', href: '/database', icon: Database },
   { name: 'Schedules', href: '/schedules', icon: Calendar },
 ];
 
-const insightsNavigation = [
+// Discovery & Analysis - Understanding and insights
+const analysisNavigation = [
+  { name: 'Discovery', href: '/discovery', icon: Compass },
+  { name: 'AI Insights', href: '/insights', icon: Brain },
+  { name: 'Correlations', href: '/correlations', icon: Network },
+  { name: 'Test Health', href: '/flaky', icon: HeartPulse },
+];
+
+// Quality & Security - Metrics and compliance
+const qualityNavigation = [
   { name: 'Quality Score', href: '/quality', icon: Shield },
   { name: 'Performance', href: '/performance', icon: Gauge },
   { name: 'Accessibility', href: '/accessibility', icon: Accessibility, badge: 'NEW' },
-  { name: 'Security Testing', href: '/security', icon: ShieldAlert },
-  { name: 'AI Insights', href: '/insights', icon: Brain },
-  { name: 'Orchestrator', href: '/orchestrator', icon: Workflow },
-  { name: 'Correlations', href: '/correlations', icon: Network },
-  { name: 'Test Health', href: '/flaky', icon: HeartPulse },
+  { name: 'Security', href: '/security', icon: ShieldAlert },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
+];
+
+// Infrastructure - DevOps and deployment
+const infraNavigation = [
+  { name: 'CI/CD', href: '/cicd', icon: GitBranch, badge: 'NEW' },
+  { name: 'Deployments', href: '/cicd?tab=deployments', icon: Rocket },
+  { name: 'Containers', href: '/cicd?tab=containers', icon: Container },
+  { name: 'Database', href: '/database', icon: Database },
+  { name: 'Orchestrator', href: '/orchestrator', icon: Workflow },
   { name: 'Infrastructure', href: '/infra', icon: Server },
 ];
 
-const cicdNavigation = [
-  { name: 'CI/CD Overview', href: '/cicd', icon: GitBranch, badge: 'NEW' },
-  { name: 'Deployments', href: '/cicd?tab=deployments', icon: Rocket },
-  { name: 'Containers', href: '/cicd?tab=containers', icon: Container },
-];
-
+// Workspace - Team and admin
 const workspaceNavigation = [
   { name: 'Team', href: '/team', icon: Users },
   { name: 'Organizations', href: '/organizations', icon: Building2 },
@@ -128,7 +152,8 @@ const workspaceNavigation = [
   { name: 'Activity', href: '/activity', icon: Activity },
 ];
 
-const bottomNavigation = [
+// Settings - Configuration and integrations
+const settingsNavigation = [
   { name: 'Integrations', href: '/integrations', icon: Zap },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
@@ -188,15 +213,25 @@ function ThemeToggle() {
   );
 }
 
-// Navigation item component
+// Navigation item type
+type NavItemType = {
+  name: string;
+  href: string;
+  icon: React.ElementType;
+  badge?: string;
+};
+
+// Navigation item component with collapsed mode support
 function NavItem({
   item,
   isActive,
   onClick,
+  isCollapsed = false,
 }: {
-  item: { name: string; href: string; icon: React.ElementType; badge?: string };
+  item: NavItemType;
   isActive: boolean;
   onClick?: () => void;
+  isCollapsed?: boolean;
 }) {
   const router = useRouter();
 
@@ -207,13 +242,14 @@ function NavItem({
     router.push(item.href);
   };
 
-  return (
+  const linkContent = (
     <Link
       href={item.href}
       onClick={handleClick}
       data-active={isActive}
       className={cn(
-        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+        'group flex items-center rounded-xl text-sm font-medium transition-all duration-200 relative',
+        isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5',
         isActive
           ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
           : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
@@ -225,21 +261,53 @@ function NavItem({
           isActive ? 'text-primary-foreground' : ''
         )}
       />
-      <span className="truncate">{item.name}</span>
-      {item.badge && (
-        <span
-          className={cn(
-            'ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
-            isActive
-              ? 'bg-primary-foreground/20 text-primary-foreground'
-              : 'bg-primary/10 text-primary'
+      {!isCollapsed && (
+        <>
+          <span className="truncate">{item.name}</span>
+          {item.badge && (
+            <span
+              className={cn(
+                'ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+                isActive
+                  ? 'bg-primary-foreground/20 text-primary-foreground'
+                  : 'bg-primary/10 text-primary'
+              )}
+            >
+              {item.badge}
+            </span>
           )}
-        >
-          {item.badge}
-        </span>
+        </>
+      )}
+      {/* Badge indicator dot when collapsed */}
+      {isCollapsed && item.badge && (
+        <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
       )}
     </Link>
   );
+
+  // Wrap with tooltip when collapsed
+  if (isCollapsed) {
+    return (
+      <Tooltip
+        content={
+          <span className="flex items-center gap-1.5">
+            {item.name}
+            {item.badge && (
+              <span className="text-primary text-[10px] font-semibold">
+                {item.badge}
+              </span>
+            )}
+          </span>
+        }
+        side="right"
+        sideOffset={12}
+      >
+        {linkContent}
+      </Tooltip>
+    );
+  }
+
+  return linkContent;
 }
 
 // Section header component
@@ -254,18 +322,40 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-// Collapsible section component
+// Collapsible section component with icon support for collapsed sidebar
 function CollapsibleSection({
   title,
+  icon: SectionIcon,
   children,
-  defaultOpen = false,
+  defaultOpen = true,
+  sidebarCollapsed = false,
 }: {
   title: string;
+  icon: React.ElementType;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  sidebarCollapsed?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
+  // When sidebar is collapsed, show only section icon with tooltip
+  if (sidebarCollapsed) {
+    return (
+      <div className="py-2 border-t border-border/30 first:border-t-0">
+        <Tooltip content={title} side="right" sideOffset={12}>
+          <div className="flex justify-center p-2">
+            <SectionIcon className="h-4 w-4 text-muted-foreground/70" />
+          </div>
+        </Tooltip>
+        {/* Show navigation items as icons */}
+        <div className="space-y-0.5">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded mode - collapsible section
   return (
     <div className="space-y-1">
       <button
@@ -286,7 +376,7 @@ function CollapsibleSection({
       <div
         className={cn(
           'space-y-0.5 overflow-hidden transition-all duration-200',
-          isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
         )}
       >
         {children}
@@ -296,10 +386,14 @@ function CollapsibleSection({
 }
 
 // Sidebar content (shared between desktop and mobile)
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({ onNavigate, isMobile = false }: { onNavigate?: () => void; isMobile?: boolean }) {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
   const { signOut } = useClerk();
+  const { isCollapsed, setIsCollapsed } = useSidebar();
+
+  // On mobile, sidebar is never collapsed
+  const collapsed = isMobile ? false : isCollapsed;
 
   const handleSignOut = async () => {
     try {
@@ -349,206 +443,348 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <>
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-3 px-5">
+      {/* Logo with Collapse Toggle */}
+      <div className={cn(
+        'flex h-16 items-center relative',
+        collapsed ? 'justify-center px-2' : 'gap-3 px-5'
+      )}>
         <div className="relative">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-lg shadow-primary/25">
-            <Eye className="h-5 w-5 text-white" />
+          <div className={cn(
+            'flex items-center justify-center rounded-xl gradient-primary shadow-lg shadow-primary/25',
+            collapsed ? 'h-9 w-9' : 'h-10 w-10'
+          )}>
+            <Eye className={cn(collapsed ? 'h-4 w-4' : 'h-5 w-5', 'text-white')} />
           </div>
-          <div className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border-2 border-card"></span>
+          {!collapsed && (
+            <div className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border-2 border-card"></span>
+            </div>
+          )}
+        </div>
+        {!collapsed && (
+          <div>
+            <span className="font-bold text-lg tracking-tight">Argus</span>
+            <p className="text-[10px] text-muted-foreground -mt-0.5">AI Quality Intelligence</p>
           </div>
-        </div>
-        <div>
-          <span className="font-bold text-lg tracking-tight">Argus</span>
-          <p className="text-[10px] text-muted-foreground -mt-0.5">AI Quality Intelligence</p>
-        </div>
+        )}
+
+        {/* Collapse Toggle Button (desktop only) */}
+        {!isMobile && (
+          <button
+            onClick={() => setIsCollapsed(!collapsed)}
+            className={cn(
+              'absolute z-50 flex h-6 w-6 items-center justify-center',
+              'rounded-full border bg-background shadow-sm',
+              'hover:bg-muted transition-colors',
+              collapsed ? 'top-5 -right-3' : 'top-5 -right-3'
+            )}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? (
+              <ChevronsRight className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronsLeft className="h-3.5 w-3.5" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Organization Switcher */}
-      <div className="px-3 pb-2">
-        <OrganizationSwitcher />
-      </div>
+      {!collapsed && (
+        <div className="px-3 pb-2">
+          <OrganizationSwitcher />
+        </div>
+      )}
 
       {/* Search Button */}
-      <div className="px-3 pb-4">
-        <button
-          onClick={openCommandPalette}
-          className="flex w-full items-center gap-2 h-9 px-3 text-sm text-muted-foreground rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-border transition-all duration-200"
-        >
-          <Search className="h-4 w-4" />
-          <span className="flex-1 text-left text-xs">Quick search...</span>
-          <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-0.5 rounded-md border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-            <span className="text-xs">⌘</span>K
-          </kbd>
-        </button>
+      <div className={cn('pb-4', collapsed ? 'px-2' : 'px-3')}>
+        {collapsed ? (
+          <Tooltip content="Quick search (⌘K)" side="right" sideOffset={12}>
+            <button
+              onClick={openCommandPalette}
+              className="flex w-full items-center justify-center h-9 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-border transition-all duration-200"
+            >
+              <Search className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </Tooltip>
+        ) : (
+          <button
+            onClick={openCommandPalette}
+            className="flex w-full items-center gap-2 h-9 px-3 text-sm text-muted-foreground rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-border transition-all duration-200"
+          >
+            <Search className="h-4 w-4" />
+            <span className="flex-1 text-left text-xs">Quick search...</span>
+            <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-0.5 rounded-md border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </button>
+        )}
       </div>
 
       {/* Main Navigation */}
-      <nav ref={navRef} className="flex-1 overflow-y-auto px-3 space-y-6">
-        {/* Main Section */}
+      <nav ref={navRef} className={cn(
+        'flex-1 overflow-y-auto space-y-4',
+        collapsed ? 'px-2' : 'px-3'
+      )}>
+        {/* Core Section - Always visible */}
         <div className="space-y-0.5">
-          {mainNavigation.map((item) => (
+          {coreNavigation.map((item) => (
             <NavItem
               key={item.name}
               item={item}
               isActive={isActive(item.href)}
               onClick={handleClick}
+              isCollapsed={collapsed}
             />
           ))}
         </div>
 
         {/* Testing Section */}
-        <div className="space-y-1">
-          <SectionHeader title="Testing" />
-          <div className="space-y-0.5">
-            {testingNavigation.map((item) => (
-              <NavItem
-                key={item.name}
-                item={item}
-                isActive={isActive(item.href)}
-                onClick={handleClick}
-              />
-            ))}
-          </div>
-        </div>
+        <CollapsibleSection title="Testing" icon={TestTube} defaultOpen sidebarCollapsed={collapsed}>
+          {testingNavigation.map((item) => (
+            <NavItem
+              key={item.name}
+              item={item}
+              isActive={isActive(item.href)}
+              onClick={handleClick}
+              isCollapsed={collapsed}
+            />
+          ))}
+        </CollapsibleSection>
 
-        {/* Insights Section */}
-        <div className="space-y-1">
-          <SectionHeader title="Insights" />
-          <div className="space-y-0.5">
-            {insightsNavigation.map((item) => (
-              <NavItem
-                key={item.name}
-                item={item}
-                isActive={isActive(item.href)}
-                onClick={handleClick}
-              />
-            ))}
-          </div>
-        </div>
+        {/* Discovery & Analysis Section */}
+        <CollapsibleSection title="Analysis" icon={Brain} defaultOpen sidebarCollapsed={collapsed}>
+          {analysisNavigation.map((item) => (
+            <NavItem
+              key={item.name}
+              item={item}
+              isActive={isActive(item.href)}
+              onClick={handleClick}
+              isCollapsed={collapsed}
+            />
+          ))}
+        </CollapsibleSection>
 
-        {/* CI/CD & DevOps Section */}
-        <div className="space-y-1">
-          <SectionHeader title="CI/CD" />
-          <div className="space-y-0.5">
-            {cicdNavigation.map((item) => (
-              <NavItem
-                key={item.name}
-                item={item}
-                isActive={isActive(item.href)}
-                onClick={handleClick}
-              />
-            ))}
-          </div>
-        </div>
+        {/* Quality & Security Section */}
+        <CollapsibleSection title="Quality" icon={Shield} defaultOpen sidebarCollapsed={collapsed}>
+          {qualityNavigation.map((item) => (
+            <NavItem
+              key={item.name}
+              item={item}
+              isActive={isActive(item.href)}
+              onClick={handleClick}
+              isCollapsed={collapsed}
+            />
+          ))}
+        </CollapsibleSection>
 
-        {/* Workspace Section - Collapsible */}
-        <CollapsibleSection title="Workspace" defaultOpen={false}>
+        {/* Infrastructure Section */}
+        <CollapsibleSection title="Infrastructure" icon={Server} defaultOpen={false} sidebarCollapsed={collapsed}>
+          {infraNavigation.map((item) => (
+            <NavItem
+              key={item.name}
+              item={item}
+              isActive={isActive(item.href)}
+              onClick={handleClick}
+              isCollapsed={collapsed}
+            />
+          ))}
+        </CollapsibleSection>
+
+        {/* Workspace Section */}
+        <CollapsibleSection title="Workspace" icon={Building2} defaultOpen={false} sidebarCollapsed={collapsed}>
           {workspaceNavigation.map((item) => (
             <NavItem
               key={item.name}
               item={item}
               isActive={isActive(item.href)}
               onClick={handleClick}
+              isCollapsed={collapsed}
+            />
+          ))}
+        </CollapsibleSection>
+
+        {/* Settings Section */}
+        <CollapsibleSection title="Settings" icon={Settings} defaultOpen={false} sidebarCollapsed={collapsed}>
+          {settingsNavigation.map((item) => (
+            <NavItem
+              key={item.name}
+              item={item}
+              isActive={isActive(item.href)}
+              onClick={handleClick}
+              isCollapsed={collapsed}
             />
           ))}
         </CollapsibleSection>
       </nav>
 
-      {/* Bottom Section */}
-      <div className="border-t border-border/50 px-3 py-3 space-y-0.5">
-        {bottomNavigation.map((item) => (
-          <NavItem
-            key={item.name}
-            item={item}
-            isActive={isActive(item.href)}
-            onClick={handleClick}
-          />
-        ))}
-
-        {/* External Links - Compact */}
-        <div className="flex items-center gap-1 px-1 pt-2">
-          <a
-            href="https://docs.heyargus.ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
-            title="Documentation"
-          >
-            <BookOpen className="h-4 w-4" />
-          </a>
-          <a
-            href="https://github.com/heyargus"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
-            title="GitHub"
-          >
-            <Github className="h-4 w-4" />
-          </a>
-          <a
-            href="https://heyargus.ai/help"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
-            title="Help & Support"
-          >
-            <HelpCircle className="h-4 w-4" />
-          </a>
-          <div className="flex-1" />
-          <ThemeToggle />
+      {/* External Links - Compact */}
+      <div className={cn(
+        'border-t border-border/50 py-3',
+        collapsed ? 'px-2' : 'px-3'
+      )}>
+        <div className={cn(
+          'flex items-center gap-1',
+          collapsed ? 'flex-col' : 'px-1'
+        )}>
+          {collapsed ? (
+            <>
+              <Tooltip content="Documentation" side="right" sideOffset={12}>
+                <a
+                  href="https://docs.heyargus.ai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+                >
+                  <BookOpen className="h-4 w-4" />
+                </a>
+              </Tooltip>
+              <Tooltip content="GitHub" side="right" sideOffset={12}>
+                <a
+                  href="https://github.com/heyargus"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+                >
+                  <Github className="h-4 w-4" />
+                </a>
+              </Tooltip>
+              <Tooltip content="Help & Support" side="right" sideOffset={12}>
+                <a
+                  href="https://heyargus.ai/help"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </a>
+              </Tooltip>
+            </>
+          ) : (
+            <>
+              <a
+                href="https://docs.heyargus.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+                title="Documentation"
+              >
+                <BookOpen className="h-4 w-4" />
+              </a>
+              <a
+                href="https://github.com/heyargus"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+                title="GitHub"
+              >
+                <Github className="h-4 w-4" />
+              </a>
+              <a
+                href="https://heyargus.ai/help"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+                title="Help & Support"
+              >
+                <HelpCircle className="h-4 w-4" />
+              </a>
+              <div className="flex-1" />
+              <ThemeToggle />
+            </>
+          )}
         </div>
+        {collapsed && (
+          <div className="flex justify-center pt-2">
+            <ThemeToggle />
+          </div>
+        )}
       </div>
 
       {/* User Profile - Compact */}
-      <div className="border-t border-border/50 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: 'h-9 w-9 rounded-xl',
-              },
-            }}
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Account</p>
-            <p className="text-[10px] text-muted-foreground truncate">Manage profile</p>
+      <div className={cn(
+        'border-t border-border/50 py-3',
+        collapsed ? 'px-2' : 'px-4'
+      )}>
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-2">
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: 'h-8 w-8 rounded-lg',
+                },
+              }}
+            />
+            <Tooltip content="Sign out" side="right" sideOffset={12}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-lg"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </Tooltip>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSignOut}
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-lg"
-            title="Sign out"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: 'h-9 w-9 rounded-xl',
+                },
+              }}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">Account</p>
+              <p className="text-[10px] text-muted-foreground truncate">Manage profile</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-lg"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Version Footer */}
-      <div className="px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60">
-          <Link href="/legal" onClick={handleClick} className="hover:text-muted-foreground">
-            Legal
-          </Link>
-          <span>·</span>
-          <Link href="/legal/privacy" onClick={handleClick} className="hover:text-muted-foreground">
-            Privacy
-          </Link>
+      {!collapsed && (
+        <div className="px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60">
+            <Link href="/legal" onClick={handleClick} className="hover:text-muted-foreground">
+              Legal
+            </Link>
+            <span>·</span>
+            <Link href="/legal/privacy" onClick={handleClick} className="hover:text-muted-foreground">
+              Privacy
+            </Link>
+          </div>
+          <VersionBadge variant="minimal" />
         </div>
-        <VersionBadge variant="minimal" />
-      </div>
+      )}
     </>
   );
 }
 
 // Desktop sidebar (always visible on lg+)
 export function Sidebar() {
+  const { isCollapsed } = useSidebar();
+
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 z-40 h-screen w-64 border-r border-border/50 bg-card/95 backdrop-blur-sm flex-col">
+    <aside
+      className={cn(
+        'hidden lg:flex fixed left-0 top-0 z-40 h-screen',
+        'border-r border-border/50 bg-card/95 backdrop-blur-sm flex-col',
+        'transition-all duration-200 ease-in-out',
+        isCollapsed ? 'w-16' : 'w-64'
+      )}
+    >
       <SidebarContent />
     </aside>
   );
@@ -604,7 +840,7 @@ export function MobileSidebar() {
           <X className="h-5 w-5" />
         </Button>
 
-        <SidebarContent onNavigate={() => setIsOpen(false)} />
+        <SidebarContent onNavigate={() => setIsOpen(false)} isMobile />
       </aside>
     </>
   );
