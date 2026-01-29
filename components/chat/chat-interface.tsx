@@ -60,6 +60,10 @@ import {
   TestRunsCard,
   WebSearchCard,
   CodeSearchCard,
+  VisualComparisonCard,
+  TestExportCard,
+  ExportFormatsCard,
+  KnowledgeGraphCard,
 } from './responses';
 import { useProactiveEngine, ProactiveSuggestion } from '@/lib/chat/proactive-engine';
 import { VoiceInput } from './voice-input';
@@ -1218,6 +1222,46 @@ function ResultDisplay({ result, onAction }: { result: unknown; onAction?: (acti
     return (
       <CodeSearchCard
         data={data as Parameters<typeof CodeSearchCard>[0]['data']}
+        onAction={(action, d) => onAction?.(action, d)}
+      />
+    );
+  }
+
+  // Handle visual comparison results
+  if (data._type === 'visual_comparison') {
+    return (
+      <VisualComparisonCard
+        data={data as Parameters<typeof VisualComparisonCard>[0]['data']}
+        onAction={(action, d) => onAction?.(action, d)}
+      />
+    );
+  }
+
+  // Handle test export results
+  if (data._type === 'test_export') {
+    return (
+      <TestExportCard
+        data={data as Parameters<typeof TestExportCard>[0]['data']}
+        onAction={(action, d) => onAction?.(action, d)}
+      />
+    );
+  }
+
+  // Handle export formats list
+  if (data._type === 'export_formats') {
+    return (
+      <ExportFormatsCard
+        data={data as Parameters<typeof ExportFormatsCard>[0]['data']}
+        onAction={(action, d) => onAction?.(action, d)}
+      />
+    );
+  }
+
+  // Handle knowledge graph query results
+  if (data._type === 'knowledge_graph') {
+    return (
+      <KnowledgeGraphCard
+        data={data as Parameters<typeof KnowledgeGraphCard>[0]['data']}
         onAction={(action, d) => onAction?.(action, d)}
       />
     );

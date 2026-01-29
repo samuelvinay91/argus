@@ -8,3 +8,6 @@ export { InfraStatusCard } from './infra-status';
 export { TestListCard, TestRunsCard } from './test-list';
 export { WebSearchCard } from './web-search';
 export { CodeSearchCard } from './code-search';
+export { VisualComparisonCard } from './visual-comparison';
+export { TestExportCard, ExportFormatsCard } from './test-export';
+export { KnowledgeGraphCard } from './knowledge-graph';
