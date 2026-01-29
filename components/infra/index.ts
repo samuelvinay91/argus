@@ -10,6 +10,9 @@ export type { CostBreakdown } from './CostBreakdownChart';
 export { LLMCostTracker, LLMCostTrackerSkeleton } from './LLMCostTracker';
 export type { LLMUsageData } from './LLMCostTracker';
 
+export { AILLMDashboard, AILLMDashboardSkeleton } from './AILLMDashboard';
+export type { LLMUsageData as AILLMUsageData } from './AILLMDashboard';
+
 export { BrowserNodesStatus, BrowserNodesStatusSkeleton } from './BrowserNodesStatus';
 export type { BrowserNodeData, SeleniumData } from './BrowserNodesStatus';
 

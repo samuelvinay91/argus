@@ -12,8 +12,8 @@ import {
   RecommendationsPanelSkeleton,
   CostBreakdownChart,
   CostBreakdownChartSkeleton,
-  LLMCostTracker,
-  LLMCostTrackerSkeleton,
+  AILLMDashboard,
+  AILLMDashboardSkeleton,
   BrowserNodesStatus,
   BrowserNodesStatusSkeleton,
   DataLayerHealthPanel,
@@ -217,9 +217,9 @@ export default function InfrastructurePage() {
           {activeTab === 'ai-costs' && (
             <div className="space-y-6">
               {llmCosts.isLoading ? (
-                <LLMCostTrackerSkeleton />
+                <AILLMDashboardSkeleton />
               ) : (
-                <LLMCostTracker data={llmCosts.data || null} />
+                <AILLMDashboard usageData={llmCosts.data || null} isLoading={llmCosts.isFetching} />
               )}
             </div>
           )}
