@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Save, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useUserProfile } from '@/lib/hooks/use-user-profile';
+import { useUserProfile, useUploadAvatar } from '@/lib/hooks/use-user-profile';
 import { useUserSettings } from '@/lib/hooks/use-user-settings';
 import { useCurrentOrganization } from '@/lib/hooks/use-current-organization';
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from '@/lib/hooks/use-api-keys';
@@ -20,6 +20,8 @@ import {
   TestDefaultsSection,
   SecuritySection,
   AboutSection,
+  AccountOverview,
+  ConnectedAccountsSection,
 } from './components';
 
 export default function SettingsPage() {
@@ -34,6 +36,9 @@ export default function SettingsPage() {
     isUpdating: profileUpdating,
     updateSuccess: profileSaved,
   } = useUserProfile();
+
+  // Avatar upload hook
+  const { uploadAvatar } = useUploadAvatar();
 
   const {
     settings,
@@ -79,6 +84,17 @@ export default function SettingsPage() {
     setActiveSection(section);
   }, []);
 
+  // Avatar upload handler
+  const handleAvatarUpload = useCallback(async (file: File) => {
+    const result = await uploadAvatar(file);
+    return result;
+  }, [uploadAvatar]);
+
+  // Navigate to API keys section
+  const handleManageApiKeys = useCallback(() => {
+    setActiveSection('api');
+  }, []);
+
   // Render header actions based on active section
   const renderHeaderActions = () => {
     const isSaving = profileUpdating || isUpdatingNotifications || isUpdatingTestDefaults;
@@ -116,12 +132,17 @@ export default function SettingsPage() {
     switch (activeSection) {
       case 'profile':
         return (
-          <ProfileSection
-            profile={profile}
-            loading={profileLoading}
-            error={profileError}
-            onSave={updateProfile}
-          />
+          <div className="space-y-6">
+            <ProfileSection
+              profile={profile}
+              loading={profileLoading}
+              error={profileError}
+              onSave={updateProfile}
+              onAvatarUpload={handleAvatarUpload}
+            />
+            <AccountOverview />
+            <ConnectedAccountsSection onManageApiKeys={handleManageApiKeys} />
+          </div>
         );
       case 'organization':
         return (

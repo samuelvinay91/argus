@@ -16,3 +16,8 @@ export { NotificationsSection, type NotificationSettings } from './notifications
 export { TestDefaultsSection, type TestDefaults, type BrowserType } from './test-defaults-section';
 export { SecuritySection } from './security-section';
 export { AboutSection } from './about-section';
+
+// New profile enhancement components
+export { AvatarUpload, AvatarUploadWithButton } from './avatar-upload';
+export { AccountOverview } from './account-overview';
+export { ConnectedAccountsSection } from './connected-accounts-section';

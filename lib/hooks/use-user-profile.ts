@@ -11,6 +11,7 @@ import { useAuthApi } from './use-auth-api';
  */
 export interface UserProfile {
   id: string;
+  user_id: string;
   display_name: string;
   email: string;
   bio: string | null;
@@ -18,7 +19,24 @@ export interface UserProfile {
   timezone: string;
   language: string;
   theme: 'light' | 'dark' | 'system';
+  // Professional info
+  job_title: string | null;
+  company: string | null;
+  department: string | null;
+  phone: string | null;
+  // Social links
+  github_username: string | null;
+  linkedin_url: string | null;
+  twitter_handle: string | null;
+  website_url: string | null;
+  // Preferences
   default_organization_id: string | null;
+  default_project_id: string | null;
+  onboarding_completed: boolean;
+  onboarding_step: number | null;
+  last_login_at: string | null;
+  last_active_at: string | null;
+  login_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -35,7 +53,73 @@ export interface UserProfileUpdate {
   timezone?: string;
   language?: string;
   theme?: 'light' | 'dark' | 'system';
+  // Professional info
+  job_title?: string | null;
+  company?: string | null;
+  department?: string | null;
+  phone?: string | null;
+  // Social links
+  github_username?: string | null;
+  linkedin_url?: string | null;
+  twitter_handle?: string | null;
+  website_url?: string | null;
   default_organization_id?: string | null;
+}
+
+/**
+ * Avatar Upload Response
+ */
+export interface AvatarUploadResponse {
+  success: boolean;
+  avatar_url: string;
+  message: string;
+}
+
+/**
+ * Account Activity Response
+ */
+export interface AccountActivity {
+  member_since: string;
+  last_login_at: string | null;
+  last_active_at: string | null;
+  login_count: number;
+  organizations_count: number;
+  api_keys_count: number;
+  api_requests_30d: number;
+  organizations: OrganizationSummary[];
+}
+
+/**
+ * Organization Summary
+ */
+export interface OrganizationSummary {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  plan: string;
+  member_count: number;
+  is_default: boolean;
+  is_personal: boolean;
+}
+
+/**
+ * Connected Account
+ */
+export interface ConnectedAccount {
+  provider: string;
+  provider_name: string;
+  email: string | null;
+  connected_at: string | null;
+}
+
+/**
+ * Connected Accounts Response
+ */
+export interface ConnectedAccountsResponse {
+  accounts: ConnectedAccount[];
+  api_keys_active: number;
+  api_keys_total: number;
 }
 
 /**
@@ -207,5 +291,272 @@ export function useUserTimezone() {
   return {
     timezone: profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
     loading,
+  };
+}
+
+/**
+ * Hook to upload user avatar
+ *
+ * Provides a mutation for uploading avatar images via POST /api/v1/users/me/avatar
+ *
+ * @example
+ * ```tsx
+ * function AvatarUploader() {
+ *   const { uploadAvatar, isUploading, error } = useUploadAvatar();
+ *
+ *   const handleFileChange = async (file: File) => {
+ *     try {
+ *       const result = await uploadAvatar(file);
+ *       console.log('Avatar URL:', result.avatar_url);
+ *     } catch (err) {
+ *       console.error('Upload failed:', err);
+ *     }
+ *   };
+ *
+ *   return <input type="file" onChange={(e) => handleFileChange(e.target.files[0])} />;
+ * }
+ * ```
+ */
+export function useUploadAvatar() {
+  const { fetchJson, isLoaded, isSignedIn, userId, backendUrl, getToken } = useAuthApi();
+  const queryClient = useQueryClient();
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File): Promise<AvatarUploadResponse> => {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Get auth token
+      const token = await getToken();
+
+      // Use fetch directly for FormData (fetchJson adds Content-Type: application/json)
+      const response = await fetch(`${backendUrl}/api/v1/users/me/avatar`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          // Use default error message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      return data as AvatarUploadResponse;
+    },
+    onSuccess: (data) => {
+      // Update the profile cache with the new avatar URL
+      queryClient.setQueryData(['user-profile', userId], (old: UserProfile | undefined) => {
+        if (old) {
+          return { ...old, avatar_url: data.avatar_url };
+        }
+        return old;
+      });
+      // Also invalidate to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ['user-profile', userId] });
+    },
+  });
+
+  const uploadAvatar = useCallback(
+    async (file: File) => {
+      return uploadMutation.mutateAsync(file);
+    },
+    [uploadMutation]
+  );
+
+  return {
+    /** Function to upload avatar file */
+    uploadAvatar,
+    /** Whether an upload is in progress */
+    isUploading: uploadMutation.isPending,
+    /** Whether the upload was successful */
+    uploadSuccess: uploadMutation.isSuccess,
+    /** Error from the last upload attempt */
+    error: uploadMutation.error instanceof Error ? uploadMutation.error.message : null,
+    /** Reset the mutation state */
+    reset: uploadMutation.reset,
+  };
+}
+
+/**
+ * Hook to get user account activity
+ *
+ * Fetches account statistics from GET /api/v1/users/me/activity
+ *
+ * @example
+ * ```tsx
+ * function AccountStats() {
+ *   const { activity, isLoading, error } = useAccountActivity();
+ *
+ *   if (isLoading) return <Spinner />;
+ *   if (error) return <Error message={error} />;
+ *
+ *   return (
+ *     <div>
+ *       <p>Member since: {activity?.member_since}</p>
+ *       <p>Organizations: {activity?.organizations_count}</p>
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
+export function useAccountActivity() {
+  const { fetchJson, isLoaded, isSignedIn, userId } = useAuthApi();
+
+  const {
+    data: activity,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ['account-activity', userId],
+    queryFn: async () => {
+      const response = await fetchJson<AccountActivity>('/api/v1/users/me/activity');
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data;
+    },
+    enabled: isLoaded && isSignedIn && !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+  });
+
+  return {
+    /** Account activity data */
+    activity: activity ?? null,
+    /** Whether data is loading */
+    isLoading: !isLoaded || isLoading,
+    /** Error message if fetch failed */
+    error: queryError instanceof Error ? queryError.message : null,
+    /** Refetch the data */
+    refetch,
+  };
+}
+
+/**
+ * Hook to get connected accounts (OAuth providers and API keys summary)
+ *
+ * Fetches from GET /api/v1/users/me/connected-accounts
+ *
+ * @example
+ * ```tsx
+ * function ConnectedAccounts() {
+ *   const { connectedAccounts, isLoading, error } = useConnectedAccounts();
+ *
+ *   if (isLoading) return <Spinner />;
+ *
+ *   return (
+ *     <ul>
+ *       {connectedAccounts?.accounts.map(account => (
+ *         <li key={account.provider}>{account.provider_name}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * }
+ * ```
+ */
+export function useConnectedAccounts() {
+  const { fetchJson, isLoaded, isSignedIn, userId } = useAuthApi();
+
+  const {
+    data: connectedAccounts,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ['connected-accounts', userId],
+    queryFn: async () => {
+      const response = await fetchJson<ConnectedAccountsResponse>('/api/v1/users/me/connected-accounts');
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data;
+    },
+    enabled: isLoaded && isSignedIn && !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+  });
+
+  return {
+    /** Connected accounts data */
+    connectedAccounts: connectedAccounts ?? null,
+    /** Whether data is loading */
+    isLoading: !isLoaded || isLoading,
+    /** Error message if fetch failed */
+    error: queryError instanceof Error ? queryError.message : null,
+    /** Refetch the data */
+    refetch,
+  };
+}
+
+/**
+ * Hook to get user's organizations
+ *
+ * Fetches from GET /api/v1/users/me/organizations
+ *
+ * @example
+ * ```tsx
+ * function OrganizationList() {
+ *   const { organizations, isLoading, error } = useUserOrganizations();
+ *
+ *   if (isLoading) return <Spinner />;
+ *
+ *   return (
+ *     <ul>
+ *       {organizations?.map(org => (
+ *         <li key={org.id}>{org.name} ({org.role})</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * }
+ * ```
+ */
+export function useUserOrganizations() {
+  const { fetchJson, isLoaded, isSignedIn, userId } = useAuthApi();
+
+  const {
+    data: organizations,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ['user-organizations', userId],
+    queryFn: async () => {
+      const response = await fetchJson<OrganizationSummary[]>('/api/v1/users/me/organizations');
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data;
+    },
+    enabled: isLoaded && isSignedIn && !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+  });
+
+  return {
+    /** List of organizations */
+    organizations: organizations ?? [],
+    /** Whether data is loading */
+    isLoading: !isLoaded || isLoading,
+    /** Error message if fetch failed */
+    error: queryError instanceof Error ? queryError.message : null,
+    /** Refetch the data */
+    refetch,
   };
 }
