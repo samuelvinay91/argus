@@ -69,6 +69,7 @@ import { useProactiveEngine, ProactiveSuggestion } from '@/lib/chat/proactive-en
 import { VoiceInput } from './voice-input';
 import { AttachmentInput, AttachmentButton, Attachment } from './attachment-input';
 import { ArtifactsPanel, ArtifactTrigger, Artifact, ArtifactType } from './artifacts-panel';
+import { toast } from '@/lib/hooks/useToast';
 
 // Type for R2 artifact references
 interface ArtifactRef {
@@ -1596,7 +1597,6 @@ function MessageContent({ message, isStreaming, onAction }: { message: Message; 
 export function ChatInterface({ conversationId, initialMessages = [], onMessagesChange }: ChatInterfaceProps) {
   // Track last saved message count to prevent duplicate saves
   const lastSavedCountRef = useRef(0);
-  const [error, setError] = useState<string | null>(null);
   const [showSuggestionCard, setShowSuggestionCard] = useState(false);
   const [suggestionCardData, setSuggestionCardData] = useState<{ title: string; description: string } | null>(null);
   const [isScreenshotsPanelOpen, setIsScreenshotsPanelOpen] = useState(false);
@@ -1708,10 +1708,12 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     },
     onError: (err) => {
       console.error('Chat error:', err);
-      setError(err.message || 'An error occurred while processing your request');
+      toast.error({
+        title: 'Chat Error',
+        description: err.message || 'An error occurred while processing your request',
+      });
     },
     onFinish: (message) => {
-      setError(null); // Clear any previous errors on success
       // Use refs to get latest values, avoiding stale closures
       const currentConversationId = conversationIdRef.current;
       const currentOnMessagesChange = onMessagesChangeRef.current;
@@ -2423,25 +2425,6 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
           )}
         </AnimatePresence>
       </div>
-
-      {/* Error Display */}
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mx-4 mb-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center justify-between"
-        >
-          <span>{error}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setError(null)}
-            className="h-6 px-2 text-destructive hover:text-destructive"
-          >
-            <XCircle className="h-4 w-4" />
-          </Button>
-        </motion.div>
-      )}
 
       {/* Quick Suggestions Chips - show when there are messages and not loading */}
       {messages.length > 0 && !isLoading && (
