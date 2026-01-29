@@ -206,8 +206,19 @@ export interface ValidateKeyResponse {
   provider: string;
 }
 
-// Supported providers
-export const AI_PROVIDERS = ['anthropic', 'openai', 'google', 'groq', 'together'] as const;
+// Supported providers - matches backend VALID_PROVIDERS
+export const AI_PROVIDERS = [
+  // Primary providers
+  'anthropic', 'openai', 'google',
+  // Inference providers
+  'groq', 'together', 'fireworks', 'cerebras',
+  // Multi-model router (recommended)
+  'openrouter',
+  // Specialized providers
+  'deepseek', 'mistral', 'perplexity', 'cohere', 'xai',
+  // Enterprise providers
+  'azure_openai', 'aws_bedrock', 'google_vertex',
+] as const;
 export type AIProvider = (typeof AI_PROVIDERS)[number];
 
 // ============================================================================
@@ -788,6 +799,107 @@ export function useSetDefaultModel() {
       // Update the preferences cache
       queryClient.setQueryData(['ai-preferences'], data);
     },
+  });
+}
+
+// ============================================================================
+// OpenRouter Models Hook
+// ============================================================================
+
+/**
+ * OpenRouter model from their API (400+ models available).
+ */
+export interface OpenRouterModel {
+  id: string;
+  name: string;
+  description: string | null;
+  provider: string;
+  context_length: number;
+  pricing: {
+    prompt: number;  // Per 1M tokens
+    completion: number;
+  };
+  supports_vision: boolean;
+  supports_tools: boolean;
+  supports_json_mode: boolean;
+}
+
+/**
+ * Hook to fetch models available via OpenRouter.
+ *
+ * OpenRouter provides access to 400+ models from all major providers
+ * through a single API key.
+ *
+ * @param filters - Optional filters for provider, capabilities, etc.
+ * @returns Query result with OpenRouter models
+ *
+ * @example
+ * ```tsx
+ * function OpenRouterModelList() {
+ *   const { data, isLoading } = useOpenRouterModels();
+ *
+ *   if (isLoading) return <Spinner />;
+ *
+ *   return (
+ *     <ul>
+ *       {data?.models.map((m) => (
+ *         <li key={m.id}>{m.name} - ${m.pricing.prompt}/1M</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * }
+ * ```
+ */
+export function useOpenRouterModels(filters?: {
+  provider?: string;
+  search?: string;
+  supports_vision?: boolean;
+  supports_tools?: boolean;
+  min_context?: number;
+}) {
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
+
+  // Build query string from filters
+  const queryParams = new URLSearchParams();
+  if (filters?.provider) queryParams.append('provider', filters.provider);
+  if (filters?.search) queryParams.append('search', filters.search);
+  if (filters?.supports_vision !== undefined) {
+    queryParams.append('supports_vision', String(filters.supports_vision));
+  }
+  if (filters?.supports_tools !== undefined) {
+    queryParams.append('supports_tools', String(filters.supports_tools));
+  }
+  if (filters?.min_context) queryParams.append('min_context', String(filters.min_context));
+
+  const queryString = queryParams.toString();
+  const endpoint = `/api/v1/openrouter/models${queryString ? `?${queryString}` : ''}`;
+
+  return useQuery({
+    queryKey: ['openrouter-models', filters],
+    queryFn: async () => {
+      try {
+        const response = await fetchJson<{
+          models: OpenRouterModel[];
+          total: number;
+          cached: boolean;
+          cache_age_seconds: number | null;
+        }>(endpoint);
+
+        if (response.error) {
+          console.warn('Failed to fetch OpenRouter models:', response.error);
+          return { models: [], total: 0, cached: false, cache_age_seconds: null };
+        }
+
+        return response.data || { models: [], total: 0, cached: false, cache_age_seconds: null };
+      } catch (error) {
+        console.warn('OpenRouter models API unavailable:', error);
+        return { models: [], total: 0, cached: false, cache_age_seconds: null };
+      }
+    },
+    enabled: isLoaded && isSignedIn,
+    staleTime: 60 * 60 * 1000, // 1 hour - models don't change frequently
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
+    retry: false,
   });
 }
 
