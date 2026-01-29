@@ -49,7 +49,7 @@ import {
 import { SaveTestDialog } from '@/components/tests/save-test-dialog';
 import { AuthenticatedImage } from '@/components/ui/authenticated-image';
 import { SlashCommandMenu, useSlashCommands } from './slash-command-menu';
-import { ModelBadge } from './model-badge';
+import { ChatModelSelector } from './chat-model-selector';
 import {
   QualityReportCard,
   ScheduleCard,
@@ -2129,7 +2129,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
         {/* Chat Header Controls - Fixed position */}
         <div className="absolute top-2 right-2 z-30 lg:top-4 lg:right-4 flex items-center gap-2">
           {/* Model Badge - Always visible */}
-          <ModelBadge showCost={true} compact={false} />
+          <ChatModelSelector />
 
           {/* Artifacts Panel Toggle - when panel is closed and there are code blocks */}
           {!isArtifactsPanelOpen && selectedArtifact && (
