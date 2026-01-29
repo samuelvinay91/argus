@@ -29,6 +29,10 @@ import {
   ArrowRight,
   X,
   FileText,
+  Globe,
+  Pencil,
+  RotateCcw,
+  PanelRightOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,10 +58,13 @@ import {
   InfraStatusCard,
   TestListCard,
   TestRunsCard,
+  WebSearchCard,
+  CodeSearchCard,
 } from './responses';
 import { useProactiveEngine, ProactiveSuggestion } from '@/lib/chat/proactive-engine';
 import { VoiceInput } from './voice-input';
 import { AttachmentInput, AttachmentButton, Attachment } from './attachment-input';
+import { ArtifactsPanel, ArtifactTrigger, Artifact, ArtifactType } from './artifacts-panel';
 
 // Type for R2 artifact references
 interface ArtifactRef {
@@ -751,6 +758,7 @@ function ToolCallDisplay({ toolName, args, result, isLoading, onAction }: {
     discoverElements: Search,
     extractData: Code,
     runAgent: Sparkles,
+    webSearch: Globe,
   };
 
   const toolLabels: Record<string, string> = {
@@ -760,6 +768,7 @@ function ToolCallDisplay({ toolName, args, result, isLoading, onAction }: {
     discoverElements: 'Discovering Elements',
     extractData: 'Extracting Data',
     runAgent: 'Running Agent',
+    webSearch: 'Searching the Web',
   };
 
   const Icon = toolIcons[toolName] || Play;
@@ -1194,6 +1203,26 @@ function ResultDisplay({ result, onAction }: { result: unknown; onAction?: (acti
     );
   }
 
+  // Handle web search results
+  if (data._type === 'web_search') {
+    return (
+      <WebSearchCard
+        data={data as Parameters<typeof WebSearchCard>[0]['data']}
+        onAction={(action, d) => onAction?.(action, d)}
+      />
+    );
+  }
+
+  // Handle code search results
+  if (data._type === 'code_search') {
+    return (
+      <CodeSearchCard
+        data={data as Parameters<typeof CodeSearchCard>[0]['data']}
+        onAction={(action, d) => onAction?.(action, d)}
+      />
+    );
+  }
+
   // Handle AI insights (falls through to default for now, can add InsightsCard later)
   if (data._type === 'ai_insights') {
     const insights = data as { insights: unknown[]; summary: { critical_count: number; high_count: number; total_insights: number } };
@@ -1536,6 +1565,14 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     summary?: { name: string; steps_count: number; assertions_count: number };
   } | null>(null);
 
+  // Artifacts panel state (Claude-style code preview)
+  const [isArtifactsPanelOpen, setIsArtifactsPanelOpen] = useState(false);
+  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
+
+  // Edit message state
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState<string>('');
+
   // Get auth token and user info for API calls
   const { getToken } = useAuth();
   const { user } = useUser();
@@ -1599,7 +1636,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   const isValidConversationId = conversationId &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationId);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setInput, stop, append } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setInput, stop, append, setMessages, reload } = useChat({
     api: '/api/chat',
     // Only pass ID if it's a valid UUID, otherwise let AI SDK generate one temporarily
     id: isValidConversationId ? conversationId : undefined,
@@ -1803,8 +1840,9 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     }
   }, [handleSubmit, input, messages, attachments, clearAttachments]);
 
-  // Handle actions from test preview cards (run, edit, save)
+  // Handle actions from tool result cards (test preview, web search, etc.)
   const handleTestPreviewAction = useCallback((action: string, data: unknown) => {
+    // Handle test preview actions
     const testData = data as {
       test?: { name: string; description?: string; steps: Array<{ action: string; target?: string; value?: string; description?: string }>; assertions?: Array<{ type: string; expected: string; description?: string }> };
       app_url?: string;
@@ -1829,7 +1867,166 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
       setSaveTestData(testData);
       setSaveTestDialogOpen(true);
     }
+    // Handle web search actions
+    else if (action === 'open_sources') {
+      // Open all source URLs in new tabs
+      const searchData = data as { results?: Array<{ url: string }> };
+      if (searchData?.results) {
+        searchData.results.forEach(result => {
+          window.open(result.url, '_blank', 'noopener,noreferrer');
+        });
+      }
+    } else if (action === 'copy_answer' || action === 'copy_code') {
+      // Answer/code copy is handled in the card component
+      // This is just for tracking/analytics if needed
+    } else if (action === 'search_again') {
+      // Refine code search - pre-fill with the original query
+      const searchData = data as { query?: string };
+      if (searchData?.query) {
+        setInput(`Search for code: ${searchData.query}`);
+        inputRef.current?.focus();
+      }
+    } else if (action === 'open_file') {
+      // Open file - this could be handled by a file viewer or external editor
+      const fileData = data as { file_path?: string };
+      if (fileData?.file_path) {
+        // For now, just copy the file path
+        navigator.clipboard.writeText(fileData.file_path);
+      }
+    }
   }, [append, setInput]);
+
+  // ============================================================================
+  // EDIT MESSAGE HANDLERS
+  // ============================================================================
+
+  // Start editing a user message
+  const handleStartEditMessage = useCallback((messageId: string, content: string) => {
+    setEditingMessageId(messageId);
+    setEditingContent(content);
+  }, []);
+
+  // Cancel editing
+  const handleCancelEdit = useCallback(() => {
+    setEditingMessageId(null);
+    setEditingContent('');
+  }, []);
+
+  // Submit edited message (removes subsequent messages and re-submits)
+  const handleSubmitEdit = useCallback((messageId: string) => {
+    if (!editingContent.trim()) return;
+
+    // Find the index of the message being edited
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1) return;
+
+    // Keep only messages before the edited one
+    const previousMessages = messages.slice(0, messageIndex);
+
+    // Update messages to remove everything from the edited message onwards
+    setMessages(previousMessages);
+
+    // Reset edit state
+    setEditingMessageId(null);
+    setEditingContent('');
+
+    // Append the new edited message
+    setTimeout(() => {
+      append({
+        role: 'user',
+        content: editingContent.trim(),
+      });
+    }, 100);
+  }, [editingContent, messages, setMessages, append]);
+
+  // ============================================================================
+  // REGENERATE HANDLER
+  // ============================================================================
+
+  // Regenerate the last assistant response
+  const handleRegenerate = useCallback(() => {
+    if (messages.length < 2) return;
+
+    // Find the last assistant message
+    const lastAssistantIndex = messages.length - 1;
+    if (messages[lastAssistantIndex]?.role !== 'assistant') return;
+
+    // Remove the last assistant message and reload
+    const messagesWithoutLastAssistant = messages.slice(0, lastAssistantIndex);
+    setMessages(messagesWithoutLastAssistant);
+
+    // Use reload to regenerate (it re-sends the last user message)
+    setTimeout(() => {
+      reload();
+    }, 100);
+  }, [messages, setMessages, reload]);
+
+  // ============================================================================
+  // ARTIFACTS PANEL HANDLERS
+  // ============================================================================
+
+  // Extract artifact from code block or tool result
+  const handleOpenArtifact = useCallback((content: string, type: ArtifactType, title: string, language?: string) => {
+    const artifact: Artifact = {
+      id: crypto.randomUUID(),
+      type,
+      title,
+      content,
+      language,
+      createdAt: new Date(),
+      editable: true,
+    };
+    setSelectedArtifact(artifact);
+    setIsArtifactsPanelOpen(true);
+  }, []);
+
+  // Close artifacts panel
+  const handleCloseArtifactsPanel = useCallback(() => {
+    setIsArtifactsPanelOpen(false);
+    setSelectedArtifact(null);
+  }, []);
+
+  // Edit artifact content in chat
+  const handleEditArtifactInChat = useCallback((content: string) => {
+    setInput(`Please modify this code:\n\`\`\`\n${content}\n\`\`\``);
+    inputRef.current?.focus();
+    handleCloseArtifactsPanel();
+  }, [setInput, handleCloseArtifactsPanel]);
+
+  // Regenerate artifact
+  const handleRegenerateArtifact = useCallback(() => {
+    if (!selectedArtifact) return;
+    handleRegenerate();
+    handleCloseArtifactsPanel();
+  }, [selectedArtifact, handleRegenerate, handleCloseArtifactsPanel]);
+
+  // Extract code blocks from message content as potential artifacts
+  const extractArtifactsFromContent = useCallback((content: string): Artifact[] => {
+    const artifacts: Artifact[] = [];
+    const codeBlockPattern = /```(\w+)?\n([\s\S]*?)```/g;
+    let codeMatch;
+    let index = 0;
+
+    while ((codeMatch = codeBlockPattern.exec(content)) !== null) {
+      const language = codeMatch[1] || 'text';
+      const code = codeMatch[2].trim();
+
+      if (code.length > 50) { // Only show artifacts for substantial code blocks
+        artifacts.push({
+          id: `artifact-${index}`,
+          type: 'code',
+          title: `Code Block ${index + 1}`,
+          content: code,
+          language,
+          createdAt: new Date(),
+          editable: true,
+        });
+        index++;
+      }
+    }
+
+    return artifacts;
+  }, []);
 
   // Persist assistant messages when AI response completes (onFinish already handles this)
   // REMOVED: useEffect that was causing infinite re-renders
@@ -1876,15 +2073,42 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
 
   return (
     <div className="flex h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] lg:h-[calc(100vh-12rem)] min-w-0 w-full overflow-hidden">
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* Main Chat Area - shrinks when artifacts panel is open on desktop */}
+      <motion.div
+        className="flex flex-col min-w-0 overflow-hidden"
+        animate={{
+          width: isArtifactsPanelOpen ? '60%' : '100%',
+        }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        style={{ flex: isArtifactsPanelOpen ? 'none' : 1 }}
+      >
         {/* Chat Header Controls - Fixed position */}
         <div className="absolute top-2 right-2 z-30 lg:top-4 lg:right-4 flex items-center gap-2">
           {/* Model Badge - Always visible */}
           <ModelBadge showCost={true} compact={false} />
 
+          {/* Artifacts Panel Toggle - when panel is closed and there are code blocks */}
+          {!isArtifactsPanelOpen && selectedArtifact && (
+            <motion.button
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsArtifactsPanelOpen(true)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-full',
+                'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20',
+                'border border-purple-500/20 hover:border-purple-500/40',
+                'transition-colors text-sm font-medium'
+              )}
+            >
+              <PanelRightOpen className="w-4 h-4" />
+              <span>Artifact</span>
+            </motion.button>
+          )}
+
           {/* Screenshots Toggle - Only when messages exist */}
-          {messages.length > 0 && (
+          {messages.length > 0 && !isArtifactsPanelOpen && (
             <ScreenshotsPanelToggle
               screenshotCount={screenshotCount}
               isOpen={isScreenshotsPanelOpen}
@@ -1953,6 +2177,11 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                 const isStreamingThisMessage = isLoading && isLastMessage && message.role === 'assistant';
                 // Disable layout animations during streaming to prevent wobbling
                 const isAnyMessageStreaming = isLoading && messages[messages.length - 1]?.role === 'assistant';
+                const isEditing = editingMessageId === message.id;
+                const isLastAssistantMessage = isLastMessage && message.role === 'assistant' && !isLoading;
+
+                // Extract artifacts from assistant messages
+                const messageArtifacts = message.role === 'assistant' ? extractArtifactsFromContent(message.content) : [];
 
                 return (
                   <motion.div
@@ -1963,7 +2192,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                     exit="exit"
                     layout={!isAnyMessageStreaming}
                     className={cn(
-                      'flex gap-3 mb-3 sm:mb-4 min-w-0 max-w-full',
+                      'flex gap-3 mb-3 sm:mb-4 min-w-0 max-w-full group',
                       message.role === 'user' ? 'justify-end' : 'justify-start'
                     )}
                   >
@@ -1973,16 +2202,114 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                         size="sm"
                       />
                     )}
-                    <MessageBubble isUser={message.role === 'user'}>
-                      {message.role === 'user' ? (
-                        <div className="min-w-0 max-w-full overflow-hidden text-primary-foreground [&_p]:text-primary-foreground [&_a]:text-primary-foreground [&_code]:bg-primary-foreground/20">
-                          <MarkdownRenderer content={message.content} />
+                    <div className="flex flex-col min-w-0 max-w-[90%] sm:max-w-[85%]">
+                      <MessageBubble isUser={message.role === 'user'}>
+                        {message.role === 'user' ? (
+                          isEditing ? (
+                            // Edit mode for user messages
+                            <div className="space-y-2">
+                              <textarea
+                                value={editingContent}
+                                onChange={(e) => setEditingContent(e.target.value)}
+                                className="w-full min-h-[80px] p-2 rounded bg-primary-foreground/10 text-primary-foreground border border-primary-foreground/20 focus:outline-none focus:ring-1 focus:ring-primary-foreground/50 resize-none"
+                                autoFocus
+                              />
+                              <div className="flex items-center gap-2 justify-end">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleCancelEdit}
+                                  className="h-7 text-xs text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSubmitEdit(message.id)}
+                                  className="h-7 text-xs bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground"
+                                >
+                                  Save & Resend
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="min-w-0 max-w-full overflow-hidden text-primary-foreground [&_p]:text-primary-foreground [&_a]:text-primary-foreground [&_code]:bg-primary-foreground/20">
+                              <MarkdownRenderer content={message.content} />
+                            </div>
+                          )
+                        ) : (
+                          <>
+                            <MessageContent message={message} isStreaming={isStreamingThisMessage} onAction={handleTestPreviewAction} />
+                            {/* Artifact triggers for code blocks */}
+                            {messageArtifacts.length > 0 && !isStreamingThisMessage && (
+                              <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+                                <p className="text-xs text-muted-foreground mb-2">Open in panel:</p>
+                                {messageArtifacts.slice(0, 3).map((artifact) => (
+                                  <ArtifactTrigger
+                                    key={artifact.id}
+                                    artifact={artifact}
+                                    onClick={() => {
+                                      setSelectedArtifact(artifact);
+                                      setIsArtifactsPanelOpen(true);
+                                    }}
+                                    className="w-full"
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </MessageBubble>
+
+                      {/* Action buttons below messages */}
+                      {!isEditing && !isStreamingThisMessage && (
+                        <div className={cn(
+                          'flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity',
+                          message.role === 'user' ? 'justify-end' : 'justify-start'
+                        )}>
+                          {message.role === 'user' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleStartEditMessage(message.id, message.content)}
+                              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                              title="Edit message"
+                            >
+                              <Pencil className="w-3 h-3 mr-1" />
+                              Edit
+                            </Button>
+                          )}
+                          {isLastAssistantMessage && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleRegenerate}
+                              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                              title="Regenerate response"
+                            >
+                              <RotateCcw className="w-3 h-3 mr-1" />
+                              Regenerate
+                            </Button>
+                          )}
+                          {message.role === 'assistant' && messageArtifacts.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedArtifact(messageArtifacts[0]);
+                                setIsArtifactsPanelOpen(true);
+                              }}
+                              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                              title="Open in panel"
+                            >
+                              <PanelRightOpen className="w-3 h-3 mr-1" />
+                              Panel
+                            </Button>
+                          )}
                         </div>
-                      ) : (
-                        <MessageContent message={message} isStreaming={isStreamingThisMessage} onAction={handleTestPreviewAction} />
                       )}
-                    </MessageBubble>
-                    {message.role === 'user' && (
+                    </div>
+                    {message.role === 'user' && !isEditing && (
                       <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-secondary flex items-center justify-center">
                         <User className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
@@ -2179,13 +2506,22 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
           Try: "Discover elements on https://demo.vercel.store" or "Run a login test"
         </p>
       </div>
-      </div>
+      </motion.div>
 
       {/* Screenshots Panel - Right Sidebar */}
       <SessionScreenshotsPanel
         messages={messages}
-        isOpen={isScreenshotsPanelOpen}
+        isOpen={isScreenshotsPanelOpen && !isArtifactsPanelOpen}
         onClose={() => setIsScreenshotsPanelOpen(false)}
+      />
+
+      {/* Artifacts Panel - Claude-style code preview (takes priority over screenshots) */}
+      <ArtifactsPanel
+        artifact={selectedArtifact}
+        isOpen={isArtifactsPanelOpen}
+        onClose={handleCloseArtifactsPanel}
+        onEdit={handleEditArtifactInChat}
+        onRegenerate={handleRegenerateArtifact}
       />
 
       {/* Save Test Dialog */}
