@@ -254,13 +254,16 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
 
                       {/* Capability badges */}
                       <div className="flex items-center gap-1 shrink-0">
-                        {model.capabilities?.includes('fast') && (
+                        {(model.capabilities?.includes('fast_inference') ||
+                          model.capabilities?.includes('fast') ||
+                          model.tier === 'free') && (
                           <span title="Fast inference">
                             <Zap className="h-3 w-3 text-yellow-500" />
                           </span>
                         )}
-                        {model.capabilities?.includes('reasoning') && (
-                          <span title="Advanced reasoning">
+                        {(model.capabilities?.includes('extended_context') ||
+                          (model.context_window && model.context_window >= 100000)) && (
+                          <span title="Extended context">
                             <Sparkles className="h-3 w-3 text-purple-500" />
                           </span>
                         )}
