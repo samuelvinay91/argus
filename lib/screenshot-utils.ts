@@ -12,11 +12,64 @@
 // Worker URL for screenshot access
 export const WORKER_SCREENSHOT_URL = 'https://argus-api.samuelvinay-kumar.workers.dev/screenshots';
 
-// Cache for signed URLs (artifact_id -> { url, expiresAt })
+// LRU cache configuration
+const SIGNED_URL_CACHE_MAX_SIZE = 100;
+
+// Cache for signed URLs with LRU eviction (artifact_id -> { url, expiresAt })
+// Uses Map's insertion order for LRU tracking (oldest entries are iterated first)
 const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
 
 // Cache TTL buffer - refresh URL 60 seconds before expiry
 const CACHE_TTL_BUFFER_MS = 60 * 1000;
+
+/**
+ * Add an entry to the signed URL cache with LRU eviction.
+ * When the cache exceeds SIGNED_URL_CACHE_MAX_SIZE, the oldest entries are removed.
+ */
+function setCacheEntry(artifactId: string, url: string, expiresIn: number): void {
+  // Remove existing entry first to update its position (makes it "recently used")
+  signedUrlCache.delete(artifactId);
+
+  // Evict oldest entries if at capacity
+  while (signedUrlCache.size >= SIGNED_URL_CACHE_MAX_SIZE) {
+    // Map iterates in insertion order, so first key is the oldest
+    const oldestKey = signedUrlCache.keys().next().value;
+    if (oldestKey) {
+      signedUrlCache.delete(oldestKey);
+    } else {
+      break;
+    }
+  }
+
+  // Add new entry (will be at the "end" - most recently used)
+  signedUrlCache.set(artifactId, {
+    url,
+    expiresAt: Date.now() + expiresIn * 1000,
+  });
+}
+
+/**
+ * Get a cache entry and mark it as recently used.
+ * Returns null if not found or expired.
+ */
+function getCacheEntry(artifactId: string): { url: string; expiresAt: number } | null {
+  const cached = signedUrlCache.get(artifactId);
+  if (!cached) {
+    return null;
+  }
+
+  // Check if expired (with buffer)
+  if (cached.expiresAt <= Date.now() + CACHE_TTL_BUFFER_MS) {
+    signedUrlCache.delete(artifactId);
+    return null;
+  }
+
+  // Move to end (mark as recently used) by re-inserting
+  signedUrlCache.delete(artifactId);
+  signedUrlCache.set(artifactId, cached);
+
+  return cached;
+}
 
 /**
  * Signed URL response from the API.
@@ -42,9 +95,9 @@ export async function getSignedScreenshotUrl(
   token: string,
   apiUrl?: string
 ): Promise<string | null> {
-  // Check cache first
-  const cached = signedUrlCache.get(artifactId);
-  if (cached && cached.expiresAt > Date.now() + CACHE_TTL_BUFFER_MS) {
+  // Check cache first (also marks as recently used for LRU)
+  const cached = getCacheEntry(artifactId);
+  if (cached) {
     return cached.url;
   }
 
@@ -70,11 +123,8 @@ export async function getSignedScreenshotUrl(
 
     const data: SignedUrlResponse = await response.json();
 
-    // Cache the result
-    signedUrlCache.set(artifactId, {
-      url: data.url,
-      expiresAt: Date.now() + data.expires_in * 1000,
-    });
+    // Cache the result with LRU eviction
+    setCacheEntry(artifactId, data.url, data.expires_in);
 
     return data.url;
   } catch (error) {
@@ -99,12 +149,12 @@ export async function getSignedScreenshotUrls(
 ): Promise<Map<string, string>> {
   const results = new Map<string, string>();
 
-  // Separate cached and uncached
+  // Separate cached and uncached (getCacheEntry also marks as recently used)
   const uncachedIds: string[] = [];
 
   for (const id of artifactIds) {
-    const cached = signedUrlCache.get(id);
-    if (cached && cached.expiresAt > Date.now() + CACHE_TTL_BUFFER_MS) {
+    const cached = getCacheEntry(id);
+    if (cached) {
       results.set(id, cached.url);
     } else {
       uncachedIds.push(id);

@@ -1,12 +1,31 @@
 /**
  * Comprehensive E2E API Test Suite for Chat Functionality
  * Tests: Conversations, Messages, and Chat API with tools
+ *
+ * Usage:
+ *   # Set environment variables
+ *   export SUPABASE_URL="https://your-project.supabase.co"
+ *   export SUPABASE_SERVICE_KEY="your-service-key"
+ *
+ *   # Run tests
+ *   npx ts-node scripts/test-chat-api.ts
  */
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://REDACTED_PROJECT_REF.supabase.co';
-const SUPABASE_SERVICE_KEY = 'REDACTED_SUPABASE_KEY';
+// Get configuration from environment variables
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('❌ Missing required environment variables:');
+  console.error('   - SUPABASE_URL');
+  console.error('   - SUPABASE_SERVICE_KEY');
+  console.error('\nExample:');
+  console.error('   export SUPABASE_URL="https://your-project.supabase.co"');
+  console.error('   export SUPABASE_SERVICE_KEY="your-service-key"');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 

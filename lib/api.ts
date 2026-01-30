@@ -10,6 +10,56 @@ import { authenticatedFetch, AuthenticatedFetchOptions } from './auth-api';
 // Storage key for organization ID
 const ORG_ID_STORAGE_KEY = 'argus_current_organization_id';
 
+// Callbacks for cross-tab organization changes
+type OrgChangeCallback = (orgId: string | null) => void;
+const orgChangeCallbacks: Set<OrgChangeCallback> = new Set();
+
+/**
+ * Register a callback to be notified when organization changes in another tab.
+ * Returns an unsubscribe function.
+ */
+export function onOrganizationChange(callback: OrgChangeCallback): () => void {
+  orgChangeCallbacks.add(callback);
+  return () => orgChangeCallbacks.delete(callback);
+}
+
+/**
+ * Initialize cross-tab organization synchronization.
+ * Call this once when the app initializes.
+ * Returns a cleanup function.
+ */
+let crossTabOrgSyncInitialized = false;
+export function initCrossTabOrgSync(): () => void {
+  if (typeof window === 'undefined' || crossTabOrgSyncInitialized) {
+    return () => {};
+  }
+
+  crossTabOrgSyncInitialized = true;
+
+  const handleStorageEvent = (event: StorageEvent) => {
+    if (event.key === ORG_ID_STORAGE_KEY) {
+      const newOrgId = event.newValue;
+
+      // Notify all registered callbacks
+      orgChangeCallbacks.forEach(callback => {
+        try {
+          callback(newOrgId);
+        } catch (error) {
+          console.error('[api] Organization change callback error:', error);
+        }
+      });
+    }
+  };
+
+  window.addEventListener('storage', handleStorageEvent);
+
+  // Return cleanup function
+  return () => {
+    window.removeEventListener('storage', handleStorageEvent);
+    crossTabOrgSyncInitialized = false;
+  };
+}
+
 /**
  * Get the current organization ID from localStorage
  *
@@ -24,6 +74,7 @@ export function getCurrentOrganizationId(): string | null {
 
 /**
  * Set the current organization ID in localStorage
+ * Note: This automatically triggers cross-tab sync via localStorage events
  *
  * @param orgId - Organization ID to set
  */
@@ -36,6 +87,7 @@ export function setCurrentOrganizationId(orgId: string): void {
 
 /**
  * Clear the current organization ID from localStorage
+ * Note: This automatically triggers cross-tab sync via localStorage events
  */
 export function clearCurrentOrganizationId(): void {
   if (typeof window === 'undefined') {

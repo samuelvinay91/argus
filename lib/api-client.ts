@@ -82,6 +82,90 @@ let authInitialized = false;
 // Returns the backend UUID format, NOT Clerk's org_xxx format
 let globalGetOrgId: (() => string | null) | null = null;
 
+// Cross-tab sync storage key
+const AUTH_SYNC_KEY = 'argus_auth_sync';
+
+// Callbacks for cross-tab auth state changes
+type AuthChangeCallback = (event: 'logout' | 'login' | 'org_change') => void;
+const authChangeCallbacks: Set<AuthChangeCallback> = new Set();
+
+/**
+ * Register a callback to be notified when auth state changes in another tab.
+ * Returns an unsubscribe function.
+ */
+export function onAuthChange(callback: AuthChangeCallback): () => void {
+  authChangeCallbacks.add(callback);
+  return () => authChangeCallbacks.delete(callback);
+}
+
+/**
+ * Notify other tabs of auth state changes.
+ * Uses localStorage events which fire in other tabs (not the current one).
+ */
+export function notifyAuthChange(event: 'logout' | 'login' | 'org_change'): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    // Write to localStorage to trigger storage event in other tabs
+    // Include timestamp to ensure the value changes (triggers event)
+    localStorage.setItem(AUTH_SYNC_KEY, JSON.stringify({
+      event,
+      timestamp: Date.now(),
+    }));
+  } catch (error) {
+    // localStorage might be unavailable (private browsing, quota exceeded)
+    console.warn('[api-client] Failed to notify auth change:', error);
+  }
+}
+
+/**
+ * Initialize cross-tab auth synchronization.
+ * Call this once when the app initializes (e.g., in ApiClientProvider).
+ */
+let crossTabSyncInitialized = false;
+export function initCrossTabAuthSync(): () => void {
+  if (typeof window === 'undefined' || crossTabSyncInitialized) {
+    return () => {};
+  }
+
+  crossTabSyncInitialized = true;
+
+  const handleStorageEvent = (event: StorageEvent) => {
+    // Handle auth sync events
+    if (event.key === AUTH_SYNC_KEY && event.newValue) {
+      try {
+        const data = JSON.parse(event.newValue);
+        const authEvent = data.event as 'logout' | 'login' | 'org_change';
+
+        // Notify all registered callbacks
+        authChangeCallbacks.forEach(callback => {
+          try {
+            callback(authEvent);
+          } catch (error) {
+            console.error('[api-client] Auth change callback error:', error);
+          }
+        });
+
+        // Handle logout specifically - clear local state
+        if (authEvent === 'logout') {
+          clearGlobalTokenGetter();
+          clearGlobalOrgIdGetter();
+        }
+      } catch (error) {
+        console.warn('[api-client] Failed to parse auth sync event:', error);
+      }
+    }
+  };
+
+  window.addEventListener('storage', handleStorageEvent);
+
+  // Return cleanup function
+  return () => {
+    window.removeEventListener('storage', handleStorageEvent);
+    crossTabSyncInitialized = false;
+  };
+}
+
 /**
  * Set the global token getter function
  * Called by ApiClientProvider on mount
@@ -93,10 +177,15 @@ export function setGlobalTokenGetter(getToken: () => Promise<string | null>) {
 
 /**
  * Clear the global token getter (on unmount/logout)
+ * @param notifyOtherTabs - If true, notify other tabs of the logout (default: false to avoid loops)
  */
-export function clearGlobalTokenGetter() {
+export function clearGlobalTokenGetter(notifyOtherTabs = false) {
   globalGetToken = null;
   // Don't reset authInitialized - it's only reset on page reload
+
+  if (notifyOtherTabs) {
+    notifyAuthChange('logout');
+  }
 }
 
 /**
