@@ -11,26 +11,88 @@ import { useAuthApi } from './use-auth-api';
  * Platform identifiers for integrations
  */
 export type IntegrationPlatform =
-  // CI/CD & Notifications
+  // Source Code Management
   | 'github'
   | 'gitlab'
-  | 'slack'
-  | 'discord'
+  | 'bitbucket'
+  | 'azure_devops'
+  // Issue Tracking
   | 'jira'
   | 'linear'
-  | 'webhook'
-  // Deployment Platforms
+  | 'asana'
+  | 'trello'
+  | 'clickup'
+  | 'shortcut'
+  | 'monday'
+  | 'notion'
+  | 'height'
+  // Chat & Notifications
+  | 'slack'
+  | 'discord'
+  | 'teams'
+  | 'google_chat'
+  // CI/CD
+  | 'github_actions'
+  | 'gitlab_ci'
+  | 'jenkins'
+  | 'circleci'
+  | 'azure_pipelines'
+  | 'bitbucket_pipelines'
+  | 'teamcity'
+  // Deployment
   | 'vercel'
   | 'netlify'
-  // Observability Platforms
-  | 'datadog'
+  | 'heroku'
+  | 'railway'
+  | 'render'
+  | 'flyio'
+  | 'aws'
+  // Observability
   | 'sentry'
+  | 'datadog'
   | 'newrelic'
+  | 'grafana'
+  | 'splunk'
+  | 'dynatrace'
+  // Session Replay
+  | 'logrocket'
   | 'fullstory'
   | 'posthog'
-  | 'logrocket'
+  | 'hotjar'
+  | 'heap'
+  // Analytics
   | 'amplitude'
-  | 'mixpanel';
+  | 'mixpanel'
+  | 'segment'
+  // Incident Management
+  | 'pagerduty'
+  | 'opsgenie'
+  | 'incident_io'
+  | 'spike'
+  | 'victorops'
+  // Feature Flags
+  | 'launchdarkly'
+  | 'split'
+  | 'flagsmith'
+  | 'unleash'
+  // Testing
+  | 'browserstack'
+  | 'saucelabs'
+  | 'lambdatest'
+  | 'percy'
+  | 'chromatic'
+  | 'playwright'
+  | 'cypress'
+  // Webhooks & Automation
+  | 'webhook'
+  | 'zapier'
+  | 'n8n'
+  // AI & Coding Agents
+  | 'cursor'
+  | 'claude_code'
+  // Database
+  | 'supabase'
+  | 'turso';
 
 /**
  * Authentication type for integrations
@@ -87,6 +149,8 @@ export interface ConnectIntegrationRequest {
   // Platform-specific fields
   site?: string; // e.g., for Datadog
   application_key?: string; // e.g., for Datadog
+  org_slug?: string; // e.g., for Sentry
+  project_slug?: string; // e.g., for Sentry
   project_key?: string; // e.g., for Jira
   instance_url?: string; // e.g., for Jira
   email?: string; // e.g., for Jira

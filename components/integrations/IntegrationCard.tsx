@@ -44,8 +44,8 @@ import {
   Settings,
 } from 'lucide-react';
 
-// Platform icons and branding
-const PLATFORM_CONFIG: Record<
+// Platform icons and branding (Partial - not all platforms need custom styling)
+const PLATFORM_CONFIG: Partial<Record<
   IntegrationPlatform,
   {
     icon: string;
@@ -53,7 +53,7 @@ const PLATFORM_CONFIG: Record<
     bgColor: string;
     oauthUrl?: string;
   }
-> = {
+>> = {
   github: {
     icon: '/icons/github.svg',
     color: 'text-white',
