@@ -537,3 +537,279 @@ export const artifactsApi = {
   resolve: (artifactRefs: string[], options?: FetchOptions) =>
     apiClient.post('/api/v1/artifacts/resolve', { artifact_refs: artifactRefs }, options),
 };
+
+// ============================================================================
+// Tests API Types
+// ============================================================================
+
+export interface Test {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  steps: Array<{ action: string; target?: string; value?: string; description?: string }>;
+  tags: string[];
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  isActive: boolean;
+  source: 'manual' | 'discovered' | 'generated' | 'imported';
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface TestListItem {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  tags: string[];
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  isActive: boolean;
+  source: 'manual' | 'discovered' | 'generated' | 'imported';
+  stepCount: number;
+  createdAt: string;
+}
+
+export interface TestsListResponse {
+  tests: TestListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CreateTestRequest {
+  projectId: string;
+  name: string;
+  description?: string | null;
+  steps?: Array<{ action: string; target?: string; value?: string; description?: string }>;
+  tags?: string[];
+  priority?: 'critical' | 'high' | 'medium' | 'low';
+  isActive?: boolean;
+  source?: 'manual' | 'discovered' | 'generated' | 'imported';
+}
+
+export interface UpdateTestRequest {
+  name?: string;
+  description?: string | null;
+  steps?: Array<{ action: string; target?: string; value?: string; description?: string }>;
+  tags?: string[];
+  priority?: 'critical' | 'high' | 'medium' | 'low';
+  isActive?: boolean;
+}
+
+/**
+ * Tests API endpoints
+ */
+export const testsApi = {
+  list: (params?: {
+    projectId?: string;
+    isActive?: boolean;
+    priority?: string;
+    source?: string;
+    tags?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }, options?: FetchOptions) => {
+    const searchParams = new URLSearchParams();
+    if (params?.projectId) searchParams.set('project_id', params.projectId);
+    if (params?.isActive !== undefined) searchParams.set('is_active', String(params.isActive));
+    if (params?.priority) searchParams.set('priority', params.priority);
+    if (params?.source) searchParams.set('source', params.source);
+    if (params?.tags) searchParams.set('tags', params.tags);
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    const query = searchParams.toString();
+    return apiClient.get<TestsListResponse>(`/api/v1/tests${query ? `?${query}` : ''}`, options);
+  },
+
+  get: (testId: string, options?: FetchOptions) =>
+    apiClient.get<Test>(`/api/v1/tests/${testId}`, options),
+
+  create: (data: CreateTestRequest, options?: FetchOptions) =>
+    apiClient.post<Test>('/api/v1/tests', data, options),
+
+  update: (testId: string, data: UpdateTestRequest, options?: FetchOptions) =>
+    apiClient.patch<Test>(`/api/v1/tests/${testId}`, data, options),
+
+  delete: (testId: string, options?: FetchOptions) =>
+    apiClient.delete<{ success: boolean; message: string }>(`/api/v1/tests/${testId}`, options),
+
+  bulkDelete: (testIds: string[], options?: FetchOptions) =>
+    apiClient.post<{
+      success: boolean;
+      deleted: string[];
+      failed: Array<{ id: string; error: string }>;
+      deletedCount: number;
+      failedCount: number;
+    }>('/api/v1/tests/bulk-delete', { testIds }, options),
+
+  bulkUpdate: (data: {
+    testIds: string[];
+    isActive?: boolean;
+    priority?: 'critical' | 'high' | 'medium' | 'low';
+    tagsAdd?: string[];
+    tagsRemove?: string[];
+  }, options?: FetchOptions) =>
+    apiClient.post<{
+      success: boolean;
+      updated: string[];
+      failed: Array<{ id: string; error: string }>;
+      updatedCount: number;
+      failedCount: number;
+    }>('/api/v1/tests/bulk-update', data, options),
+};
+
+// ============================================================================
+// Test Runs API Types
+// ============================================================================
+
+export type TestRunStatus = 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'error';
+export type TriggerType = 'manual' | 'scheduled' | 'ci' | 'webhook' | 'api';
+
+export interface TestRunListItem {
+  id: string;
+  projectId: string;
+  name: string | null;
+  status: TestRunStatus;
+  trigger: TriggerType | null;
+  totalTests: number;
+  passedTests: number;
+  failedTests: number;
+  durationMs: number | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface TestRun extends TestRunListItem {
+  appUrl: string | null;
+  browser: string | null;
+  skippedTests: number;
+  startedAt: string | null;
+  createdBy: string | null;
+  updatedAt: string | null;
+}
+
+export interface TestResultSummary {
+  id: string;
+  testId: string | null;
+  name: string;
+  status: string;
+  durationMs: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export interface TestRunWithResults extends TestRun {
+  results: TestResultSummary[];
+}
+
+export interface TestRunsListResponse {
+  runs: TestRunListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface TestResult {
+  id: string;
+  testRunId: string;
+  testId: string | null;
+  name: string;
+  status: string;
+  durationMs: number | null;
+  stepsTotal: number | null;
+  stepsCompleted: number | null;
+  errorMessage: string | null;
+  errorScreenshot: string | null;
+  stepResults: Array<Record<string, unknown>> | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateTestRunRequest {
+  projectId: string;
+  name?: string | null;
+  appUrl?: string | null;
+  browser?: string | null;
+  trigger?: TriggerType;
+  totalTests?: number;
+}
+
+export interface UpdateTestRunRequest {
+  name?: string | null;
+  status?: TestRunStatus;
+  passedTests?: number;
+  failedTests?: number;
+  skippedTests?: number;
+  durationMs?: number;
+  completedAt?: string;
+}
+
+export interface CreateTestResultRequest {
+  testId?: string | null;
+  name: string;
+  status: string;
+  durationMs?: number | null;
+  stepsTotal?: number | null;
+  stepsCompleted?: number | null;
+  errorMessage?: string | null;
+  errorScreenshot?: string | null;
+  stepResults?: Array<Record<string, unknown>> | null;
+}
+
+export interface TestRunComparisonResponse {
+  currentRun: TestRunListItem | null;
+  previousRun: TestRunListItem | null;
+  deltas: {
+    passedDelta: number | null;
+    failedDelta: number | null;
+    durationDelta: number | null;
+    passRateDelta: number | null;
+  };
+  hasPreviousRun: boolean;
+}
+
+/**
+ * Test Runs API endpoints
+ */
+export const testRunsApi = {
+  list: (params?: {
+    projectId?: string;
+    status?: TestRunStatus;
+    trigger?: TriggerType;
+    limit?: number;
+    offset?: number;
+  }, options?: FetchOptions) => {
+    const searchParams = new URLSearchParams();
+    if (params?.projectId) searchParams.set('project_id', params.projectId);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.trigger) searchParams.set('trigger', params.trigger);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    const query = searchParams.toString();
+    return apiClient.get<TestRunsListResponse>(`/api/v1/test-runs${query ? `?${query}` : ''}`, options);
+  },
+
+  get: (runId: string, includeResults = true, options?: FetchOptions) =>
+    apiClient.get<TestRunWithResults>(`/api/v1/test-runs/${runId}?include_results=${includeResults}`, options),
+
+  create: (data: CreateTestRunRequest, options?: FetchOptions) =>
+    apiClient.post<TestRun>('/api/v1/test-runs', data, options),
+
+  update: (runId: string, data: UpdateTestRunRequest, options?: FetchOptions) =>
+    apiClient.patch<TestRun>(`/api/v1/test-runs/${runId}`, data, options),
+
+  delete: (runId: string, options?: FetchOptions) =>
+    apiClient.delete<{ success: boolean; message: string }>(`/api/v1/test-runs/${runId}`, options),
+
+  getResults: (runId: string, options?: FetchOptions) =>
+    apiClient.get<TestResult[]>(`/api/v1/test-runs/${runId}/results`, options),
+
+  addResult: (runId: string, data: CreateTestResultRequest, options?: FetchOptions) =>
+    apiClient.post<TestResult>(`/api/v1/test-runs/${runId}/results`, data, options),
+
+  getComparison: (projectId: string, options?: FetchOptions) =>
+    apiClient.get<TestRunComparisonResponse>(`/api/v1/test-runs/comparison/${projectId}`, options),
+};

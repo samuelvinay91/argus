@@ -1,96 +1,117 @@
 'use client';
 
+/**
+ * Tests and Test Runs Hooks - Migrated to Backend API
+ *
+ * This module uses the FastAPI backend for all CRUD operations,
+ * while keeping Supabase Realtime for live subscriptions only.
+ *
+ * Migration: RAP-312 Phase 1 - Tests & Runs Domain
+ */
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { Test, TestRun, TestResult, InsertTables } from '@/lib/supabase/types';
-import { BACKEND_URL } from '@/lib/config/api-endpoints';
+import {
+  testsApi,
+  testRunsApi,
+  BACKEND_URL,
+  type Test,
+  type TestListItem,
+  type TestRun,
+  type TestRunListItem,
+  type TestResult,
+  type TestRunWithResults,
+  type CreateTestRequest,
+  type UpdateTestRequest,
+  type CreateTestRunRequest,
+  type TestRunComparisonResponse,
+} from '@/lib/api-client';
+
+// Re-export types for backward compatibility
+export type {
+  Test,
+  TestListItem,
+  TestRun,
+  TestRunListItem,
+  TestResult,
+  TestRunWithResults,
+};
 
 // ============================================
 // TESTS
 // ============================================
 
 export function useTests(projectId: string | null) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['tests', projectId],
     queryFn: async () => {
       if (!projectId) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('tests') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      const response = await testsApi.list({
+        projectId,
+        isActive: true,
+        limit: 500,
+      });
 
-      if (error) throw error;
-      return data as Test[];
+      // Transform to legacy Supabase format for backward compatibility
+      return response.tests.map((test) => ({
+        id: test.id,
+        project_id: test.projectId,
+        name: test.name,
+        description: test.description,
+        steps: [] as Array<{ action: string; target?: string; value?: string; description?: string }>,
+        tags: test.tags,
+        priority: test.priority,
+        is_active: test.isActive,
+        source: test.source,
+        created_by: null as string | null,
+        created_at: test.createdAt,
+        updated_at: test.createdAt, // Use created_at as fallback
+      }));
     },
     enabled: !!projectId,
-    staleTime: 2 * 60 * 1000, // 2 minutes - tests change occasionally
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    placeholderData: [], // Prevent loading state flash
+    placeholderData: [],
   });
 }
 
 export function useCreateTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (test: InsertTables<'tests'>) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('tests') as any)
-        .insert(test)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as Test;
+    mutationFn: async (test: CreateTestRequest) => {
+      const response = await testsApi.create(test);
+      return response;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['tests', data.project_id] });
+      queryClient.invalidateQueries({ queryKey: ['tests', data.projectId] });
     },
   });
 }
 
 export function useUpdateTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string } & Partial<Test>) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('tests') as any)
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as Test;
+    mutationFn: async ({ id, projectId, ...updates }: { id: string; projectId: string } & UpdateTestRequest) => {
+      const response = await testsApi.update(id, updates);
+      return { ...response, projectId };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['tests', data.project_id] });
+      queryClient.invalidateQueries({ queryKey: ['tests', data.projectId] });
     },
   });
 }
 
 export function useDeleteTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ testId, projectId }: { testId: string; projectId: string }) => {
-      // Soft delete by setting is_active to false
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('tests') as any)
-        .update({ is_active: false })
-        .eq('id', testId);
-
-      if (error) throw error;
+      // Soft delete by setting is_active to false via API
+      await testsApi.update(testId, { isActive: false });
       return projectId;
     },
     onSuccess: (projectId) => {
@@ -104,73 +125,112 @@ export function useDeleteTest() {
 // ============================================
 
 export function useTestRuns(projectId: string | null, limit = 50) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['test-runs', projectId, limit],
     queryFn: async () => {
       if (!projectId) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('test_runs') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const response = await testRunsApi.list({
+        projectId,
+        limit,
+      });
 
-      if (error) throw error;
-      return data as TestRun[];
+      // Transform to legacy Supabase format for backward compatibility
+      return response.runs.map((run) => ({
+        id: run.id,
+        project_id: run.projectId,
+        name: run.name,
+        trigger: (run.trigger || 'manual') as 'manual' | 'scheduled' | 'webhook' | 'ci',
+        status: run.status as 'pending' | 'running' | 'passed' | 'failed' | 'cancelled',
+        app_url: '',
+        environment: null as string | null,
+        browser: null as string | null,
+        total_tests: run.totalTests,
+        passed_tests: run.passedTests,
+        failed_tests: run.failedTests,
+        skipped_tests: 0,
+        duration_ms: run.durationMs,
+        started_at: null as string | null,
+        completed_at: run.completedAt,
+        triggered_by: null as string | null,
+        ci_metadata: null as Record<string, unknown> | null,
+        created_at: run.createdAt,
+      }));
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000, // 30 seconds - runs update more frequently
+    staleTime: 30 * 1000, // 30 seconds
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    placeholderData: [], // Prevent loading state flash
+    placeholderData: [],
   });
 }
 
 export function useTestRun(runId: string | null) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['test-run', runId],
     queryFn: async () => {
       if (!runId) return null;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('test_runs') as any)
-        .select('*')
-        .eq('id', runId)
-        .single();
+      const response = await testRunsApi.get(runId, false);
 
-      if (error) throw error;
-      return data as TestRun;
+      // Transform to legacy Supabase format for backward compatibility
+      return {
+        id: response.id,
+        project_id: response.projectId,
+        name: response.name,
+        trigger: (response.trigger || 'manual') as 'manual' | 'scheduled' | 'webhook' | 'ci',
+        status: response.status as 'pending' | 'running' | 'passed' | 'failed' | 'cancelled',
+        app_url: response.appUrl || '',
+        environment: null as string | null,
+        browser: response.browser,
+        total_tests: response.totalTests,
+        passed_tests: response.passedTests,
+        failed_tests: response.failedTests,
+        skipped_tests: response.skippedTests,
+        duration_ms: response.durationMs,
+        started_at: response.startedAt,
+        completed_at: response.completedAt,
+        triggered_by: response.createdBy,
+        ci_metadata: null as Record<string, unknown> | null,
+        created_at: response.createdAt,
+      };
     },
     enabled: !!runId,
   });
 }
 
 export function useTestResults(runId: string | null) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['test-results', runId],
     queryFn: async () => {
       if (!runId) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('test_results') as any)
-        .select('*')
-        .eq('test_run_id', runId)
-        .order('created_at', { ascending: true });
+      const results = await testRunsApi.getResults(runId);
 
-      if (error) throw error;
-      return data as TestResult[];
+      // Transform to legacy Supabase format for backward compatibility
+      return results.map((r) => ({
+        id: r.id,
+        test_run_id: r.testRunId,
+        test_id: r.testId,
+        name: r.name,
+        status: (r.status || 'pending') as 'pending' | 'running' | 'passed' | 'failed' | 'skipped',
+        duration_ms: r.durationMs,
+        error_message: r.errorMessage,
+        error_screenshot: r.errorScreenshot,
+        error_stack: null as string | null,
+        step_results: r.stepResults,
+        steps_total: r.stepsTotal,
+        steps_completed: r.stepsCompleted,
+        retry_count: 0,
+        started_at: null as string | null,
+        completed_at: r.completedAt,
+        created_at: r.createdAt,
+      }));
     },
     enabled: !!runId,
   });
 }
 
-// Real-time subscription for test runs
+// Real-time subscription for test runs (keep Supabase for subscriptions)
 export function useTestRunSubscription(projectId: string | null) {
   const queryClient = useQueryClient();
   const supabase = getSupabaseClient();
@@ -204,8 +264,39 @@ export function useTestRunSubscription(projectId: string | null) {
 // RUN TEST
 // ============================================
 
+interface LegacyTest {
+  id: string;
+  name: string;
+  steps: Array<string | { instruction?: string; action?: string }>;
+}
+
+interface LegacyTestRun {
+  id: string;
+  project_id: string;
+  status: string;
+  passed_tests: number;
+  failed_tests: number;
+  total_tests: number;
+  duration_ms: number | null;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+interface LegacyTestResult {
+  id: string;
+  test_run_id: string;
+  test_id: string | null;
+  name: string;
+  status: string;
+  duration_ms: number | null;
+  steps_total: number | null;
+  steps_completed: number | null;
+  error_message: string | null;
+  step_results: Array<Record<string, unknown>> | null;
+  completed_at: string | null;
+}
+
 export function useRunTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -217,33 +308,31 @@ export function useRunTest() {
     }: {
       projectId: string;
       appUrl: string;
-      tests: Test[];
+      tests: LegacyTest[];
       browser?: string;
     }) => {
-      // 1. Create test run in Supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: testRun, error: runError } = await (supabase.from('test_runs') as any)
-        .insert({
-          project_id: projectId,
-          app_url: appUrl,
-          browser,
-          status: 'running',
-          total_tests: tests.length,
-          started_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // 1. Create test run via API
+      const testRun = await testRunsApi.create({
+        projectId,
+        appUrl,
+        browser,
+        trigger: 'manual',
+        totalTests: tests.length,
+      });
 
-      if (runError) throw runError;
+      // Update to running status
+      await testRunsApi.update(testRun.id, {
+        status: 'running',
+      });
 
-      // 2. Execute tests via Worker
-      const results: TestResult[] = [];
+      // 2. Execute tests via Worker (keep direct worker call for execution)
+      const results: LegacyTestResult[] = [];
       let passedCount = 0;
       let failedCount = 0;
 
       for (const test of tests) {
         const steps = Array.isArray(test.steps)
-          ? (test.steps as Array<string | { instruction?: string; action?: string }>).map((s) => {
+          ? test.steps.map((s) => {
               if (typeof s === 'string') return s;
               return s.instruction || s.action || '';
             }).filter(Boolean)
@@ -264,67 +353,85 @@ export function useRunTest() {
           const workerResult = await response.json();
           const passed = workerResult.success;
 
-          // 3. Save result to Supabase
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: result, error: resultError } = await (supabase.from('test_results') as any)
-            .insert({
-              test_run_id: testRun.id,
-              test_id: test.id,
-              name: test.name,
-              status: passed ? 'passed' : 'failed',
-              duration_ms: workerResult.duration || 0,
-              steps_total: steps.length,
-              steps_completed: passed ? steps.length : 0,
-              error_message: workerResult.error || null,
-              step_results: workerResult.steps || [],
-              completed_at: new Date().toISOString(),
-            })
-            .select()
-            .single();
+          // 3. Save result via API
+          const result = await testRunsApi.addResult(testRun.id, {
+            testId: test.id,
+            name: test.name,
+            status: passed ? 'passed' : 'failed',
+            durationMs: workerResult.duration || 0,
+            stepsTotal: steps.length,
+            stepsCompleted: passed ? steps.length : 0,
+            errorMessage: workerResult.error || null,
+            stepResults: workerResult.steps || [],
+          });
 
-          if (resultError) throw resultError;
-          results.push(result as TestResult);
+          results.push({
+            id: result.id,
+            test_run_id: result.testRunId,
+            test_id: result.testId,
+            name: result.name,
+            status: result.status,
+            duration_ms: result.durationMs,
+            steps_total: result.stepsTotal,
+            steps_completed: result.stepsCompleted,
+            error_message: result.errorMessage,
+            step_results: result.stepResults,
+            completed_at: result.completedAt,
+          });
 
           if (passed) passedCount++;
           else failedCount++;
         } catch (error) {
           // Record failed test
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: result } = await (supabase.from('test_results') as any)
-            .insert({
-              test_run_id: testRun.id,
-              test_id: test.id,
-              name: test.name,
-              status: 'failed',
-              steps_total: steps.length,
-              error_message: String(error),
-              completed_at: new Date().toISOString(),
-            })
-            .select()
-            .single();
+          const result = await testRunsApi.addResult(testRun.id, {
+            testId: test.id,
+            name: test.name,
+            status: 'failed',
+            stepsTotal: steps.length,
+            errorMessage: String(error),
+          });
 
-          if (result) results.push(result as TestResult);
+          results.push({
+            id: result.id,
+            test_run_id: result.testRunId,
+            test_id: result.testId,
+            name: result.name,
+            status: result.status,
+            duration_ms: result.durationMs,
+            steps_total: result.stepsTotal,
+            steps_completed: result.stepsCompleted,
+            error_message: result.errorMessage,
+            step_results: result.stepResults,
+            completed_at: result.completedAt,
+          });
           failedCount++;
         }
       }
 
-      // 4. Update test run with final status
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: finalRun, error: updateError } = await (supabase.from('test_runs') as any)
-        .update({
-          status: failedCount === 0 ? 'passed' : 'failed',
-          passed_tests: passedCount,
-          failed_tests: failedCount,
-          completed_at: new Date().toISOString(),
-          duration_ms: Date.now() - new Date(testRun.started_at!).getTime(),
-        })
-        .eq('id', testRun.id)
-        .select()
-        .single();
+      // 4. Update test run with final status via API
+      const startedAt = testRun.startedAt ? new Date(testRun.startedAt).getTime() : Date.now();
+      const finalRun = await testRunsApi.update(testRun.id, {
+        status: failedCount === 0 ? 'passed' : 'failed',
+        passedTests: passedCount,
+        failedTests: failedCount,
+        completedAt: new Date().toISOString(),
+        durationMs: Date.now() - startedAt,
+      });
 
-      if (updateError) throw updateError;
-
-      return { testRun: finalRun as TestRun, results };
+      return {
+        testRun: {
+          id: finalRun.id,
+          project_id: finalRun.projectId,
+          status: finalRun.status,
+          passed_tests: finalRun.passedTests,
+          failed_tests: finalRun.failedTests,
+          total_tests: finalRun.totalTests,
+          duration_ms: finalRun.durationMs,
+          started_at: finalRun.startedAt,
+          completed_at: finalRun.completedAt,
+        } as LegacyTestRun,
+        results,
+      };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['test-runs'] });
@@ -338,30 +445,42 @@ export function useRunTest() {
 // ============================================
 
 export function useTestRunHistory(projectId: string | null, currentRunId: string | null, limit = 10) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['test-run-history', projectId, currentRunId, limit],
     queryFn: async () => {
       if (!projectId) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const query = (supabase.from('test_runs') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(limit + 1); // Fetch one extra in case current run is in results
-
-      const { data, error } = await query;
-
-      if (error) throw error;
+      const response = await testRunsApi.list({
+        projectId,
+        limit: limit + 1, // Fetch one extra in case current run is in results
+      });
 
       // Filter out current run and limit to requested count
-      const runs = (data as TestRun[])
+      const runs = response.runs
         .filter((run) => run.id !== currentRunId)
         .slice(0, limit);
 
-      return runs;
+      // Transform to legacy Supabase format for backward compatibility
+      return runs.map((run) => ({
+        id: run.id,
+        project_id: run.projectId,
+        name: run.name,
+        trigger: (run.trigger || 'manual') as 'manual' | 'scheduled' | 'webhook' | 'ci',
+        status: run.status as 'pending' | 'running' | 'passed' | 'failed' | 'cancelled',
+        app_url: '',
+        environment: null as string | null,
+        browser: null as string | null,
+        total_tests: run.totalTests,
+        passed_tests: run.passedTests,
+        failed_tests: run.failedTests,
+        skipped_tests: 0,
+        duration_ms: run.durationMs,
+        started_at: null as string | null,
+        completed_at: run.completedAt,
+        triggered_by: null as string | null,
+        ci_metadata: null as Record<string, unknown> | null,
+        created_at: run.createdAt,
+      }));
     },
     enabled: !!projectId,
     staleTime: 30 * 1000, // 30 seconds
@@ -371,7 +490,6 @@ export function useTestRunHistory(projectId: string | null, currentRunId: string
 }
 
 export function useRunSingleTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -383,32 +501,28 @@ export function useRunSingleTest() {
     }: {
       projectId: string;
       appUrl: string;
-      test: Test;
+      test: LegacyTest;
       browser?: string;
     }) => {
       const steps = Array.isArray(test.steps)
-        ? (test.steps as Array<string | { instruction?: string; action?: string }>).map((s) => {
+        ? test.steps.map((s) => {
             if (typeof s === 'string') return s;
             return s.instruction || s.action || '';
           }).filter(Boolean)
         : [];
 
-      // Create test run
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: testRun, error: runError } = await (supabase.from('test_runs') as any)
-        .insert({
-          project_id: projectId,
-          app_url: appUrl,
-          browser,
-          name: test.name,
-          status: 'running',
-          total_tests: 1,
-          started_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // Create test run via API
+      const testRun = await testRunsApi.create({
+        projectId,
+        name: test.name,
+        appUrl,
+        browser,
+        trigger: 'manual',
+        totalTests: 1,
+      });
 
-      if (runError) throw runError;
+      // Update to running
+      await testRunsApi.update(testRun.id, { status: 'running' });
 
       // Execute via Worker
       const response = await fetch(`${BACKEND_URL}/api/v1/browser/test`, {
@@ -425,35 +539,34 @@ export function useRunSingleTest() {
       const workerResult = await response.json();
       const passed = workerResult.success;
 
-      // Save result
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('test_results') as any).insert({
-        test_run_id: testRun.id,
-        test_id: test.id,
+      // Save result via API
+      await testRunsApi.addResult(testRun.id, {
+        testId: test.id,
         name: test.name,
         status: passed ? 'passed' : 'failed',
-        duration_ms: workerResult.duration || 0,
-        steps_total: steps.length,
-        steps_completed: passed ? steps.length : 0,
-        error_message: workerResult.error || null,
-        completed_at: new Date().toISOString(),
+        durationMs: workerResult.duration || 0,
+        stepsTotal: steps.length,
+        stepsCompleted: passed ? steps.length : 0,
+        errorMessage: workerResult.error || null,
       });
 
-      // Update run status
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: finalRun } = await (supabase.from('test_runs') as any)
-        .update({
-          status: passed ? 'passed' : 'failed',
-          passed_tests: passed ? 1 : 0,
-          failed_tests: passed ? 0 : 1,
-          completed_at: new Date().toISOString(),
-          duration_ms: Date.now() - new Date(testRun.started_at!).getTime(),
-        })
-        .eq('id', testRun.id)
-        .select()
-        .single();
+      // Update run status via API
+      const startedAt = testRun.startedAt ? new Date(testRun.startedAt).getTime() : Date.now();
+      const finalRun = await testRunsApi.update(testRun.id, {
+        status: passed ? 'passed' : 'failed',
+        passedTests: passed ? 1 : 0,
+        failedTests: passed ? 0 : 1,
+        completedAt: new Date().toISOString(),
+        durationMs: Date.now() - startedAt,
+      });
 
-      return finalRun as TestRun;
+      return {
+        id: finalRun.id,
+        project_id: finalRun.projectId,
+        status: finalRun.status,
+        passed_tests: finalRun.passedTests,
+        failed_tests: finalRun.failedTests,
+      } as LegacyTestRun;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['test-runs'] });
@@ -466,8 +579,8 @@ export function useRunSingleTest() {
 // ============================================
 
 export interface TestRunComparisonData {
-  currentRun: TestRun | null;
-  previousRun: TestRun | null;
+  currentRun: LegacyTestRun | null;
+  previousRun: LegacyTestRun | null;
   deltas: {
     passedDelta: number | null;
     failedDelta: number | null;
@@ -477,17 +590,11 @@ export interface TestRunComparisonData {
   hasPreviousRun: boolean;
 }
 
-/**
- * Hook to compare the latest test run with the previous one for a project.
- * Returns delta values for passed/failed tests and duration.
- */
 export function useTestRunComparison(projectId: string | null): {
   data: TestRunComparisonData | undefined;
   isLoading: boolean;
   error: Error | null;
 } {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['test-run-comparison', projectId],
     queryFn: async (): Promise<TestRunComparisonData> => {
@@ -505,56 +612,33 @@ export function useTestRunComparison(projectId: string | null): {
         };
       }
 
-      // Fetch the two most recent completed test runs for this project
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('test_runs') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .in('status', ['passed', 'failed']) // Only completed runs
-        .order('created_at', { ascending: false })
-        .limit(2);
+      const response = await testRunsApi.getComparison(projectId);
 
-      if (error) throw error;
-
-      const runs = data as TestRun[];
-      const currentRun = runs[0] || null;
-      const previousRun = runs[1] || null;
-
-      // Calculate deltas
-      let passedDelta: number | null = null;
-      let failedDelta: number | null = null;
-      let durationDelta: number | null = null;
-      let passRateDelta: number | null = null;
-
-      if (currentRun && previousRun) {
-        passedDelta = currentRun.passed_tests - previousRun.passed_tests;
-        failedDelta = currentRun.failed_tests - previousRun.failed_tests;
-
-        if (currentRun.duration_ms !== null && previousRun.duration_ms !== null) {
-          durationDelta = currentRun.duration_ms - previousRun.duration_ms;
-        }
-
-        // Calculate pass rate delta
-        const currentTotal = currentRun.passed_tests + currentRun.failed_tests;
-        const previousTotal = previousRun.passed_tests + previousRun.failed_tests;
-
-        if (currentTotal > 0 && previousTotal > 0) {
-          const currentPassRate = (currentRun.passed_tests / currentTotal) * 100;
-          const previousPassRate = (previousRun.passed_tests / previousTotal) * 100;
-          passRateDelta = currentPassRate - previousPassRate;
-        }
-      }
+      const toLegacyRun = (run: TestRunListItem | null): LegacyTestRun | null => {
+        if (!run) return null;
+        return {
+          id: run.id,
+          project_id: run.projectId,
+          status: run.status,
+          passed_tests: run.passedTests,
+          failed_tests: run.failedTests,
+          total_tests: run.totalTests,
+          duration_ms: run.durationMs,
+          started_at: null,
+          completed_at: run.completedAt,
+        };
+      };
 
       return {
-        currentRun,
-        previousRun,
+        currentRun: toLegacyRun(response.currentRun),
+        previousRun: toLegacyRun(response.previousRun),
         deltas: {
-          passedDelta,
-          failedDelta,
-          durationDelta,
-          passRateDelta,
+          passedDelta: response.deltas.passedDelta,
+          failedDelta: response.deltas.failedDelta,
+          durationDelta: response.deltas.durationDelta,
+          passRateDelta: response.deltas.passRateDelta,
         },
-        hasPreviousRun: previousRun !== null,
+        hasPreviousRun: response.hasPreviousRun,
       };
     },
     enabled: !!projectId,
@@ -568,7 +652,6 @@ export function useTestRunComparison(projectId: string | null): {
 // ============================================
 
 export function useRerunTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -583,59 +666,46 @@ export function useRerunTest() {
       appUrl: string;
       browser?: string;
     }) => {
-      // 1. Fetch original test results to get the tests to rerun
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: originalResults, error: resultsError } = await (supabase.from('test_results') as any)
-        .select('*')
-        .eq('test_run_id', testRunId);
+      // 1. Fetch original test results via API
+      const originalResults = await testRunsApi.getResults(testRunId);
 
-      if (resultsError) throw resultsError;
+      // 2. Create new test run via API
+      const newTestRun = await testRunsApi.create({
+        projectId,
+        appUrl,
+        browser,
+        trigger: 'manual',
+        totalTests: originalResults.length,
+      });
 
-      // 2. Create new test run
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: newTestRun, error: runError } = await (supabase.from('test_runs') as any)
-        .insert({
-          project_id: projectId,
-          app_url: appUrl,
-          browser,
-          status: 'running',
-          trigger: 'manual',
-          total_tests: originalResults?.length || 0,
-          started_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (runError) throw runError;
+      await testRunsApi.update(newTestRun.id, { status: 'running' });
 
       // 3. Rerun each test
       let passedCount = 0;
       let failedCount = 0;
 
-      for (const originalResult of originalResults || []) {
+      for (const originalResult of originalResults) {
         // Get test details if test_id exists
         let steps: string[] = [];
-        if (originalResult.test_id) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: testData } = await (supabase.from('tests') as any)
-            .select('steps')
-            .eq('id', originalResult.test_id)
-            .single();
-
-          if (testData?.steps) {
-            steps = Array.isArray(testData.steps)
-              ? (testData.steps as Array<string | { instruction?: string; action?: string }>).map((s) => {
-                  if (typeof s === 'string') return s;
-                  return s.instruction || s.action || '';
-                }).filter(Boolean)
-              : [];
+        if (originalResult.testId) {
+          try {
+            const testData = await testsApi.get(originalResult.testId);
+            if (testData?.steps) {
+              steps = testData.steps.map((s) => {
+                if (typeof s === 'string') return s;
+                return s.description || s.action || '';
+              }).filter(Boolean);
+            }
+          } catch {
+            // Test may have been deleted
           }
         }
 
         // If no steps from test, try to extract from original step_results
-        if (steps.length === 0 && originalResult.step_results) {
-          const stepResults = originalResult.step_results as Array<{ instruction?: string; step?: string }>;
-          steps = stepResults.map((sr) => sr.instruction || sr.step || '').filter(Boolean);
+        if (steps.length === 0 && originalResult.stepResults) {
+          steps = originalResult.stepResults.map((sr) =>
+            (sr.instruction as string) || (sr.step as string) || ''
+          ).filter(Boolean);
         }
 
         try {
@@ -653,56 +723,50 @@ export function useRerunTest() {
           const workerResult = await response.json();
           const passed = workerResult.success;
 
-          // Save result
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase.from('test_results') as any).insert({
-            test_run_id: newTestRun.id,
-            test_id: originalResult.test_id,
+          // Save result via API
+          await testRunsApi.addResult(newTestRun.id, {
+            testId: originalResult.testId,
             name: originalResult.name,
             status: passed ? 'passed' : 'failed',
-            duration_ms: workerResult.duration || 0,
-            steps_total: steps.length,
-            steps_completed: passed ? steps.length : 0,
-            error_message: workerResult.error || null,
-            step_results: workerResult.steps || [],
-            completed_at: new Date().toISOString(),
+            durationMs: workerResult.duration || 0,
+            stepsTotal: steps.length,
+            stepsCompleted: passed ? steps.length : 0,
+            errorMessage: workerResult.error || null,
+            stepResults: workerResult.steps || [],
           });
 
           if (passed) passedCount++;
           else failedCount++;
         } catch (error) {
           // Record failed test
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase.from('test_results') as any).insert({
-            test_run_id: newTestRun.id,
-            test_id: originalResult.test_id,
+          await testRunsApi.addResult(newTestRun.id, {
+            testId: originalResult.testId,
             name: originalResult.name,
             status: 'failed',
-            steps_total: steps.length,
-            error_message: String(error),
-            completed_at: new Date().toISOString(),
+            stepsTotal: steps.length,
+            errorMessage: String(error),
           });
           failedCount++;
         }
       }
 
-      // 4. Update test run with final status
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: finalRun, error: updateError } = await (supabase.from('test_runs') as any)
-        .update({
-          status: failedCount === 0 ? 'passed' : 'failed',
-          passed_tests: passedCount,
-          failed_tests: failedCount,
-          completed_at: new Date().toISOString(),
-          duration_ms: Date.now() - new Date(newTestRun.started_at!).getTime(),
-        })
-        .eq('id', newTestRun.id)
-        .select()
-        .single();
+      // 4. Update test run with final status via API
+      const startedAt = newTestRun.startedAt ? new Date(newTestRun.startedAt).getTime() : Date.now();
+      const finalRun = await testRunsApi.update(newTestRun.id, {
+        status: failedCount === 0 ? 'passed' : 'failed',
+        passedTests: passedCount,
+        failedTests: failedCount,
+        completedAt: new Date().toISOString(),
+        durationMs: Date.now() - startedAt,
+      });
 
-      if (updateError) throw updateError;
-
-      return finalRun as TestRun;
+      return {
+        id: finalRun.id,
+        project_id: finalRun.projectId,
+        status: finalRun.status,
+        passed_tests: finalRun.passedTests,
+        failed_tests: finalRun.failedTests,
+      } as LegacyTestRun;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['test-runs'] });
