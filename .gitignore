@@ -73,7 +73,6 @@ test-results/
 blob-report/
 playwright/.cache/
 .worktrees/
-.worktrees/
 
 # clerk configuration (can include secrets)
 /.clerk/

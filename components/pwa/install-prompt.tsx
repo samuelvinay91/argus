@@ -262,8 +262,14 @@ export function PWAUpdatePrompt() {
 
   const handleUpdate = () => {
     if (waitingWorker) {
-      waitingWorker.postMessage({ type: 'SKIP_WAITING' });
-      window.location.reload();
+      // Warn user about potential unsaved changes before reload
+      const confirmed = window.confirm(
+        'A new version is available. The page will reload and any unsaved changes may be lost. Update now?'
+      );
+      if (confirmed) {
+        waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+        window.location.reload();
+      }
     }
   };
 

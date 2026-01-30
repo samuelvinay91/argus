@@ -42,6 +42,9 @@ export interface SwipeableDrawerProps {
 const DRAG_CLOSE_THRESHOLD = 100;
 const VELOCITY_THRESHOLD = 500;
 
+// Global counter for body scroll lock to handle multiple drawers
+let scrollLockCount = 0;
+
 export function SwipeableDrawer({
   open,
   onClose,
@@ -94,15 +97,19 @@ export function SwipeableDrawer({
     }
   }, [open, controls]);
 
-  // Prevent body scroll when open
+  // Prevent body scroll when open (handles multiple drawers with counter)
   React.useEffect(() => {
     if (open) {
+      scrollLockCount++;
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = '';
+      if (open) {
+        scrollLockCount--;
+        if (scrollLockCount === 0) {
+          document.body.style.overflow = '';
+        }
+      }
     };
   }, [open]);
 
