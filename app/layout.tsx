@@ -5,6 +5,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Providers } from '@/lib/providers';
 import { SidebarProvider, MobileSidebar, MobileHeader } from '@/components/layout/sidebar';
 import { MobileBottomNav } from '@/components/layout';
+import { PWAInstallPrompt, PWAUpdatePrompt } from '@/components/pwa';
 import { Toaster } from '@/components/ui/toaster';
 import { CommandPalette } from '@/components/shared/CommandPalette';
 import './globals.css';
@@ -252,7 +253,9 @@ export default function RootLayout({
                 <SignedIn>
                   <MobileBottomNav />
                   <CommandPalette />
+                  <PWAInstallPrompt />
                 </SignedIn>
+                <PWAUpdatePrompt />
                 <Toaster />
               </div>
             </SidebarProvider>

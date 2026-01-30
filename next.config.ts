@@ -1,5 +1,90 @@
 import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
+import withPWAInit from '@ducanh2912/next-pwa';
+
+// PWA configuration
+const withPWA = withPWAInit({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true,
+  scope: '/',
+  sw: 'sw.js',
+  cacheOnFrontEndNav: true,
+  reloadOnOnline: true,
+  fallbacks: {
+    document: '/offline',
+  },
+  workboxOptions: {
+    // Runtime caching strategies
+    runtimeCaching: [
+      // Cache API responses with NetworkFirst (fresh data preferred)
+      {
+        urlPattern: /^https:\/\/argus-brain-production\.up\.railway\.app\/api\/.*/i,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'api-cache',
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 60 * 60, // 1 hour
+          },
+          networkTimeoutSeconds: 10,
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      // Cache Supabase API with NetworkFirst
+      {
+        urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'supabase-cache',
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 60 * 5, // 5 minutes
+          },
+          networkTimeoutSeconds: 10,
+        },
+      },
+      // Cache static assets with CacheFirst
+      {
+        urlPattern: /\.(?:js|css|woff2?|ttf|otf|eot)$/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'static-assets',
+          expiration: {
+            maxEntries: 200,
+            maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+          },
+        },
+      },
+      // Cache images with CacheFirst
+      {
+        urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'image-cache',
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+          },
+        },
+      },
+      // Cache Google Fonts with StaleWhileRevalidate
+      {
+        urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'google-fonts',
+          expiration: {
+            maxEntries: 20,
+            maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+          },
+        },
+      },
+    ],
+  },
+});
 
 // Content Security Policy configuration
 // Note: 'unsafe-inline' for scripts is required by Next.js for inline script hydration
@@ -148,4 +233,5 @@ const sentryWebpackPluginOptions = {
   automaticVercelMonitors: true,
 };
 
-export default withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+// Apply PWA wrapper first, then Sentry
+export default withSentryConfig(withPWA(nextConfig), sentryWebpackPluginOptions);
