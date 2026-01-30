@@ -36,6 +36,20 @@
     --ring: 173 80% 40%;
     --radius: 0.625rem;
 
+    /* ===========================================
+     * RESPONSIVE LAYOUT TOKENS
+     * Mobile-first layout system
+     * =========================================== */
+    --sidebar-width: 256px;
+    --sidebar-collapsed: 64px;
+    --header-height: 56px;
+    --mobile-header-height: 48px;
+    --bottom-nav-height: 64px;
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
+
     /* Argus Brand Colors */
     --argus-teal: 173 80% 40%;
     --argus-cyan: 185 85% 50%;
@@ -231,6 +245,114 @@
 }
 
 @layer components {
+  /* ===========================================
+   * MOBILE-FIRST TYPOGRAPHY SCALE
+   * Responsive text utilities for consistent sizing
+   * =========================================== */
+  .text-page-title {
+    @apply text-xl font-bold tracking-tight;
+  }
+  @screen sm {
+    .text-page-title {
+      @apply text-2xl;
+    }
+  }
+  @screen lg {
+    .text-page-title {
+      @apply text-3xl;
+    }
+  }
+
+  .text-section-title {
+    @apply text-lg font-semibold;
+  }
+  @screen sm {
+    .text-section-title {
+      @apply text-xl;
+    }
+  }
+
+  .text-card-title {
+    @apply text-base font-medium;
+  }
+  @screen sm {
+    .text-card-title {
+      @apply text-lg;
+    }
+  }
+
+  .text-body {
+    @apply text-sm;
+  }
+  @screen sm {
+    .text-body {
+      @apply text-base;
+    }
+  }
+
+  .text-caption {
+    @apply text-xs text-muted-foreground;
+  }
+  @screen sm {
+    .text-caption {
+      @apply text-sm;
+    }
+  }
+
+  /* ===========================================
+   * MOBILE-FIRST SPACING UTILITIES
+   * Consistent padding/margin patterns
+   * =========================================== */
+  .page-padding {
+    @apply px-4 py-4;
+  }
+  @screen sm {
+    .page-padding {
+      @apply px-6 py-6;
+    }
+  }
+  @screen lg {
+    .page-padding {
+      @apply px-8 py-8;
+    }
+  }
+
+  .section-spacing {
+    @apply space-y-4;
+  }
+  @screen sm {
+    .section-spacing {
+      @apply space-y-6;
+    }
+  }
+
+  .card-padding {
+    @apply p-4;
+  }
+  @screen sm {
+    .card-padding {
+      @apply p-6;
+    }
+  }
+
+  /* Touch-friendly targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  .touch-target-lg {
+    @apply min-h-[48px] min-w-[48px];
+  }
+
+  /* Safe area padding for notched devices */
+  .safe-area-bottom {
+    padding-bottom: max(1rem, var(--safe-area-bottom));
+  }
+
+  .safe-area-top {
+    padding-top: max(0px, var(--safe-area-top));
+  }
+
   /* Consistent card styling */
   .card-elevated {
     @apply bg-card border border-border rounded-xl;

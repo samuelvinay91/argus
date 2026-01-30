@@ -8,6 +8,15 @@ const config: Config = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    // Mobile-first breakpoints
+    screens: {
+      xs: '375px',   // Small phones (iPhone SE)
+      sm: '640px',   // Large phones / phablets
+      md: '768px',   // Tablets portrait
+      lg: '1024px',  // Tablets landscape / small laptops
+      xl: '1280px',  // Desktops
+      '2xl': '1536px', // Large desktops
+    },
     extend: {
       colors: {
         background: 'hsl(var(--background))',
@@ -97,6 +106,26 @@ const config: Config = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      // Mobile-first spacing scale (8px grid)
+      spacing: {
+        'safe-bottom': 'var(--safe-area-bottom, 0px)',
+        'safe-top': 'var(--safe-area-top, 0px)',
+        'header': 'var(--header-height, 56px)',
+        'header-mobile': 'var(--mobile-header-height, 48px)',
+        'bottom-nav': 'var(--bottom-nav-height, 64px)',
+        'sidebar': 'var(--sidebar-width, 256px)',
+        'sidebar-collapsed': 'var(--sidebar-collapsed, 64px)',
+      },
+      // Min-height for touch targets (44px minimum)
+      minHeight: {
+        'touch': '44px',
+        'touch-lg': '48px',
+      },
+      // Min-width for touch targets
+      minWidth: {
+        'touch': '44px',
+        'touch-lg': '48px',
       },
       keyframes: {
         'accordion-down': {

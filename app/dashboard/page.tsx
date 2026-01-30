@@ -2,21 +2,17 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { formatDistanceToNow } from 'date-fns';
 import {
   TestTube,
-  TrendingUp,
-  Clock,
-  AlertTriangle,
   ChevronDown,
   RefreshCw,
-  Loader2,
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
+import { PageContainer, PageHeader } from '@/components/layout';
+import { ResponsiveGrid } from '@/components/layout/responsive-grid';
+import { CollapsibleSection } from '@/components/ui/collapsible-section';
 import { Button } from '@/components/ui/button';
 import {
-  MetricCard,
-  MetricCardSkeleton,
   TestHealthChart,
   TestHealthChartSkeleton,
   ActiveExecutionsWidget,
@@ -33,6 +29,7 @@ import type { ActivityItem, TestHealthDataPoint } from '@/components/dashboard';
 import { useProjects } from '@/lib/hooks/use-projects';
 import { useReportsStats, useRecentRuns } from '@/lib/hooks/use-reports';
 import { useTests, useTestRuns, useTestRunSubscription, useRunTest } from '@/lib/hooks/use-tests';
+import { useIsMobile } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import type { TestRun, Test } from '@/lib/supabase/types';
 
@@ -44,15 +41,9 @@ function formatDuration(ms: number): string {
   return `${minutes}m ${remainingSeconds}s`;
 }
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
-}
-
 export default function DashboardPage() {
-  const { user, isLoaded: userLoaded } = useUser();
+  const { user } = useUser();
+  const isMobile = useIsMobile();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<7 | 30 | 90>(7);
 
@@ -97,7 +88,6 @@ export default function DashboardPage() {
     // Calculate flaky tests (tests that have both passed and failed in recent runs)
     const testResults = new Map<string, { passed: number; failed: number }>();
     recentRuns.forEach((run: TestRun) => {
-      // This is a simplified calculation - in a real app you'd track per-test results
       if (run.passed_tests > 0 || run.failed_tests > 0) {
         const key = run.name || 'default';
         const current = testResults.get(key) || { passed: 0, failed: 0 };
@@ -193,20 +183,22 @@ export default function DashboardPage() {
     return (
       <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
+        <PageContainer className="flex items-center justify-center">
           <div className="text-center max-w-md px-6">
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
               <TestTube className="h-8 w-8 text-primary" />
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight mb-2">Welcome to Argus</h2>
-            <p className="text-muted-foreground mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight mb-2">
+              Welcome to Argus
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base mb-6">
               Get started by creating your first project to begin testing.
             </p>
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
               <a href="/projects">Create Project</a>
             </Button>
           </div>
-        </main>
+        </PageContainer>
       </div>
     );
   }
@@ -214,10 +206,9 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64 min-w-0">
-        {/* Main Content */}
-        <div className="p-6 space-y-6">
-          {/* Dashboard Hero */}
+      <PageContainer>
+        <div className="space-y-4 sm:space-y-6">
+          {/* Dashboard Hero - Full width, responsive */}
           {isLoading ? (
             <DashboardHeroSkeleton />
           ) : (
@@ -250,16 +241,17 @@ export default function DashboardPage() {
             />
           )}
 
-          {/* Project Selector Bar */}
-          <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-card border">
-            <div className="flex items-center gap-4">
-              <div className="relative">
+          {/* Project Selector Bar - Mobile optimized */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-xl bg-card border">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="relative flex-1 sm:flex-initial">
                 <select
                   value={currentProjectId || ''}
                   onChange={(e) => setSelectedProjectId(e.target.value)}
                   className={cn(
-                    'h-9 rounded-md border bg-background px-3 pr-8 text-sm appearance-none cursor-pointer',
-                    'focus:outline-none focus:ring-2 focus:ring-ring'
+                    'h-10 sm:h-9 w-full sm:w-auto rounded-md border bg-background px-3 pr-8 text-sm appearance-none cursor-pointer',
+                    'focus:outline-none focus:ring-2 focus:ring-ring',
+                    'touch-target'
                   )}
                 >
                   {projects.map((project) => (
@@ -270,7 +262,7 @@ export default function DashboardPage() {
                 </select>
                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground truncate hidden sm:inline">
                 {currentProject ? currentProject.name : 'Select a project'}
               </span>
             </div>
@@ -279,54 +271,112 @@ export default function DashboardPage() {
               size="sm"
               onClick={() => refetchStats()}
               disabled={isLoading}
+              className="h-10 sm:h-9 touch-target"
             >
               <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
               Refresh
             </Button>
           </div>
 
-          {/* Main Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Chart & Recent Runs */}
-            <div className="lg:col-span-2 space-y-6">
-              {isLoading ? (
-                <TestHealthChartSkeleton />
-              ) : (
-                <TestHealthChart
-                  data={chartData}
-                  selectedPeriod={selectedPeriod}
-                  onPeriodChange={setSelectedPeriod}
-                  isLoading={statsLoading}
-                />
-              )}
+          {/* Main Grid - Stacks on mobile */}
+          <ResponsiveGrid
+            cols={{ xs: 1, lg: 3 }}
+            gap="md"
+            className="items-start"
+          >
+            {/* Left Column - Chart & Recent Runs (takes 2 cols on desktop) */}
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+              {/* Test Health Chart */}
+              <CollapsibleSection
+                title="Test Health"
+                mobileCollapsed={false}
+                defaultOpen={true}
+                className="rounded-xl border bg-card overflow-hidden"
+                contentClassName="p-0"
+              >
+                {isLoading ? (
+                  <div className="p-4">
+                    <TestHealthChartSkeleton />
+                  </div>
+                ) : (
+                  <TestHealthChart
+                    data={chartData}
+                    selectedPeriod={selectedPeriod}
+                    onPeriodChange={setSelectedPeriod}
+                    isLoading={statsLoading}
+                  />
+                )}
+              </CollapsibleSection>
 
-              {isLoading ? (
-                <RecentRunsTableSkeleton />
-              ) : (
-                <RecentRunsTable runs={recentRuns} isLoading={runsLoading} limit={8} />
-              )}
+              {/* Recent Runs - Collapsible on mobile */}
+              <CollapsibleSection
+                title="Recent Runs"
+                count={recentRuns.length}
+                mobileCollapsed={true}
+                defaultOpen={true}
+                className="rounded-xl border bg-card overflow-hidden"
+                contentClassName="p-0"
+              >
+                {isLoading ? (
+                  <div className="p-4">
+                    <RecentRunsTableSkeleton />
+                  </div>
+                ) : (
+                  <RecentRunsTable
+                    runs={recentRuns}
+                    isLoading={runsLoading}
+                    limit={isMobile ? 5 : 8}
+                  />
+                )}
+              </CollapsibleSection>
             </div>
 
             {/* Right Column - Active Executions & Activity */}
-            <div className="space-y-6">
-              {isLoading ? (
-                <ActiveExecutionsWidgetSkeleton />
-              ) : (
-                <ActiveExecutionsWidget
-                  executions={allTestRuns}
-                  isLoading={runsLoading}
-                />
-              )}
+            <div className="space-y-4 sm:space-y-6">
+              {/* Active Executions */}
+              <CollapsibleSection
+                title="Active Executions"
+                mobileCollapsed={true}
+                defaultOpen={true}
+                className="rounded-xl border bg-card overflow-hidden"
+                contentClassName="p-0"
+              >
+                {isLoading ? (
+                  <div className="p-4">
+                    <ActiveExecutionsWidgetSkeleton />
+                  </div>
+                ) : (
+                  <ActiveExecutionsWidget
+                    executions={allTestRuns}
+                    isLoading={runsLoading}
+                  />
+                )}
+              </CollapsibleSection>
 
-              {isLoading ? (
-                <TeamActivityFeedSkeleton />
-              ) : (
-                <TeamActivityFeed activities={activityItems} isLoading={runsLoading} />
-              )}
+              {/* Team Activity - Collapsible on mobile */}
+              <CollapsibleSection
+                title="Recent Activity"
+                count={activityItems.length}
+                mobileCollapsed={true}
+                defaultOpen={true}
+                className="rounded-xl border bg-card overflow-hidden"
+                contentClassName="p-0"
+              >
+                {isLoading ? (
+                  <div className="p-4">
+                    <TeamActivityFeedSkeleton />
+                  </div>
+                ) : (
+                  <TeamActivityFeed
+                    activities={activityItems}
+                    isLoading={runsLoading}
+                  />
+                )}
+              </CollapsibleSection>
             </div>
-          </div>
+          </ResponsiveGrid>
 
-          {/* Quick Actions */}
+          {/* Quick Actions - Full width */}
           {isLoading ? (
             <QuickActionsSkeleton />
           ) : (
@@ -337,7 +387,7 @@ export default function DashboardPage() {
             />
           )}
         </div>
-      </main>
+      </PageContainer>
     </div>
   );
 }

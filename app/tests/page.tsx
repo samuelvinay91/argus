@@ -16,8 +16,13 @@ import {
   Activity,
   Radio,
   Users,
+  ChevronDown,
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
+import { PageContainer } from '@/components/layout';
+import { StatBar, type StatItem } from '@/components/ui/stat-bar';
+import { CollapsibleSection } from '@/components/ui/collapsible-section';
+import { SwipeableDrawer, DrawerContent } from '@/components/ui/swipeable-drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,14 +40,16 @@ import {
 import { useProjects, useCreateProject } from '@/lib/hooks/use-projects';
 import { useRealtimeTests } from '@/hooks/use-realtime-tests';
 import { useProjectPresence } from '@/hooks/use-presence';
+import { useIsMobile, useIsDesktop } from '@/hooks/use-media-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Test, TestRun } from '@/lib/supabase/types';
 import { cn } from '@/lib/utils';
 
 export default function TestsPage() {
   const { user } = useUser();
+  const isMobile = useIsMobile();
+  const isDesktop = useIsDesktop();
   const [showNewTest, setShowNewTest] = useState(false);
-  const [showNewProject, setShowNewProject] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
   const [newTestName, setNewTestName] = useState('');
   const [newTestSteps, setNewTestSteps] = useState('');
@@ -99,6 +106,32 @@ export default function TestsPage() {
     };
   }, [tests, recentRuns, runningTests]);
 
+  // Stats for StatBar component
+  const statItems: StatItem[] = useMemo(() => [
+    {
+      label: 'Tests',
+      value: stats.totalTests,
+      icon: <Activity className="h-4 w-4" />,
+    },
+    {
+      label: 'Pass Rate',
+      value: `${stats.passRate}%`,
+      icon: <CheckCircle2 className="h-4 w-4" />,
+      color: Number(stats.passRate) >= 80 ? 'success' : Number(stats.passRate) >= 50 ? 'warning' : 'error',
+    },
+    {
+      label: 'Avg Duration',
+      value: `${stats.avgDuration}s`,
+      icon: <Clock className="h-4 w-4" />,
+    },
+    ...(stats.runningCount > 0 ? [{
+      label: 'Running',
+      value: stats.runningCount,
+      icon: <Loader2 className="h-4 w-4 animate-spin" />,
+      color: 'info' as const,
+    }] : []),
+  ], [stats]);
+
   // Handle create project
   const handleCreateProject = async () => {
     if (!newProjectName || !newProjectUrl) return;
@@ -110,7 +143,6 @@ export default function TestsPage() {
       });
       setSelectedProjectId(project.id);
       setAppUrl(newProjectUrl);
-      setShowNewProject(false);
       setNewProjectName('');
       setNewProjectUrl('');
     } catch (error) {
@@ -201,18 +233,18 @@ export default function TestsPage() {
     }
   };
 
-  // Table columns
+  // Table columns - simplified for mobile
   const columns: ColumnDef<Test>[] = [
     {
       accessorKey: 'name',
       header: 'Test Name',
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
+          <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
             <Zap className="h-4 w-4 text-primary" />
           </div>
-          <div>
-            <div className="font-medium">{row.original.name}</div>
+          <div className="min-w-0">
+            <div className="font-medium truncate">{row.original.name}</div>
             <div className="text-xs text-muted-foreground">
               {Array.isArray(row.original.steps) ? row.original.steps.length : 0} steps
             </div>
@@ -235,42 +267,35 @@ export default function TestsPage() {
       },
     },
     {
-      accessorKey: 'source',
-      header: 'Source',
-      cell: ({ row }) => (
-        <span className="text-muted-foreground capitalize">{row.original.source}</span>
-      ),
-    },
-    {
       accessorKey: 'created_at',
       header: 'Created',
       cell: ({ row }) => (
-        <span className="text-muted-foreground" suppressHydrationWarning>
+        <span className="text-muted-foreground text-sm" suppressHydrationWarning>
           {formatDistanceToNow(new Date(row.original.created_at), { addSuffix: true })}
         </span>
       ),
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: '',
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Button
             variant="default"
             size="sm"
-            className="h-8 px-3"
+            className="h-9 px-3 touch-target"
             onClick={(e) => {
               e.stopPropagation();
               handleRunTest(row.original);
             }}
           >
-            <Play className="h-4 w-4 mr-1" />
-            Run Test
+            <Play className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Run</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+            className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive touch-target"
             onClick={(e) => {
               e.stopPropagation();
               handleDeleteTest(row.original.id);
@@ -283,18 +308,61 @@ export default function TestsPage() {
     },
   ];
 
+  // Mobile test card component
+  const MobileTestCard = ({ test }: { test: Test }) => (
+    <div className="p-4 rounded-xl border bg-card">
+      <div className="flex items-start gap-3">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Zap className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium truncate">{test.name}</h3>
+          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+            <span>{Array.isArray(test.steps) ? test.steps.length : 0} steps</span>
+            <span>•</span>
+            <Badge variant={test.priority === 'critical' ? 'error' : test.priority === 'high' ? 'warning' : 'default'} className="text-xs">
+              {test.priority}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1" suppressHydrationWarning>
+            Created {formatDistanceToNow(new Date(test.created_at), { addSuffix: true })}
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-2 mt-4">
+        <Button
+          className="flex-1 h-10 touch-target"
+          onClick={() => handleRunTest(test)}
+        >
+          <Play className="h-4 w-4 mr-2" />
+          Run Test
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-10 w-10 touch-target text-muted-foreground hover:text-destructive"
+          onClick={() => handleDeleteTest(test.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+
   // No project state
   if (!projectsLoading && projects.length === 0) {
     return (
       <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 lg:ml-64 min-w-0 flex items-center justify-center">
-          <div className="text-center max-w-md">
+        <PageContainer className="flex items-center justify-center">
+          <div className="text-center max-w-md px-4">
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
               <Zap className="h-8 w-8 text-primary" />
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight mb-2">Create your first project</h2>
-            <p className="text-muted-foreground mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight mb-2">
+              Create your first project
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base mb-6">
               Projects represent the applications you want to test. Add a project to get started.
             </p>
             <div className="space-y-4">
@@ -302,14 +370,16 @@ export default function TestsPage() {
                 placeholder="Project name"
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
+                className="h-11 touch-target"
               />
               <Input
                 placeholder="Application URL (e.g., https://myapp.com)"
                 value={newProjectUrl}
                 onChange={(e) => setNewProjectUrl(e.target.value)}
+                className="h-11 touch-target"
               />
               <Button
-                className="w-full"
+                className="w-full h-11 touch-target"
                 onClick={handleCreateProject}
                 disabled={createProject.isPending || !newProjectName || !newProjectUrl}
               >
@@ -322,7 +392,7 @@ export default function TestsPage() {
               </Button>
             </div>
           </div>
-        </main>
+        </PageContainer>
       </div>
     );
   }
@@ -330,108 +400,83 @@ export default function TestsPage() {
   return (
     <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64 min-w-0 overflow-x-hidden">
-        {/* Header */}
-        <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-sm px-4 lg:px-6 py-3">
-          {/* Top row - Project selector and actions */}
-          <div className="flex flex-wrap items-center gap-3">
+      <PageContainer padding={false}>
+        {/* Mobile-optimized Header */}
+        <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur-sm">
+          {/* Top row - Project selector and status */}
+          <div className="px-4 py-3 flex items-center gap-3">
             {/* Project Selector */}
-            <select
-              value={currentProject || ''}
-              onChange={(e) => {
-                setSelectedProjectId(e.target.value);
-                const project = projects.find((p) => p.id === e.target.value);
-                if (project) setAppUrl(project.app_url);
-              }}
-              className="h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[120px]"
-            >
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-
-            {/* Stats Pills - hidden on small screens */}
-            <div className="hidden md:flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Activity className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{stats.totalTests}</span>
-                <span className="text-muted-foreground hidden lg:inline">tests</span>
-              </div>
-              <div className="h-4 w-px bg-border" />
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                <span className="font-medium">{stats.passRate}%</span>
-                <span className="text-muted-foreground hidden lg:inline">pass rate</span>
-              </div>
-              <div className="h-4 w-px bg-border hidden lg:block" />
-              <div className="hidden lg:flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{stats.avgDuration}s</span>
-                <span className="text-muted-foreground">avg</span>
-              </div>
-              {/* Running tests indicator */}
-              {stats.runningCount > 0 && (
-                <>
-                  <div className="h-4 w-px bg-border" />
-                  <div className="flex items-center gap-2 text-sm">
-                    <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
-                    <span className="font-medium text-blue-500">{stats.runningCount}</span>
-                    <span className="text-muted-foreground hidden lg:inline">running</span>
-                  </div>
-                </>
-              )}
+            <div className="relative flex-1 sm:flex-initial sm:min-w-[180px]">
+              <select
+                value={currentProject || ''}
+                onChange={(e) => {
+                  setSelectedProjectId(e.target.value);
+                  const project = projects.find((p) => p.id === e.target.value);
+                  if (project) setAppUrl(project.app_url);
+                }}
+                className={cn(
+                  'h-10 w-full rounded-md border bg-background px-3 pr-8 text-sm appearance-none cursor-pointer',
+                  'focus:outline-none focus:ring-2 focus:ring-ring',
+                  'touch-target'
+                )}
+              >
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
 
-            <div className="flex-1 min-w-0" />
-
-            {/* Realtime Status Indicator */}
+            {/* Status indicators */}
             <div className="flex items-center gap-2">
               <div className={cn(
                 'flex items-center gap-1.5 text-xs px-2 py-1 rounded-full',
-                isRealtimeSubscribed ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
+                isRealtimeSubscribed ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
               )}>
                 <Radio className="h-3 w-3" />
                 <span className="hidden sm:inline">{isRealtimeSubscribed ? 'Live' : 'Offline'}</span>
               </div>
 
-              {/* Online users indicator */}
               {onlineUsers.length > 0 && (
-                <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-500">
+                <div className="hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-info/10 text-info">
                   <Users className="h-3 w-3" />
-                  <span className="hidden sm:inline">{onlineUsers.length} online</span>
+                  <span>{onlineUsers.length}</span>
                 </div>
               )}
             </div>
 
-            {/* Activity Feed Toggle */}
+            {/* Action buttons */}
             <Button
               size="sm"
               variant={showActivityFeed ? 'default' : 'outline'}
               onClick={() => setShowActivityFeed(!showActivityFeed)}
-              className="h-9"
+              className="h-10 w-10 sm:w-auto sm:px-3 touch-target"
             >
               <Activity className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Activity</span>
             </Button>
 
-            <Button size="sm" onClick={() => setShowNewTest(true)}>
+            <Button size="sm" onClick={() => setShowNewTest(true)} className="h-10 touch-target">
               <Plus className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">New Test</span>
             </Button>
           </div>
 
-          {/* Bottom row - App URL and Run buttons */}
-          <div className="flex flex-wrap items-center gap-3 mt-3">
-            {/* App URL */}
+          {/* Stats Bar - horizontally scrollable on mobile */}
+          <div className="px-4 pb-3">
+            <StatBar stats={statItems} variant="compact" />
+          </div>
+
+          {/* App URL and Run All - only on larger screens or when expanded */}
+          <div className="px-4 pb-3 flex items-center gap-3">
             <Input
               value={appUrl}
               onChange={(e) => setAppUrl(e.target.value)}
-              placeholder="App URL (e.g., https://example.com)"
-              className="flex-1 min-w-[200px] max-w-md h-9"
+              placeholder="App URL"
+              className="flex-1 h-10 touch-target text-sm"
             />
-
             <Button
               size="sm"
               variant="outline"
@@ -443,6 +488,7 @@ export default function TestsPage() {
                 }
               }}
               disabled={runTest.isPending || tests.length === 0}
+              className="h-10 touch-target whitespace-nowrap"
             >
               {runTest.isPending ? (
                 <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
@@ -454,96 +500,138 @@ export default function TestsPage() {
           </div>
         </header>
 
-        <div className="flex min-w-0">
-          {/* Main Content */}
-          <div className={cn('flex-1 min-w-0 p-4 lg:p-6 overflow-x-hidden', showActivityFeed && 'pr-0')}>
-            {/* New Test Form */}
-            {showNewTest && (
-              <div className="mb-6 p-4 rounded-lg border bg-card animate-fade-up">
-                <h3 className="font-medium mb-4">Create New Test</h3>
-                <div className="space-y-4">
-                  <Input
-                    placeholder="Test name (e.g., User Login Flow)"
-                    value={newTestName}
-                    onChange={(e) => setNewTestName(e.target.value)}
-                  />
-                  <Textarea
-                    placeholder="Enter test steps, one per line:&#10;Navigate to login page&#10;Enter username&#10;Enter password&#10;Click Sign In&#10;Verify dashboard is visible"
-                    value={newTestSteps}
-                    onChange={(e) => setNewTestSteps(e.target.value)}
-                    rows={5}
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" onClick={() => setShowNewTest(false)}>
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleCreateTest}
-                      disabled={createTest.isPending || !newTestName || !newTestSteps}
-                    >
-                      {createTest.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                      Create Test
-                    </Button>
-                  </div>
+        {/* Main Content */}
+        <div className="p-4 space-y-4">
+          {/* New Test Form */}
+          {showNewTest && (
+            <div className="p-4 rounded-xl border bg-card animate-fade-up">
+              <h3 className="font-medium mb-4">Create New Test</h3>
+              <div className="space-y-4">
+                <Input
+                  placeholder="Test name (e.g., User Login Flow)"
+                  value={newTestName}
+                  onChange={(e) => setNewTestName(e.target.value)}
+                  className="h-11 touch-target"
+                />
+                <Textarea
+                  placeholder="Enter test steps, one per line:&#10;Navigate to login page&#10;Enter username&#10;Enter password&#10;Click Sign In"
+                  value={newTestSteps}
+                  onChange={(e) => setNewTestSteps(e.target.value)}
+                  rows={5}
+                  className="min-h-[120px]"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowNewTest(false)}
+                    className="flex-1 sm:flex-none h-10 touch-target"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateTest}
+                    disabled={createTest.isPending || !newTestName || !newTestSteps}
+                    className="flex-1 sm:flex-none h-10 touch-target"
+                  >
+                    {createTest.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                    Create Test
+                  </Button>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Running Tests Banner */}
-            {runningTests.length > 0 && (
-              <div className="mb-6 p-4 rounded-lg border border-blue-500/30 bg-blue-500/5 animate-pulse">
-                <div className="flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
-                  <div>
-                    <p className="font-medium text-blue-500">
-                      {runningTests.length} test{runningTests.length > 1 ? 's' : ''} running
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {runningTests.map(t => t.name || 'Test').join(', ')}
-                    </p>
-                  </div>
+          {/* Running Tests Banner */}
+          {runningTests.length > 0 && (
+            <div className="p-4 rounded-xl border border-info/30 bg-info/5 animate-pulse">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 text-info animate-spin flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-medium text-info">
+                    {runningTests.length} test{runningTests.length > 1 ? 's' : ''} running
+                  </p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {runningTests.map(t => t.name || 'Test').join(', ')}
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Recent Runs */}
-            {recentRuns.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Recent Runs</h3>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {recentRuns.slice(0, 8).map((run) => (
-                    <div
-                      key={run.id}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-lg border min-w-[180px] transition-all',
-                        run.status === 'passed' && 'border-success/30 bg-success/5',
-                        run.status === 'failed' && 'border-error/30 bg-error/5',
-                        run.status === 'running' && 'border-info/30 bg-info/5 animate-pulse'
-                      )}
-                    >
-                      <StatusDot status={run.status} />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{run.name || 'Test Run'}</div>
-                        <div className="text-xs text-muted-foreground" suppressHydrationWarning>
-                          {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
+          {/* Recent Runs - Collapsible on mobile */}
+          {recentRuns.length > 0 && (
+            <CollapsibleSection
+              title="Recent Runs"
+              count={recentRuns.length}
+              mobileCollapsed={true}
+              defaultOpen={true}
+            >
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                {recentRuns.slice(0, isMobile ? 4 : 8).map((run) => (
+                  <div
+                    key={run.id}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-2 rounded-lg border min-w-[160px] sm:min-w-[180px] flex-shrink-0',
+                      run.status === 'passed' && 'border-success/30 bg-success/5',
+                      run.status === 'failed' && 'border-error/30 bg-error/5',
+                      run.status === 'running' && 'border-info/30 bg-info/5 animate-pulse'
+                    )}
+                  >
+                    <StatusDot status={run.status} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{run.name || 'Test Run'}</div>
+                      <div className="text-xs text-muted-foreground" suppressHydrationWarning>
+                        {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
+                      </div>
+                    </div>
+                    {run.status === 'running' ? (
+                      <Loader2 className="h-4 w-4 text-info animate-spin flex-shrink-0" />
+                    ) : run.duration_ms ? (
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        {(run.duration_ms / 1000).toFixed(1)}s
+                      </span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Tests - Cards on mobile, Table on desktop */}
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">
+              All Tests ({tests.length})
+            </h3>
+
+            {isMobile ? (
+              // Mobile: Card layout
+              <div className="space-y-3">
+                {testsLoading ? (
+                  // Loading skeletons
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="p-4 rounded-xl border bg-card animate-pulse">
+                      <div className="flex items-start gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-muted" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-muted rounded w-3/4" />
+                          <div className="h-3 bg-muted rounded w-1/2" />
                         </div>
                       </div>
-                      {run.status === 'running' ? (
-                        <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
-                      ) : run.duration_ms ? (
-                        <span className="text-xs text-muted-foreground">
-                          {(run.duration_ms / 1000).toFixed(1)}s
-                        </span>
-                      ) : null}
                     </div>
-                  ))}
-                </div>
+                  ))
+                ) : tests.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No tests yet. Create your first test to get started.</p>
+                  </div>
+                ) : (
+                  tests.map((test) => (
+                    <MobileTestCard key={test.id} test={test} />
+                  ))
+                )}
               </div>
-            )}
-
-            {/* Tests Table */}
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">All Tests</h3>
+            ) : (
+              // Desktop: Table layout
               <DataTable
                 columns={columns}
                 data={tests}
@@ -552,20 +640,47 @@ export default function TestsPage() {
                 isLoading={testsLoading}
                 emptyMessage="No tests yet. Create your first test to get started."
               />
-            </div>
+            )}
           </div>
+        </div>
 
-          {/* Activity Feed Sidebar */}
-          {showActivityFeed && (
-            <div className="w-80 border-l bg-card/50 p-4 animate-in slide-in-from-right">
+        {/* Activity Feed - Drawer on mobile, Sidebar on desktop */}
+        {isMobile ? (
+          <SwipeableDrawer
+            open={showActivityFeed}
+            onClose={() => setShowActivityFeed(false)}
+            position="right"
+            width="full"
+            title="Activity Feed"
+          >
+            <DrawerContent>
+              <RealtimeActivityFeed
+                projectId={currentProject}
+                maxItems={20}
+              />
+            </DrawerContent>
+          </SwipeableDrawer>
+        ) : (
+          showActivityFeed && (
+            <div className="fixed right-0 top-0 bottom-0 w-80 border-l bg-card/95 backdrop-blur-sm p-4 pt-20 animate-in slide-in-from-right z-40">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium">Activity Feed</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowActivityFeed(false)}
+                >
+                  Close
+                </Button>
+              </div>
               <RealtimeActivityFeed
                 projectId={currentProject}
                 maxItems={20}
               />
             </div>
-          )}
-        </div>
-      </main>
+          )
+        )}
+      </PageContainer>
 
       {/* Live Execution Modal */}
       <LiveExecutionModal
