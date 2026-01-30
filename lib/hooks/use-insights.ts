@@ -240,34 +240,37 @@ export function useCoverageGaps(projectId: string | null) {
     queryFn: async () => {
       if (!projectId) return { gaps: [], stats: { critical: 0, high: 0, totalSuggested: 0, overallCoverage: 0 } };
 
-      // Get discovery sessions for the project
+      // Get discovery sessions for the project (ordered by most recent)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: sessions, error: sessionsError } = await (supabase.from('discovery_sessions') as any)
         .select('id')
-        .eq('project_id', projectId);
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
 
       if (sessionsError) throw sessionsError;
 
-      // Get discovered pages
+      // Get discovered pages (limit to recent sessions to avoid URL length issues)
       let discoveredPages: Array<{ id: string; url: string; title: string | null }> = [];
       if (sessions && sessions.length > 0) {
-        const sessionIds = sessions.map((s: { id: string }) => s.id);
+        // Limit to most recent 10 sessions to avoid URL length issues with in() filter
+        const sessionIds = sessions.slice(0, 10).map((s: { id: string }) => s.id);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: pages, error: pagesError } = await (supabase.from('discovered_pages') as any)
           .select('id, url, title')
-          .in('session_id', sessionIds);
+          .in('discovery_session_id', sessionIds);
         if (pagesError) throw pagesError;
         discoveredPages = pages || [];
       }
 
-      // Get discovered flows
+      // Get discovered flows (limit to recent sessions to avoid URL length issues)
       let discoveredFlows: Array<{ id: string; name: string; description: string | null }> = [];
       if (sessions && sessions.length > 0) {
-        const sessionIds = sessions.map((s: { id: string }) => s.id);
+        // Limit to most recent 10 sessions to avoid URL length issues with in() filter
+        const sessionIds = sessions.slice(0, 10).map((s: { id: string }) => s.id);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: flows, error: flowsError } = await (supabase.from('discovered_flows') as any)
           .select('id, name, description')
-          .in('session_id', sessionIds);
+          .in('discovery_session_id', sessionIds);
         if (flowsError) throw flowsError;
         discoveredFlows = flows || [];
       }
