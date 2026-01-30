@@ -15,6 +15,35 @@ const STORAGE_KEY = 'argus-pwa-install-dismissed';
 const DISMISS_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
+ * Safe localStorage access - handles private browsing and security policies
+ */
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    // localStorage unavailable (private browsing, security policy, etc.)
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    // localStorage unavailable
+    return false;
+  }
+}
+
+/**
+ * Check if PWA features are supported
+ */
+function isPWASupported(): boolean {
+  return typeof window !== 'undefined' && 'serviceWorker' in navigator;
+}
+
+/**
  * PWAInstallPrompt - Shows install banner for PWA
  *
  * Features:
@@ -50,7 +79,12 @@ export function PWAInstallPrompt() {
 
   // Check if dismissed recently
   React.useEffect(() => {
-    const dismissed = localStorage.getItem(STORAGE_KEY);
+    // Skip if PWA features not supported
+    if (!isPWASupported()) {
+      return;
+    }
+
+    const dismissed = safeGetItem(STORAGE_KEY);
     if (dismissed) {
       const dismissedAt = parseInt(dismissed, 10);
       if (Date.now() - dismissedAt < DISMISS_DURATION) {
@@ -97,7 +131,7 @@ export function PWAInstallPrompt() {
 
   // Handle dismiss
   const handleDismiss = () => {
-    localStorage.setItem(STORAGE_KEY, Date.now().toString());
+    safeSetItem(STORAGE_KEY, Date.now().toString());
     setShowPrompt(false);
   };
 

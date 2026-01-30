@@ -5,13 +5,26 @@ import * as React from 'react';
 /**
  * Hook to detect if a media query matches
  *
+ * SSR-safe: Returns undefined during SSR/initial render, then the actual value after hydration.
+ * This prevents hydration mismatches between server and client.
+ *
  * @param query - Media query string (e.g., '(min-width: 768px)')
+ * @param defaultValue - Default value to return before hydration (default: false)
  * @returns boolean indicating if the query matches
  */
-export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = React.useState(false);
+export function useMediaQuery(query: string, defaultValue = false): boolean {
+  const [mounted, setMounted] = React.useState(false);
+  const [matches, setMatches] = React.useState(defaultValue);
+
+  // Track mounted state to avoid hydration mismatch
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
+    // Only run on client after mount
+    if (!mounted) return;
+
     const mediaQuery = window.matchMedia(query);
 
     // Set initial value
@@ -29,7 +42,12 @@ export function useMediaQuery(query: string): boolean {
     return () => {
       mediaQuery.removeEventListener('change', handler);
     };
-  }, [query]);
+  }, [query, mounted]);
+
+  // Return default value until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return defaultValue;
+  }
 
   return matches;
 }

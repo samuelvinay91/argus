@@ -85,7 +85,11 @@ export function MobileBottomNav({
     >
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
-          const isActive = item.href !== '#' && pathname.startsWith(item.href);
+          // Check for exact match or that pathname is a sub-path (has trailing /)
+          // This prevents /dashboard matching /dashboardxyz
+          const isActive = item.href !== '#' && (
+            pathname === item.href || pathname.startsWith(item.href + '/')
+          );
           const Icon = item.icon;
 
           if (item.onClick) {
