@@ -221,8 +221,11 @@ export function useDiscoverySession(sessionId: string | null) {
     enabled: !!sessionId,
     refetchInterval: (query) => {
       const data = query.state.data as DiscoverySessionResponse | null | undefined;
-      // Poll every 2 seconds while running
-      return data?.status === 'running' ? 2000 : false;
+      // Poll every 2 seconds while running or pending
+      if (data?.status === 'running' || data?.status === 'pending') {
+        return 2000;
+      }
+      return false;
     },
     staleTime: 1000, // 1 second - session status changes frequently
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes

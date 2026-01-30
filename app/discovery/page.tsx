@@ -778,6 +778,9 @@ export default function DiscoveryPage() {
   // Enhanced session-based hooks for multi-page crawling
   const startDiscoverySession = useStartDiscoverySession();
   const { data: currentSession, isLoading: sessionLoading } = useDiscoverySession(currentSessionId);
+  // Fetch pages/flows for current session to show real-time progress
+  const { data: sessionPages = [] } = useDiscoverySessionPages(currentSessionId);
+  const { data: sessionFlows = [] } = useDiscoverySessionFlows(currentSessionId);
   const pauseDiscovery = usePauseDiscovery();
   const resumeDiscovery = useResumeDiscovery();
   const cancelDiscovery = useCancelDiscovery();
@@ -815,16 +818,21 @@ export default function DiscoveryPage() {
   // Calculate stats - use session data when available, fall back to legacy
   const stats = useMemo(() => {
     // Prefer session progress data for real-time updates during crawling
-    if (currentSession?.progress) {
-      const maxPages = currentSession.config?.maxPages || discoveryConfig.maxPages || 50;
+    if (currentSession?.progress || currentSessionId) {
+      const maxPages = currentSession?.config?.maxPages || discoveryConfig.maxPages || 50;
+      // Calculate elements from session pages if available
+      const elementsFromPages = sessionPages.reduce(
+        (acc, p) => acc + (p.element_count || 0),
+        0
+      );
       return {
-        pagesDiscovered: currentSession.progress.pagesDiscovered,
-        elementsFound: 0, // Will be populated when pages data loads
-        flowsIdentified: currentSession.progress.flowsIdentified,
-        coverage: Math.min(100, Math.round((currentSession.progress.pagesDiscovered / maxPages) * 100)),
-        pagesQueued: currentSession.progress.pagesQueued,
-        currentUrl: currentSession.progress.currentUrl,
-        currentStep: currentSession.progress.currentStep,
+        pagesDiscovered: currentSession?.progress?.pagesDiscovered || sessionPages.length || 0,
+        elementsFound: elementsFromPages || (currentSession as unknown as { elements_found?: number })?.elements_found || 0,
+        flowsIdentified: currentSession?.progress?.flowsIdentified || sessionFlows.length || 0,
+        coverage: (currentSession as unknown as { coverage_score?: number })?.coverage_score || Math.min(100, Math.round(((sessionPages.length || 0) / maxPages) * 100)),
+        pagesQueued: currentSession?.progress?.pagesQueued || 0,
+        currentUrl: currentSession?.progress?.currentUrl || (currentSession as unknown as { current_url?: string })?.current_url,
+        currentStep: currentSession?.progress?.currentStep,
       };
     }
 
@@ -853,15 +861,21 @@ export default function DiscoveryPage() {
       currentUrl: undefined,
       currentStep: undefined,
     };
-  }, [discoveryData, currentSession, discoveryConfig.maxPages]);
+  }, [discoveryData, currentSession, currentSessionId, sessionPages, sessionFlows, discoveryConfig.maxPages]);
 
   // Convert pages to graph nodes
+  // Use session pages during active discovery, otherwise use latest discovery data
   const graphData = useMemo(() => {
-    if (!discoveryData?.pages) {
+    // Prefer session pages when there's an active session
+    const pages = (currentSessionId && sessionPages.length > 0)
+      ? sessionPages
+      : discoveryData?.pages;
+
+    if (!pages || pages.length === 0) {
       return { nodes: [], edges: [] };
     }
 
-    const nodes: PageNode[] = discoveryData.pages.map((page, index) => ({
+    const nodes: PageNode[] = pages.map((page) => ({
       id: page.id,
       url: page.url,
       title: page.title || page.url,
@@ -884,13 +898,14 @@ export default function DiscoveryPage() {
     }
 
     return { nodes, edges };
-  }, [discoveryData?.pages]);
+  }, [currentSessionId, sessionPages, discoveryData?.pages]);
 
   // AI Insights - generated from session data and patterns
   const aiInsights: AIInsight[] = useMemo(() => {
     const insights: AIInsight[] = [];
-    const pages = discoveryData?.pages || [];
-    const flows = discoveryData?.flows || [];
+    // Use session data when available for real-time insights
+    const pages = (currentSessionId && sessionPages.length > 0) ? sessionPages : (discoveryData?.pages || []);
+    const flows = (currentSessionId && sessionFlows.length > 0) ? sessionFlows : (discoveryData?.flows || []);
 
     // Real-time session insights
     if (currentSession?.status === 'running' && stats.pagesQueued > 0) {
@@ -1050,7 +1065,7 @@ export default function DiscoveryPage() {
     }
 
     return insights;
-  }, [discoveryData, currentSession, stats, discoveryConfig.maxPages, discoveryHistory, crossProjectPatterns, globalPatterns]);
+  }, [discoveryData, currentSession, currentSessionId, sessionPages, sessionFlows, stats, discoveryConfig.maxPages, discoveryHistory, crossProjectPatterns, globalPatterns]);
 
   // Helper function to categorize page type
   function categorizePageType(pageType: string, url: string): string {

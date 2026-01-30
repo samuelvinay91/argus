@@ -419,11 +419,19 @@ function DiscoveryProgress({
 
       // Handle 'complete' event - discovery finished successfully
       eventSource.addEventListener('complete', (event: MessageEvent) => {
+        // Prevent duplicate handling of complete events
+        if (isCompletedRef.current) {
+          return;
+        }
+
         const data = parseEventData(event);
         if (!data) return;
 
-        // Mark as completed to prevent reconnection loop
+        // Mark as completed FIRST to prevent any duplicate handling
         isCompletedRef.current = true;
+
+        // Close the connection immediately to prevent more events
+        eventSource.close();
 
         setStatus((prev) => prev ? {
           ...prev,
@@ -434,9 +442,6 @@ function DiscoveryProgress({
         } : null);
         setShowCelebration(true);
         addActivityLog('Discovery completed successfully!', 'success');
-
-        // Close the connection since we're done
-        eventSource.close();
 
         if (onComplete && data.result) {
           onComplete(data.result as DiscoveryResult);
