@@ -15,11 +15,24 @@ const withPWA = withPWAInit({
     document: '/offline',
   },
   workboxOptions: {
+    // Exclude SSE/streaming endpoints from service worker handling
+    // These are long-lived connections that should bypass the SW entirely
+    navigateFallbackDenylist: [/\/stream/],
     // Runtime caching strategies
     runtimeCaching: [
-      // Cache API responses with NetworkFirst (fresh data preferred)
+      // IMPORTANT: Exclude streaming endpoints - they must NOT be cached
+      // SSE streams fail if intercepted by service worker
       {
-        urlPattern: /^https:\/\/argus-brain-production\.up\.railway\.app\/api\/.*/i,
+        urlPattern: /\/stream(\?|$)/i,
+        handler: 'NetworkOnly',
+        options: {
+          cacheName: 'sse-bypass',
+        },
+      },
+      // Cache API responses with NetworkFirst (fresh data preferred)
+      // Excludes streaming endpoints (handled above)
+      {
+        urlPattern: /^https:\/\/argus-brain-production\.up\.railway\.app\/api\/(?!.*\/stream).*/i,
         handler: 'NetworkFirst',
         options: {
           cacheName: 'api-cache',
