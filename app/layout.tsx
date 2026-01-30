@@ -239,6 +239,13 @@ export default function RootLayout({
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
           />
+          {/* TEMPORARY: Unregister broken service worker that causes SSE streams to fail.
+              This is a static script (no user input) used for cleanup during the PWA fix. */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(function(r){for(var i of r)i.unregister()})}`,
+            }}
+          />
         </head>
         <body className={inter.className}>
           <a href="#main-content" className="skip-link">

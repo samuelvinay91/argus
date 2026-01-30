@@ -3,14 +3,17 @@ import { withSentryConfig } from '@sentry/nextjs';
 import withPWAInit from '@ducanh2912/next-pwa';
 
 // PWA configuration
+// TEMPORARILY DISABLED: Service worker has transpilation issue causing
+// "_async_to_generator is not defined" error that breaks SSE streams.
+// TODO: Re-enable after fixing the Workbox/babel transpilation issue.
 const withPWA = withPWAInit({
   dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
-  register: true,
+  disable: true, // Temporarily disabled - SSE streams were failing
+  register: false,
   scope: '/',
   sw: 'sw.js',
-  cacheOnFrontEndNav: true,
-  reloadOnOnline: true,
+  cacheOnFrontEndNav: false,
+  reloadOnOnline: false,
   fallbacks: {
     document: '/offline',
   },
