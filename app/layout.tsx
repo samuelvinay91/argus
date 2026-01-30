@@ -4,6 +4,7 @@ import { ClerkProvider, SignedIn } from '@clerk/nextjs';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Providers } from '@/lib/providers';
 import { SidebarProvider, MobileSidebar, MobileHeader } from '@/components/layout/sidebar';
+import { MobileBottomNav } from '@/components/layout';
 import { Toaster } from '@/components/ui/toaster';
 import { CommandPalette } from '@/components/shared/CommandPalette';
 import './globals.css';
@@ -249,6 +250,7 @@ export default function RootLayout({
                 <MobileSidebar />
                 {children}
                 <SignedIn>
+                  <MobileBottomNav />
                   <CommandPalette />
                 </SignedIn>
                 <Toaster />
