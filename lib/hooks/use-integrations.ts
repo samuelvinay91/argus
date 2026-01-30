@@ -142,6 +142,7 @@ export interface IntegrationsListResponse {
 export interface ConnectIntegrationRequest {
   // Common fields
   api_key?: string;
+  auth_token?: string; // For Sentry and similar platforms
   webhook_url?: string;
   // OAuth (returned from OAuth flow)
   oauth_code?: string;
@@ -331,11 +332,30 @@ export function useConnectIntegration() {
       platform: IntegrationPlatform;
       config: ConnectIntegrationRequest;
     }): Promise<ConnectIntegrationResponse> => {
+      // Backend expects credentials to be wrapped in a "credentials" object
+      // Also extract non-credential fields to their proper locations
+      const { notify_on_failure, notify_on_success, notify_on_healing,
+              auto_create_issues, issue_type, default_priority, link_to_runs,
+              ...credentialFields } = config;
+
+      const requestBody = {
+        credentials: credentialFields,
+        settings: {
+          notify_on_failure,
+          notify_on_success,
+          notify_on_healing,
+          auto_create_issues,
+          issue_type,
+          default_priority,
+          link_to_runs,
+        },
+      };
+
       const response = await fetchJson<ConnectIntegrationResponse>(
         `/api/v1/integrations/${platform}/connect`,
         {
           method: 'POST',
-          body: JSON.stringify(config),
+          body: JSON.stringify(requestBody),
         }
       );
 

@@ -286,17 +286,43 @@ export function IntegrationCard({
         return (
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">API Key (Auth Token)</label>
+              <label className="text-sm font-medium">Auth Token</label>
               <Input
                 type="password"
-                placeholder="Enter your Sentry auth token"
-                value={configValues.api_key || ''}
+                placeholder="sntrys_..."
+                value={configValues.auth_token || ''}
                 onChange={(e) =>
-                  setConfigValues({ ...configValues, api_key: e.target.value })
+                  setConfigValues({ ...configValues, auth_token: e.target.value })
                 }
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Find this in Sentry Settings &gt; Auth Tokens
+                Create at Settings &gt; Account &gt; API &gt; Auth Tokens
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Organization Slug</label>
+              <Input
+                placeholder="my-organization"
+                value={configValues.org_slug || ''}
+                onChange={(e) =>
+                  setConfigValues({ ...configValues, org_slug: e.target.value })
+                }
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                From your Sentry URL: sentry.io/organizations/<strong>slug</strong>/
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Project Slug (Optional)</label>
+              <Input
+                placeholder="my-project"
+                value={configValues.project_slug || ''}
+                onChange={(e) =>
+                  setConfigValues({ ...configValues, project_slug: e.target.value })
+                }
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Leave empty to sync all projects in the organization
               </p>
             </div>
           </div>
