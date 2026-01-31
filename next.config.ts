@@ -1,105 +1,14 @@
 import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
-import withPWAInit from '@ducanh2912/next-pwa';
+import withSerwistInit from '@serwist/next';
 
-// PWA configuration
-// TEMPORARILY DISABLED: Service worker has transpilation issue causing
-// "_async_to_generator is not defined" error that breaks SSE streams.
-// TODO: Re-enable after fixing the Workbox/babel transpilation issue.
-const withPWA = withPWAInit({
-  dest: 'public',
-  disable: true, // Temporarily disabled - SSE streams were failing
-  register: false,
-  scope: '/',
-  sw: 'sw.js',
-  cacheOnFrontEndNav: false,
-  reloadOnOnline: false,
-  fallbacks: {
-    document: '/offline',
-  },
-  workboxOptions: {
-    // Exclude SSE/streaming endpoints from service worker handling
-    // These are long-lived connections that should bypass the SW entirely
-    navigateFallbackDenylist: [/\/stream/],
-    // Runtime caching strategies
-    runtimeCaching: [
-      // IMPORTANT: Exclude streaming endpoints - they must NOT be cached
-      // SSE streams fail if intercepted by service worker
-      {
-        urlPattern: /\/stream(\?|$)/i,
-        handler: 'NetworkOnly',
-        options: {
-          cacheName: 'sse-bypass',
-        },
-      },
-      // Cache API responses with NetworkFirst (fresh data preferred)
-      // Excludes streaming endpoints (handled above)
-      {
-        urlPattern: /^https:\/\/argus-brain-production\.up\.railway\.app\/api\/(?!.*\/stream).*/i,
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'api-cache',
-          expiration: {
-            maxEntries: 100,
-            maxAgeSeconds: 60 * 60, // 1 hour
-          },
-          networkTimeoutSeconds: 10,
-          cacheableResponse: {
-            statuses: [0, 200],
-          },
-        },
-      },
-      // Cache Supabase API with NetworkFirst
-      {
-        urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'supabase-cache',
-          expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 60 * 5, // 5 minutes
-          },
-          networkTimeoutSeconds: 10,
-        },
-      },
-      // Cache static assets with CacheFirst
-      {
-        urlPattern: /\.(?:js|css|woff2?|ttf|otf|eot)$/i,
-        handler: 'CacheFirst',
-        options: {
-          cacheName: 'static-assets',
-          expiration: {
-            maxEntries: 200,
-            maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-          },
-        },
-      },
-      // Cache images with CacheFirst
-      {
-        urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
-        handler: 'CacheFirst',
-        options: {
-          cacheName: 'image-cache',
-          expiration: {
-            maxEntries: 100,
-            maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-          },
-        },
-      },
-      // Cache Google Fonts with StaleWhileRevalidate
-      {
-        urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
-        handler: 'StaleWhileRevalidate',
-        options: {
-          cacheName: 'google-fonts',
-          expiration: {
-            maxEntries: 20,
-            maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-          },
-        },
-      },
-    ],
-  },
+// PWA configuration using Serwist (official Next.js recommended package)
+// Caching strategies are defined in app/sw.ts
+const withSerwist = withSerwistInit({
+  swSrc: 'app/sw.ts',
+  swDest: 'public/sw.js',
+  // Disable in development to avoid service worker issues with HMR
+  disable: process.env.NODE_ENV === 'development',
 });
 
 // Content Security Policy configuration
@@ -249,5 +158,5 @@ const sentryWebpackPluginOptions = {
   automaticVercelMonitors: true,
 };
 
-// Apply PWA wrapper first, then Sentry
-export default withSentryConfig(withPWA(nextConfig), sentryWebpackPluginOptions);
+// Apply Serwist (PWA) wrapper first, then Sentry
+export default withSentryConfig(withSerwist(nextConfig), sentryWebpackPluginOptions);
