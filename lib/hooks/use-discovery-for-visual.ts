@@ -1,14 +1,49 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getSupabaseClient } from '@/lib/supabase/client';
-import type { DiscoverySession, DiscoveredPage } from '@/lib/supabase/types';
+import { discoveryApi, type DiscoverySession, type DiscoveredPage } from '@/lib/api-client';
 
 /**
  * Extended discovery session with discovered pages for Visual AI integration
  */
-export interface DiscoverySessionWithPages extends DiscoverySession {
-  pages: DiscoveredPage[];
+export interface DiscoverySessionWithPages {
+  id: string;
+  project_id: string;
+  status: string;
+  app_url: string;
+  created_at: string;
+  pages: Array<{
+    id: string;
+    discovery_session_id: string;
+    url: string;
+    title: string | null;
+    page_type: string;
+    created_at: string;
+  }>;
+}
+
+/**
+ * Transform API response to legacy format for backward compatibility
+ */
+function transformSessionToLegacy(
+  session: DiscoverySession,
+  pages: DiscoveredPage[]
+): DiscoverySessionWithPages {
+  return {
+    id: session.id,
+    project_id: session.projectId,
+    status: session.status,
+    app_url: session.appUrl,
+    created_at: session.startedAt,
+    pages: pages.map((page) => ({
+      id: page.id,
+      discovery_session_id: page.sessionId,
+      url: page.url,
+      title: page.title || null,
+      page_type: page.pageType,
+      created_at: page.discoveredAt,
+    })),
+  };
 }
 
 /**
@@ -16,51 +51,38 @@ export interface DiscoverySessionWithPages extends DiscoverySession {
  * Designed for Visual AI integration to allow selecting discovered URLs for visual testing.
  */
 export function useRecentDiscoverySessions(projectId: string | null, limit: number = 5) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['discovery-sessions-with-pages', projectId, limit],
     queryFn: async (): Promise<DiscoverySessionWithPages[]> => {
       if (!projectId) return [];
 
-      // Fetch recent completed discovery sessions
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: sessions, error: sessionError } = await (supabase.from('discovery_sessions') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .in('status', ['completed', 'running'])
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      // Fetch recent completed/running discovery sessions via API
+      const response = await discoveryApi.listSessions({
+        projectId,
+        limit,
+      });
 
-      if (sessionError) throw sessionError;
-      if (!sessions || sessions.length === 0) return [];
+      // Filter to only completed or running sessions
+      const filteredSessions = response.sessions.filter(
+        (s) => s.status === 'completed' || s.status === 'running'
+      );
 
-      // Fetch pages for all sessions in parallel
-      const sessionIds = sessions.map((s: DiscoverySession) => s.id);
+      if (filteredSessions.length === 0) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: allPages, error: pagesError } = await (supabase.from('discovered_pages') as any)
-        .select('*')
-        .in('discovery_session_id', sessionIds)
-        .order('created_at', { ascending: false });
+      // Fetch pages for each session in parallel
+      const sessionsWithPages = await Promise.all(
+        filteredSessions.map(async (session) => {
+          try {
+            const pages = await discoveryApi.getPages(session.id);
+            return transformSessionToLegacy(session, pages);
+          } catch {
+            // If pages fetch fails, return session with empty pages
+            return transformSessionToLegacy(session, []);
+          }
+        })
+      );
 
-      if (pagesError) throw pagesError;
-
-      // Group pages by session ID
-      const pagesBySession = (allPages || []).reduce((acc: Record<string, DiscoveredPage[]>, page: DiscoveredPage) => {
-        const sessionId = page.discovery_session_id;
-        if (!acc[sessionId]) {
-          acc[sessionId] = [];
-        }
-        acc[sessionId].push(page);
-        return acc;
-      }, {});
-
-      // Combine sessions with their pages
-      return (sessions as DiscoverySession[]).map((session) => ({
-        ...session,
-        pages: pagesBySession[session.id] || [],
-      }));
+      return sessionsWithPages;
     },
     enabled: !!projectId,
     staleTime: 30 * 1000, // 30 seconds
@@ -95,7 +117,7 @@ export function useDiscoveredUrls(projectId: string | null) {
         map.set(item.url, item);
       }
       return map;
-    }, new Map<string, typeof discoveredUrls[0]>())
+    }, new Map<string, (typeof discoveredUrls)[0]>())
   ).map(([, value]) => value);
 
   // Sort by discovery date (newest first)

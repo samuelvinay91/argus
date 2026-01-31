@@ -2,10 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback } from 'react';
-import { getSupabaseClient } from '@/lib/supabase/client';
-import { apiClient, BACKEND_URL, getAuthToken } from '@/lib/api-client';
+import { discoveryApi, apiClient, BACKEND_URL, getAuthToken } from '@/lib/api-client';
 import type {
-  DiscoverySession,
   DiscoveredPage,
   DiscoveredFlow,
   Json,
@@ -233,28 +231,37 @@ export function useDiscoverySession(sessionId: string | null) {
  * Get discovered pages for a session
  */
 export function useDiscoveredPages(sessionId: string | null) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['discovered-pages', sessionId],
     queryFn: async (): Promise<DiscoveredPage[]> => {
       if (!sessionId) return [];
 
-      // Try API first, fall back to direct Supabase query
-      try {
-        return await apiClient.get<DiscoveredPage[]>(`${API_BASE}/sessions/${sessionId}/pages`);
-      } catch {
-        // Fall back to direct query
-      }
+      const pages = await discoveryApi.getPages(sessionId);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('discovered_pages') as any)
-        .select('*')
-        .eq('discovery_session_id', sessionId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as DiscoveredPage[];
+      // Transform API response to legacy format
+      return pages.map((page) => ({
+        id: page.id,
+        discovery_session_id: page.sessionId,
+        project_id: null,
+        url: page.url,
+        title: page.title,
+        description: page.description,
+        page_type: page.pageType as DiscoveredPage['page_type'],
+        screenshot_url: page.screenshotUrl,
+        element_count: page.elementsCount,
+        form_count: page.formsCount,
+        link_count: page.linksCount,
+        depth: null,
+        parent_url: null,
+        load_time_ms: page.loadTimeMs,
+        html_snapshot: null,
+        ai_analysis: page.aiAnalysis,
+        accessibility_issues: null,
+        seo_analysis: null,
+        metadata: null,
+        created_at: page.discoveredAt,
+        updated_at: page.discoveredAt,
+      }));
     },
     enabled: !!sessionId,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -267,28 +274,35 @@ export function useDiscoveredPages(sessionId: string | null) {
  * Get discovered flows for a session
  */
 export function useDiscoveredFlows(sessionId: string | null) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['discovered-flows', sessionId],
     queryFn: async (): Promise<DiscoveredFlow[]> => {
       if (!sessionId) return [];
 
-      // Try API first, fall back to direct Supabase query
-      try {
-        return await apiClient.get<DiscoveredFlow[]>(`${API_BASE}/sessions/${sessionId}/flows`);
-      } catch {
-        // Fall back to direct query
-      }
+      const flows = await discoveryApi.getFlows(sessionId);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('discovered_flows') as any)
-        .select('*')
-        .eq('discovery_session_id', sessionId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as DiscoveredFlow[];
+      // Transform API response to legacy format
+      return flows.map((flow) => ({
+        id: flow.id,
+        discovery_session_id: flow.sessionId,
+        name: flow.name,
+        description: flow.description,
+        flow_type: flow.category as DiscoveredFlow['flow_type'],
+        category: flow.category,
+        priority: flow.priority as DiscoveredFlow['priority'],
+        steps: flow.steps,
+        entry_points: flow.startUrl ? [{ url: flow.startUrl }] : [],
+        page_ids: flow.pagesInvolved,
+        complexity_score: flow.complexityScore,
+        confidence_score: null,
+        business_value_score: null,
+        execution_time_estimate: flow.estimatedDuration,
+        validated: flow.validated,
+        validation_result: flow.validationResult,
+        auto_generated_test: flow.testGenerated ? {} : null,
+        created_at: flow.createdAt,
+        updated_at: flow.updatedAt,
+      }));
     },
     enabled: !!sessionId,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -302,7 +316,6 @@ export function useDiscoveredFlows(sessionId: string | null) {
  */
 export function useUpdateFlow() {
   const queryClient = useQueryClient();
-  const supabase = getSupabaseClient();
 
   return useMutation({
     mutationFn: async ({
@@ -312,22 +325,38 @@ export function useUpdateFlow() {
       flowId: string;
       updates: Partial<DiscoveredFlow>;
     }): Promise<DiscoveredFlow> => {
-      // Try API first
-      try {
-        return await apiClient.put<DiscoveredFlow>(`${API_BASE}/flows/${flowId}`, updates);
-      } catch {
-        // Fall back to direct update
-      }
+      const apiUpdates = {
+        name: updates.name,
+        description: updates.description,
+        priority: updates.priority,
+        steps: updates.steps,
+        category: updates.category || updates.flow_type,
+      };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('discovered_flows') as any)
-        .update(updates)
-        .eq('id', flowId)
-        .select()
-        .single();
+      const flow = await discoveryApi.updateFlow(flowId, apiUpdates);
 
-      if (error) throw error;
-      return data as DiscoveredFlow;
+      // Transform API response to legacy format
+      return {
+        id: flow.id,
+        discovery_session_id: flow.sessionId,
+        name: flow.name,
+        description: flow.description,
+        flow_type: flow.category as DiscoveredFlow['flow_type'],
+        category: flow.category,
+        priority: flow.priority as DiscoveredFlow['priority'],
+        steps: flow.steps,
+        entry_points: flow.startUrl ? [{ url: flow.startUrl }] : [],
+        page_ids: flow.pagesInvolved,
+        complexity_score: flow.complexityScore,
+        confidence_score: null,
+        business_value_score: null,
+        execution_time_estimate: flow.estimatedDuration,
+        validated: flow.validated,
+        validation_result: flow.validationResult,
+        auto_generated_test: flow.testGenerated ? {} : null,
+        created_at: flow.createdAt,
+        updated_at: flow.updatedAt,
+      };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['discovered-flows'] });
@@ -450,44 +479,22 @@ export function useCancelDiscovery() {
  * Get discovery history for a project
  */
 export function useDiscoveryHistory(projectId: string | null, limit: number = 20) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['discovery-history', projectId, limit],
     queryFn: async (): Promise<DiscoveryHistoryItem[]> => {
       if (!projectId) return [];
 
-      // Try API first
-      try {
-        return await apiClient.get<DiscoveryHistoryItem[]>(
-          `${API_BASE}/projects/${projectId}/history?limit=${limit}`
-        );
-      } catch {
-        // Fall back to direct query
-      }
+      const history = await discoveryApi.getProjectHistory(projectId, { limit });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('discovery_sessions') as any)
-        .select('id, app_url, status, pages_found, flows_found, started_at, completed_at')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-
-      return (data as DiscoverySession[]).map((session) => ({
-        id: session.id,
-        appUrl: session.app_url,
-        status: session.status as DiscoverySessionStatus,
-        pagesFound: session.pages_found,
-        flowsFound: session.flows_found,
-        startedAt: session.started_at,
-        completedAt: session.completed_at,
-        duration:
-          session.started_at && session.completed_at
-            ? new Date(session.completed_at).getTime() -
-              new Date(session.started_at).getTime()
-            : undefined,
+      return history.map((item) => ({
+        id: item.id,
+        appUrl: '', // Not returned by API, would need to fetch session details
+        status: item.status as DiscoverySessionStatus,
+        pagesFound: item.pagesFound,
+        flowsFound: item.flowsFound,
+        startedAt: item.startedAt,
+        completedAt: item.completedAt,
+        duration: item.durationSeconds ? item.durationSeconds * 1000 : undefined,
       }));
     },
     enabled: !!projectId,
@@ -536,7 +543,7 @@ export function useDiscoveryStream(sessionId: string | null) {
       }
     };
 
-    eventSource.onerror = (e) => {
+    eventSource.onerror = () => {
       setIsConnected(false);
       // Only set error if it's not a normal close
       if (eventSource.readyState !== EventSource.CLOSED) {
@@ -629,7 +636,6 @@ export function useBulkGenerateTests() {
  */
 export function useDeleteDiscoverySession() {
   const queryClient = useQueryClient();
-  const supabase = getSupabaseClient();
 
   return useMutation({
     mutationFn: async ({
@@ -639,31 +645,7 @@ export function useDeleteDiscoverySession() {
       sessionId: string;
       projectId: string;
     }): Promise<void> => {
-      // Try API first
-      try {
-        await apiClient.delete(`${API_BASE}/sessions/${sessionId}`);
-        return;
-      } catch {
-        // Fall back to direct delete
-      }
-
-      // Delete in order: flows -> pages -> session
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('discovered_flows') as any)
-        .delete()
-        .eq('discovery_session_id', sessionId);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('discovered_pages') as any)
-        .delete()
-        .eq('discovery_session_id', sessionId);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('discovery_sessions') as any)
-        .delete()
-        .eq('id', sessionId);
-
-      if (error) throw error;
+      await discoveryApi.deleteSession(sessionId);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -741,57 +723,31 @@ export interface PatternMatch {
  * Get cross-project patterns that match the current discovery session
  */
 export function useCrossProjectPatterns(sessionId: string | null) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['cross-project-patterns', sessionId],
     queryFn: async (): Promise<PatternMatch[]> => {
       if (!sessionId) return [];
 
-      // Try API first for AI-powered pattern matching
-      try {
-        return await apiClient.get<PatternMatch[]>(`${API_BASE}/sessions/${sessionId}/patterns`);
-      } catch {
-        // Fall back to direct query with basic matching
-      }
+      const response = await discoveryApi.getSessionPatterns(sessionId);
 
-      // Direct Supabase query fallback - get patterns ordered by relevance
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: patterns, error } = await (supabase.from('discovery_patterns') as any)
-        .select('*')
-        .order('times_seen', { ascending: false })
-        .limit(10);
-
-      if (error || !patterns) return [];
-
-      // Transform to PatternMatch format with basic scoring
-      return patterns.map((p: {
-        id: string;
-        pattern_type: string;
-        pattern_name: string;
-        pattern_data: { description?: string; selectors?: string[]; suggested_steps?: Array<{ instruction: string }> };
-        times_seen: number;
-        projects_seen?: string[];
-        test_success_rate?: number;
-        self_heal_success_rate?: number;
-        created_at: string;
-      }) => ({
+      // Transform API response to PatternMatch format
+      return response.patterns.map((p) => ({
         patternId: p.id,
         pattern: {
           id: p.id,
-          patternType: p.pattern_type,
-          patternName: p.pattern_name,
-          description: p.pattern_data?.description || '',
-          timesSeen: p.times_seen,
-          projectCount: p.projects_seen?.length || 1,
-          testSuccessRate: p.test_success_rate || 0,
-          selfHealSuccessRate: p.self_heal_success_rate || 0,
-          selectors: p.pattern_data?.selectors || [],
-          suggestedSteps: p.pattern_data?.suggested_steps,
-          confidence: Math.min(0.95, 0.5 + (p.times_seen * 0.05)),
-          createdAt: p.created_at,
+          patternType: p.patternType as CrossProjectPattern['patternType'],
+          patternName: p.patternName,
+          description: '', // Not in API response
+          timesSeen: p.timesSeen,
+          projectCount: 1, // Not in API response
+          testSuccessRate: p.testSuccessRate || 0,
+          selfHealSuccessRate: p.selfHealSuccessRate || 0,
+          selectors: [], // Would need to extract from patternData
+          suggestedSteps: undefined,
+          confidence: Math.min(0.95, 0.5 + (p.timesSeen * 0.05)),
+          createdAt: p.createdAt,
         },
-        matchScore: 0.7, // Default score without AI matching
+        matchScore: 0.7, // Default score
         matchedElements: [],
       }));
     },
@@ -806,49 +762,24 @@ export function useCrossProjectPatterns(sessionId: string | null) {
  * Get global patterns across all projects (for insights)
  */
 export function useGlobalPatterns(limit: number = 5) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['global-patterns', limit],
     queryFn: async (): Promise<CrossProjectPattern[]> => {
-      // Try API first
-      try {
-        return await apiClient.get<CrossProjectPattern[]>(`${API_BASE}/patterns?limit=${limit}`);
-      } catch {
-        // Fall back to direct query
-      }
+      const response = await discoveryApi.listPatterns({ limit });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('discovery_patterns') as any)
-        .select('*')
-        .order('times_seen', { ascending: false })
-        .limit(limit);
-
-      if (error || !data) return [];
-
-      return data.map((p: {
-        id: string;
-        pattern_type: string;
-        pattern_name: string;
-        pattern_data: { description?: string; selectors?: string[]; suggested_steps?: Array<{ instruction: string }> };
-        times_seen: number;
-        projects_seen?: string[];
-        test_success_rate?: number;
-        self_heal_success_rate?: number;
-        created_at: string;
-      }) => ({
+      return response.patterns.map((p) => ({
         id: p.id,
-        patternType: p.pattern_type,
-        patternName: p.pattern_name,
-        description: p.pattern_data?.description || '',
-        timesSeen: p.times_seen,
-        projectCount: p.projects_seen?.length || 1,
-        testSuccessRate: p.test_success_rate || 0,
-        selfHealSuccessRate: p.self_heal_success_rate || 0,
-        selectors: p.pattern_data?.selectors || [],
-        suggestedSteps: p.pattern_data?.suggested_steps,
-        confidence: Math.min(0.95, 0.5 + (p.times_seen * 0.05)),
-        createdAt: p.created_at,
+        patternType: p.patternType as CrossProjectPattern['patternType'],
+        patternName: p.patternName,
+        description: '', // Not in API response
+        timesSeen: p.timesSeen,
+        projectCount: 1, // Not in API response
+        testSuccessRate: p.testSuccessRate || 0,
+        selfHealSuccessRate: p.selfHealSuccessRate || 0,
+        selectors: [], // Would need to extract from patternData
+        suggestedSteps: undefined,
+        confidence: Math.min(0.95, 0.5 + (p.timesSeen * 0.05)),
+        createdAt: p.createdAt,
       }));
     },
     staleTime: 10 * 60 * 1000, // 10 minutes

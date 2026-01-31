@@ -478,42 +478,292 @@ export const apiClient = {
     fetchJson<T>(url, { ...options, method: 'DELETE' }),
 };
 
+// ============================================================================
+// Discovery API Types
+// ============================================================================
+
+export interface DiscoverySession {
+  id: string;
+  projectId: string;
+  status: 'pending' | 'running' | 'paused' | 'completed' | 'cancelled' | 'failed';
+  progressPercentage: number;
+  pagesFound: number;
+  flowsFound: number;
+  elementsFound: number;
+  formsFound: number;
+  errorsCount: number;
+  startedAt: string;
+  completedAt: string | null;
+  appUrl: string;
+  mode: string;
+  strategy: string;
+  maxPages: number;
+  maxDepth: number;
+  currentUrl: string | null;
+  currentDepth: number;
+  estimatedTimeRemaining: number | null;
+  coverageScore: number | null;
+  executionContext: string | null;
+  videoArtifactId: string | null;
+  recordingUrl: string | null;
+}
+
+export interface DiscoveredPage {
+  id: string;
+  sessionId: string;
+  url: string;
+  title: string;
+  description: string;
+  pageType: string;
+  screenshotUrl: string | null;
+  elementsCount: number;
+  formsCount: number;
+  linksCount: number;
+  discoveredAt: string;
+  loadTimeMs: number | null;
+  aiAnalysis: Record<string, unknown> | null;
+}
+
+export interface DiscoveredFlow {
+  id: string;
+  sessionId: string;
+  name: string;
+  description: string;
+  category: string;
+  priority: string;
+  startUrl: string;
+  steps: Array<Record<string, unknown>>;
+  pagesInvolved: string[];
+  estimatedDuration: number | null;
+  complexityScore: number | null;
+  testGenerated: boolean;
+  validated: boolean;
+  validationResult: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface DiscoverySessionsListResponse {
+  sessions: DiscoverySession[];
+  total: number;
+}
+
+export interface DiscoveryPattern {
+  id: string;
+  patternType: string;
+  patternName: string;
+  patternSignature: string;
+  patternData: Record<string, unknown>;
+  timesSeen: number;
+  testSuccessRate: number | null;
+  selfHealSuccessRate: number | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface DiscoveryPatternsListResponse {
+  patterns: DiscoveryPattern[];
+  total: number;
+}
+
+export interface DiscoveryHistoryItem {
+  id: string;
+  projectId: string;
+  status: string;
+  pagesFound: number;
+  flowsFound: number;
+  startedAt: string;
+  completedAt: string | null;
+  durationSeconds: number | null;
+  coverageScore: number | null;
+}
+
+export interface DiscoveryComparisonResponse {
+  session1Id: string;
+  session2Id: string;
+  newPages: string[];
+  removedPages: string[];
+  changedPages: Array<Record<string, unknown>>;
+  newFlows: string[];
+  removedFlows: string[];
+  coverageChange: number;
+  summary: string;
+}
+
+export interface StartDiscoveryRequest {
+  projectId: string;
+  appUrl: string;
+  mode?: string;
+  strategy?: string;
+  maxPages?: number;
+  maxDepth?: number;
+  includePatterns?: string[];
+  excludePatterns?: string[];
+  focusAreas?: string[];
+  captureScreenshots?: boolean;
+  useVisionAi?: boolean;
+  authConfig?: {
+    type: string;
+    credentials: Record<string, unknown>;
+    loginUrl?: string;
+    loginSteps?: Array<Record<string, unknown>>;
+  };
+  customHeaders?: Record<string, string>;
+  timeoutSeconds?: number;
+  executionContext?: 'dashboard' | 'api' | 'mcp';
+  recordSession?: boolean;
+}
+
+export interface UpdateFlowRequest {
+  name?: string;
+  description?: string;
+  priority?: string;
+  steps?: Array<Record<string, unknown>>;
+  category?: string;
+}
+
 /**
  * Discovery API endpoints
  */
 export const discoveryApi = {
-  startSession: (params: {
-    projectId: string;
-    appUrl: string;
-    mode?: string;
-    strategy?: string;
-    maxPages?: number;
-    maxDepth?: number;
-  }, options?: FetchOptions) => apiClient.post<{ id: string }>('/api/v1/discovery/sessions', params, options),
+  // Session Management
+  listSessions: (params?: {
+    projectId?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }, options?: FetchOptions) => {
+    const searchParams = new URLSearchParams();
+    if (params?.projectId) searchParams.set('project_id', params.projectId);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    const query = searchParams.toString();
+    return apiClient.get<DiscoverySessionsListResponse>(
+      `/api/v1/discovery/sessions${query ? `?${query}` : ''}`,
+      options
+    );
+  },
+
+  startSession: (params: StartDiscoveryRequest, options?: FetchOptions) =>
+    apiClient.post<DiscoverySession>('/api/v1/discovery/sessions', params, options),
 
   getSession: (sessionId: string, options?: FetchOptions) =>
-    apiClient.get<{ id: string; status: string }>(`/api/v1/discovery/sessions/${sessionId}`, options),
+    apiClient.get<DiscoverySession>(`/api/v1/discovery/sessions/${sessionId}`, options),
+
+  deleteSession: (sessionId: string, options?: FetchOptions) =>
+    apiClient.delete<{ success: boolean; message: string }>(
+      `/api/v1/discovery/sessions/${sessionId}`,
+      options
+    ),
 
   pauseSession: (sessionId: string, options?: FetchOptions) =>
-    apiClient.post(`/api/v1/discovery/sessions/${sessionId}/pause`, undefined, options),
+    apiClient.post<{ success: boolean; sessionId: string; status: string; message: string }>(
+      `/api/v1/discovery/sessions/${sessionId}/pause`,
+      undefined,
+      options
+    ),
 
   resumeSession: (sessionId: string, options?: FetchOptions) =>
-    apiClient.post(`/api/v1/discovery/sessions/${sessionId}/resume`, undefined, options),
+    apiClient.post<{ success: boolean; sessionId: string; status: string; message: string }>(
+      `/api/v1/discovery/sessions/${sessionId}/resume`,
+      undefined,
+      options
+    ),
 
   cancelSession: (sessionId: string, options?: FetchOptions) =>
-    apiClient.post(`/api/v1/discovery/sessions/${sessionId}/cancel`, undefined, options),
+    apiClient.post<{ success: boolean; sessionId: string; status: string; message: string }>(
+      `/api/v1/discovery/sessions/${sessionId}/cancel`,
+      undefined,
+      options
+    ),
 
+  // Pages
   getPages: (sessionId: string, options?: FetchOptions) =>
-    apiClient.get(`/api/v1/discovery/sessions/${sessionId}/pages`, options),
+    apiClient.get<DiscoveredPage[]>(`/api/v1/discovery/sessions/${sessionId}/pages`, options),
 
+  getPage: (sessionId: string, pageId: string, options?: FetchOptions) =>
+    apiClient.get<DiscoveredPage>(
+      `/api/v1/discovery/sessions/${sessionId}/pages/${pageId}`,
+      options
+    ),
+
+  // Flows
   getFlows: (sessionId: string, options?: FetchOptions) =>
-    apiClient.get(`/api/v1/discovery/sessions/${sessionId}/flows`, options),
+    apiClient.get<DiscoveredFlow[]>(`/api/v1/discovery/sessions/${sessionId}/flows`, options),
 
-  validateFlow: (flowId: string, options?: FetchOptions) =>
-    apiClient.post(`/api/v1/discovery/flows/${flowId}/validate`, undefined, options),
+  updateFlow: (flowId: string, data: UpdateFlowRequest, options?: FetchOptions) =>
+    apiClient.put<DiscoveredFlow>(`/api/v1/discovery/flows/${flowId}`, data, options),
 
-  generateTest: (flowId: string, options?: FetchOptions) =>
-    apiClient.post(`/api/v1/discovery/flows/${flowId}/generate-test`, undefined, options),
+  validateFlow: (flowId: string, params?: {
+    timeoutSeconds?: number;
+    captureVideo?: boolean;
+    stopOnError?: boolean;
+  }, options?: FetchOptions) =>
+    apiClient.post<{
+      success: boolean;
+      flowId: string;
+      validationResult: Record<string, unknown>;
+      videUrl?: string;
+    }>(`/api/v1/discovery/flows/${flowId}/validate`, params, options),
+
+  generateTest: (flowId: string, params?: {
+    framework?: string;
+    language?: string;
+    includeAssertions?: boolean;
+    includeScreenshots?: boolean;
+    parameterize?: boolean;
+  }, options?: FetchOptions) =>
+    apiClient.post<{
+      success: boolean;
+      flowId: string;
+      testId?: string;
+      testCode?: string;
+    }>(`/api/v1/discovery/flows/${flowId}/generate-test`, params, options),
+
+  // Patterns
+  listPatterns: (params?: {
+    patternType?: string;
+    limit?: number;
+    offset?: number;
+  }, options?: FetchOptions) => {
+    const searchParams = new URLSearchParams();
+    if (params?.patternType) searchParams.set('pattern_type', params.patternType);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    const query = searchParams.toString();
+    return apiClient.get<DiscoveryPatternsListResponse>(
+      `/api/v1/discovery/patterns${query ? `?${query}` : ''}`,
+      options
+    );
+  },
+
+  getSessionPatterns: (sessionId: string, options?: FetchOptions) =>
+    apiClient.get<DiscoveryPatternsListResponse>(
+      `/api/v1/discovery/sessions/${sessionId}/patterns`,
+      options
+    ),
+
+  // History & Comparison
+  getProjectHistory: (projectId: string, params?: {
+    limit?: number;
+    offset?: number;
+  }, options?: FetchOptions) => {
+    const searchParams = new URLSearchParams();
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    const query = searchParams.toString();
+    return apiClient.get<DiscoveryHistoryItem[]>(
+      `/api/v1/discovery/projects/${projectId}/history${query ? `?${query}` : ''}`,
+      options
+    );
+  },
+
+  compareSessionst: (projectId: string, session1Id: string, session2Id: string, options?: FetchOptions) =>
+    apiClient.get<DiscoveryComparisonResponse>(
+      `/api/v1/discovery/projects/${projectId}/compare?session_1_id=${session1Id}&session_2_id=${session2Id}`,
+      options
+    ),
 };
 
 /**
@@ -581,7 +831,14 @@ export interface CreateTestRequest {
   projectId: string;
   name: string;
   description?: string | null;
-  steps?: Array<{ action: string; target?: string; value?: string; description?: string }>;
+  // Steps can use either 'action' or 'instruction' field - both are accepted
+  steps?: Array<{
+    action?: string;
+    instruction?: string;
+    target?: string;
+    value?: string;
+    description?: string;
+  }>;
   tags?: string[];
   priority?: 'critical' | 'high' | 'medium' | 'low';
   isActive?: boolean;
@@ -812,4 +1069,76 @@ export const testRunsApi = {
 
   getComparison: (projectId: string, options?: FetchOptions) =>
     apiClient.get<TestRunComparisonResponse>(`/api/v1/test-runs/comparison/${projectId}`, options),
+};
+
+// ============================================================================
+// Projects API Types
+// ============================================================================
+
+export interface ProjectListItem {
+  id: string;
+  organizationId: string;
+  name: string;
+  description: string | null;
+  appUrl: string | null;
+  isActive: boolean;
+  testCount: number;
+  lastRunAt: string | null;
+  createdAt: string;
+}
+
+export interface Project extends ProjectListItem {
+  codebasePath: string | null;
+  repositoryUrl: string | null;
+  settings: Record<string, unknown> | null;
+  updatedAt: string | null;
+}
+
+export interface CreateProjectRequest {
+  name: string;
+  description?: string | null;
+  appUrl?: string | null;
+  codebasePath?: string | null;
+  repositoryUrl?: string | null;
+  settings?: Record<string, unknown> | null;
+}
+
+export interface UpdateProjectRequest {
+  name?: string;
+  description?: string | null;
+  appUrl?: string | null;
+  codebasePath?: string | null;
+  repositoryUrl?: string | null;
+  settings?: Record<string, unknown> | null;
+  isActive?: boolean;
+}
+
+/**
+ * Projects API endpoints
+ */
+export const projectsApi = {
+  list: (params?: {
+    isActive?: boolean;
+    limit?: number;
+    offset?: number;
+  }, options?: FetchOptions) => {
+    const searchParams = new URLSearchParams();
+    if (params?.isActive !== undefined) searchParams.set('is_active', String(params.isActive));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    const query = searchParams.toString();
+    return apiClient.get<ProjectListItem[]>(`/api/v1/projects${query ? `?${query}` : ''}`, options);
+  },
+
+  get: (projectId: string, options?: FetchOptions) =>
+    apiClient.get<Project>(`/api/v1/projects/${projectId}`, options),
+
+  create: (data: CreateProjectRequest, options?: FetchOptions) =>
+    apiClient.post<Project>('/api/v1/projects', data, options),
+
+  update: (projectId: string, data: UpdateProjectRequest, options?: FetchOptions) =>
+    apiClient.patch<Project>(`/api/v1/projects/${projectId}`, data, options),
+
+  delete: (projectId: string, options?: FetchOptions) =>
+    apiClient.delete<{ success: boolean; message: string }>(`/api/v1/projects/${projectId}`, options),
 };

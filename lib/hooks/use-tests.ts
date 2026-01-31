@@ -12,6 +12,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import type { Json } from '@/lib/supabase/types';
 import {
   testsApi,
   testRunsApi,
@@ -143,17 +144,17 @@ export function useTestRuns(projectId: string | null, limit = 50) {
         trigger: (run.trigger || 'manual') as 'manual' | 'scheduled' | 'webhook' | 'ci',
         status: run.status as 'pending' | 'running' | 'passed' | 'failed' | 'cancelled',
         app_url: '',
-        environment: null as string | null,
-        browser: null as string | null,
+        environment: '', // Components expect string, not null
+        browser: '' as string,
         total_tests: run.totalTests,
         passed_tests: run.passedTests,
         failed_tests: run.failedTests,
         skipped_tests: 0,
         duration_ms: run.durationMs,
-        started_at: null as string | null,
+        started_at: run.createdAt, // Use createdAt as fallback
         completed_at: run.completedAt,
-        triggered_by: null as string | null,
-        ci_metadata: null as Record<string, unknown> | null,
+        triggered_by: '' as string,
+        ci_metadata: null as Json,
         created_at: run.createdAt,
       }));
     },
@@ -180,17 +181,17 @@ export function useTestRun(runId: string | null) {
         trigger: (response.trigger || 'manual') as 'manual' | 'scheduled' | 'webhook' | 'ci',
         status: response.status as 'pending' | 'running' | 'passed' | 'failed' | 'cancelled',
         app_url: response.appUrl || '',
-        environment: null as string | null,
-        browser: response.browser,
+        environment: '', // Components expect string, not null
+        browser: response.browser || '',
         total_tests: response.totalTests,
         passed_tests: response.passedTests,
         failed_tests: response.failedTests,
         skipped_tests: response.skippedTests,
         duration_ms: response.durationMs,
-        started_at: response.startedAt,
+        started_at: response.startedAt || response.createdAt,
         completed_at: response.completedAt,
-        triggered_by: response.createdBy,
-        ci_metadata: null as Record<string, unknown> | null,
+        triggered_by: response.createdBy || '',
+        ci_metadata: null as Json,
         created_at: response.createdAt,
       };
     },
@@ -217,11 +218,11 @@ export function useTestResults(runId: string | null) {
         error_message: r.errorMessage,
         error_screenshot: r.errorScreenshot,
         error_stack: null as string | null,
-        step_results: r.stepResults,
-        steps_total: r.stepsTotal,
-        steps_completed: r.stepsCompleted,
+        step_results: (r.stepResults || null) as Json,
+        steps_total: r.stepsTotal ?? 0,
+        steps_completed: r.stepsCompleted ?? 0, // Components expect number, not null
         retry_count: 0,
-        started_at: null as string | null,
+        started_at: r.createdAt, // Use createdAt as fallback
         completed_at: r.completedAt,
         created_at: r.createdAt,
       }));
@@ -468,17 +469,17 @@ export function useTestRunHistory(projectId: string | null, currentRunId: string
         trigger: (run.trigger || 'manual') as 'manual' | 'scheduled' | 'webhook' | 'ci',
         status: run.status as 'pending' | 'running' | 'passed' | 'failed' | 'cancelled',
         app_url: '',
-        environment: null as string | null,
-        browser: null as string | null,
+        environment: '', // Components expect string, not null
+        browser: '' as string,
         total_tests: run.totalTests,
         passed_tests: run.passedTests,
         failed_tests: run.failedTests,
         skipped_tests: 0,
         duration_ms: run.durationMs,
-        started_at: null as string | null,
+        started_at: run.createdAt, // Use createdAt as fallback
         completed_at: run.completedAt,
-        triggered_by: null as string | null,
-        ci_metadata: null as Record<string, unknown> | null,
+        triggered_by: '' as string,
+        ci_metadata: null as Json,
         created_at: run.createdAt,
       }));
     },
