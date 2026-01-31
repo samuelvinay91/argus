@@ -57,7 +57,6 @@ export function CreateProjectModal({
     try {
       const project = await createProject.mutateAsync({
         name: name.trim(),
-        slug: name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
         app_url: url.trim(),
         description: description.trim() || undefined,
       });
@@ -195,7 +194,6 @@ export function CreateProjectInline({
     try {
       const project = await createProject.mutateAsync({
         name,
-        slug: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
         app_url: url,
       });
 

@@ -243,13 +243,11 @@ function ChatPageContent() {
     if (isStored) return;
 
     try {
-      const messageId = crypto.randomUUID();
       await addMessage.mutateAsync({
-        id: messageId,
         conversation_id: currentConversationId,
         role: latestMessage.role as 'user' | 'assistant' | 'system',
         content: latestMessage.content,
-        tool_invocations: latestMessage.toolInvocations as unknown as Json | null,
+        tool_invocations: latestMessage.toolInvocations as unknown as Record<string, unknown> | null,
       });
     } catch (error) {
       console.error('Failed to save message:', error);

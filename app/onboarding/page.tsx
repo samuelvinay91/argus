@@ -204,7 +204,6 @@ export default function OnboardingPage() {
           setLoading(true);
           await createProject.mutateAsync({
             name: projectName,
-            slug: projectName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
             app_url: projectUrl,
             description: `Created during onboarding`,
           });

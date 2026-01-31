@@ -75,7 +75,7 @@ import {
   type CrossBrowserTestResult,
   type BrowserCompareResult,
   type BrowserCaptureResult,
-  type AIExplainResponse,
+  type AIExplainResponseLegacy as AIExplainResponse,
   type AIExplainChangeDetail,
   type AccessibilityAnalysisResult,
   type AccessibilityIssue,
