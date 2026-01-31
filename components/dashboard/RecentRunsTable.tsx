@@ -16,10 +16,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { StatusDot, Badge } from '@/components/ui/data-table';
 import { cn } from '@/lib/utils';
-import type { TestRunListItem } from '@/lib/api-client';
+import type { TestRun } from '@/lib/supabase/types';
 
 interface RecentRunsTableProps {
-  runs: TestRunListItem[];
+  runs: TestRun[];
   isLoading?: boolean;
   limit?: number;
 }
@@ -118,8 +118,8 @@ export function RecentRunsTable({
         ) : (
           <div className="divide-y">
             {displayedRuns.map((run) => {
-              const passRate = run.totalTests > 0
-                ? Math.round((run.passedTests / run.totalTests) * 100)
+              const passRate = run.total_tests > 0
+                ? Math.round((run.passed_tests / run.total_tests) * 100)
                 : 0;
 
               return (
@@ -135,7 +135,7 @@ export function RecentRunsTable({
                       <span className="font-medium truncate">
                         {run.name || 'Test Run'}
                       </span>
-                      {run.trigger !== 'manual' && run.trigger && (
+                      {run.trigger !== 'manual' && (
                         <span className="text-xs text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
                           {run.trigger}
                         </span>
@@ -143,8 +143,10 @@ export function RecentRunsTable({
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>
-                        {formatDistanceToNow(new Date(run.createdAt), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
                       </span>
+                      <span className="text-border">|</span>
+                      <span>{run.browser}</span>
                     </div>
                   </div>
 
@@ -154,12 +156,12 @@ export function RecentRunsTable({
                       <>
                         <span className="text-success flex items-center gap-1">
                           <CheckCircle2 className="h-3.5 w-3.5" />
-                          {run.passedTests}
+                          {run.passed_tests}
                         </span>
-                        {run.failedTests > 0 && (
+                        {run.failed_tests > 0 && (
                           <span className="text-error flex items-center gap-1">
                             <XCircle className="h-3.5 w-3.5" />
-                            {run.failedTests}
+                            {run.failed_tests}
                           </span>
                         )}
                       </>
@@ -178,7 +180,7 @@ export function RecentRunsTable({
 
                   {/* Duration */}
                   <div className="text-sm text-muted-foreground w-16 text-right">
-                    {formatDuration(run.durationMs)}
+                    {formatDuration(run.duration_ms)}
                   </div>
 
                   {/* Status badge */}

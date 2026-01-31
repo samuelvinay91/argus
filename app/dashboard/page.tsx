@@ -28,10 +28,10 @@ import { DashboardHero, DashboardHeroSkeleton } from '@/components/dashboard/Das
 import type { ActivityItem, TestHealthDataPoint } from '@/components/dashboard';
 import { useProjects } from '@/lib/hooks/use-projects';
 import { useReportsStats, useRecentRuns } from '@/lib/hooks/use-reports';
-import { useTests, useTestRuns, useTestRunSubscription, useRunTest, type LegacyTest } from '@/lib/hooks/use-tests';
+import { useTests, useTestRuns, useTestRunSubscription, useRunTest } from '@/lib/hooks/use-tests';
 import { useIsMobile } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
-import type { TestRunListItem } from '@/lib/api-client';
+import type { TestRun, Test } from '@/lib/supabase/types';
 
 function formatDuration(ms: number): string {
   const seconds = ms / 1000;
@@ -87,12 +87,12 @@ export default function DashboardPage() {
 
     // Calculate flaky tests (tests that have both passed and failed in recent runs)
     const testResults = new Map<string, { passed: number; failed: number }>();
-    recentRuns.forEach((run: TestRunListItem) => {
-      if (run.passedTests > 0 || run.failedTests > 0) {
+    recentRuns.forEach((run: TestRun) => {
+      if (run.passed_tests > 0 || run.failed_tests > 0) {
         const key = run.name || 'default';
         const current = testResults.get(key) || { passed: 0, failed: 0 };
-        current.passed += run.passedTests;
-        current.failed += run.failedTests;
+        current.passed += run.passed_tests;
+        current.failed += run.failed_tests;
         testResults.set(key, current);
       }
     });
@@ -128,30 +128,30 @@ export default function DashboardPage() {
   const activityItems: ActivityItem[] = useMemo(() => {
     const items: ActivityItem[] = [];
 
-    recentRuns.slice(0, 10).forEach((run: TestRunListItem) => {
+    recentRuns.slice(0, 10).forEach((run: TestRun) => {
       if (run.status === 'passed') {
         items.push({
           id: `${run.id}-passed`,
           type: 'test_passed',
           title: `Test run "${run.name || 'Test Run'}" passed`,
-          description: `${run.passedTests} tests passed in ${formatDuration(run.durationMs || 0)}`,
-          timestamp: run.completedAt || run.createdAt,
+          description: `${run.passed_tests} tests passed in ${formatDuration(run.duration_ms || 0)}`,
+          timestamp: run.completed_at || run.created_at,
         });
       } else if (run.status === 'failed') {
         items.push({
           id: `${run.id}-failed`,
           type: 'test_failed',
           title: `Test run "${run.name || 'Test Run'}" failed`,
-          description: `${run.failedTests} of ${run.totalTests} tests failed`,
-          timestamp: run.completedAt || run.createdAt,
+          description: `${run.failed_tests} of ${run.total_tests} tests failed`,
+          timestamp: run.completed_at || run.created_at,
         });
       } else if (run.status === 'running') {
         items.push({
           id: `${run.id}-running`,
           type: 'test_run',
           title: `Test run "${run.name || 'Test Run'}" started`,
-          description: `Running ${run.totalTests} tests`,
-          timestamp: run.createdAt,
+          description: `Running ${run.total_tests} tests`,
+          timestamp: run.started_at || run.created_at,
         });
       }
     });
@@ -169,7 +169,7 @@ export default function DashboardPage() {
       await runTestMutation.mutateAsync({
         projectId: currentProjectId,
         appUrl: currentProject.app_url,
-        tests: tests as LegacyTest[],
+        tests: tests as Test[],
         browser: 'chromium',
       });
       refetchStats();
@@ -232,7 +232,7 @@ export default function DashboardPage() {
               }
               stats={{
                 testsToday: recentRuns.filter(
-                  (r) => new Date(r.createdAt).toDateString() === new Date().toDateString()
+                  (r) => new Date(r.created_at).toDateString() === new Date().toDateString()
                 ).length,
                 passRate: Math.round(metrics.passRate),
                 avgDuration: formatDuration((metrics.avgDuration || 0) * 1000),

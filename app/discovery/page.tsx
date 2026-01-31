@@ -1207,10 +1207,10 @@ export default function DiscoveryPage() {
       console.warn('Backend test generation failed, falling back to direct creation:', error);
       try {
         const test = await createTest.mutateAsync({
-          projectId: currentProject,
+          project_id: currentProject,
           name: flow.name,
           description: flow.description || `Auto-generated from discovered flow: ${flow.name}`,
-          steps: (flow.steps || []) as Array<{ action?: string; instruction?: string; target?: string; value?: string; description?: string }>,
+          steps: flow.steps || [],
           tags: ['discovered', 'auto-generated'],
           priority: flow.priority || 'medium',
           source: 'discovered',

@@ -32,14 +32,11 @@ import {
   useDeleteLibraryTest,
   useDuplicateLibraryTest,
   useTestTags,
-  type LegacyTest,
 } from '@/lib/hooks/use-test-library';
 import { useProjects } from '@/lib/hooks/use-projects';
 import { toast } from '@/lib/hooks/useToast';
+import type { Test } from '@/lib/supabase/types';
 import { cn } from '@/lib/utils';
-
-// Use LegacyTest from hook for type compatibility
-type Test = LegacyTest;
 
 export default function TestLibraryPage() {
   const { user } = useUser();

@@ -138,6 +138,7 @@ export default function TestsPage() {
     try {
       const project = await createProject.mutateAsync({
         name: newProjectName,
+        slug: newProjectName.toLowerCase().replace(/\s+/g, '-'),
         app_url: newProjectUrl,
       });
       setSelectedProjectId(project.id);
@@ -160,10 +161,11 @@ export default function TestsPage() {
 
     try {
       await createTest.mutateAsync({
-        projectId: currentProject,
+        project_id: currentProject,
         name: newTestName,
         description: `${steps.length} step test`,
         steps,
+        created_by: user?.id || null,
       });
       setShowNewTest(false);
       setNewTestName('');

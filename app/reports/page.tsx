@@ -243,10 +243,10 @@ export default function ReportsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{run.name || 'Test Run'}</div>
                         <div className="text-sm text-muted-foreground">
-                          {formatDistanceToNow(new Date(run.createdAt), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
                         </div>
                       </div>
-                      <Badge variant="error">{run.failedTests} failed</Badge>
+                      <Badge variant="error">{run.failed_tests} failed</Badge>
                     </div>
                   ))
                 ) : (
@@ -279,21 +279,21 @@ export default function ReportsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{run.name || 'Test Run'}</div>
                       <div className="text-sm text-muted-foreground">
-                        {formatDistanceToNow(new Date(run.createdAt), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
                       </div>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {run.durationMs ? formatDuration(run.durationMs / 1000) : '-'}
+                      {run.duration_ms ? formatDuration(run.duration_ms / 1000) : '-'}
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <span className="text-success flex items-center gap-1">
                         <CheckCircle2 className="h-3.5 w-3.5" />
-                        {run.passedTests}
+                        {run.passed_tests}
                       </span>
-                      {run.failedTests > 0 && (
+                      {run.failed_tests > 0 && (
                         <span className="text-error flex items-center gap-1">
                           <XCircle className="h-3.5 w-3.5" />
-                          {run.failedTests}
+                          {run.failed_tests}
                         </span>
                       )}
                     </div>
@@ -302,8 +302,8 @@ export default function ReportsPage() {
                         className="h-full bg-success transition-all duration-300"
                         style={{
                           width: `${
-                            run.totalTests > 0
-                              ? ((run.passedTests || 0) / run.totalTests) * 100
+                            run.total_tests > 0
+                              ? ((run.passed_tests || 0) / run.total_tests) * 100
                               : 0
                           }%`,
                         }}
