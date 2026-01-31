@@ -22,14 +22,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/lib/hooks/useToast';
-import { useRerunTest } from '@/lib/hooks/use-tests';
+import { useRerunTest, type LegacyTestRun } from '@/lib/hooks/use-tests';
 import type { TestRun, TestResult } from '@/lib/supabase/types';
 import { cn } from '@/lib/utils';
 
 export interface TestRunActionsProps {
   testRun: TestRun;
   testResults?: TestResult[];
-  onRerunComplete?: (newRun: TestRun) => void;
+  onRerunComplete?: (newRun: LegacyTestRun) => void;
   onDelete?: () => void;
   className?: string;
   size?: 'sm' | 'default';

@@ -31,7 +31,8 @@ import { useReportsStats, useRecentRuns } from '@/lib/hooks/use-reports';
 import { useTests, useTestRuns, useTestRunSubscription, useRunTest } from '@/lib/hooks/use-tests';
 import { useIsMobile } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
-import type { TestRun, Test } from '@/lib/supabase/types';
+import type { TestRunListItem } from '@/lib/api-client';
+import type { LegacyTest } from '@/lib/hooks/use-tests';
 
 function formatDuration(ms: number): string {
   const seconds = ms / 1000;
@@ -87,12 +88,12 @@ export default function DashboardPage() {
 
     // Calculate flaky tests (tests that have both passed and failed in recent runs)
     const testResults = new Map<string, { passed: number; failed: number }>();
-    recentRuns.forEach((run: TestRun) => {
-      if (run.passed_tests > 0 || run.failed_tests > 0) {
+    recentRuns.forEach((run: TestRunListItem) => {
+      if (run.passedTests > 0 || run.failedTests > 0) {
         const key = run.name || 'default';
         const current = testResults.get(key) || { passed: 0, failed: 0 };
-        current.passed += run.passed_tests;
-        current.failed += run.failed_tests;
+        current.passed += run.passedTests;
+        current.failed += run.failedTests;
         testResults.set(key, current);
       }
     });
@@ -128,30 +129,30 @@ export default function DashboardPage() {
   const activityItems: ActivityItem[] = useMemo(() => {
     const items: ActivityItem[] = [];
 
-    recentRuns.slice(0, 10).forEach((run: TestRun) => {
+    recentRuns.slice(0, 10).forEach((run: TestRunListItem) => {
       if (run.status === 'passed') {
         items.push({
           id: `${run.id}-passed`,
           type: 'test_passed',
           title: `Test run "${run.name || 'Test Run'}" passed`,
-          description: `${run.passed_tests} tests passed in ${formatDuration(run.duration_ms || 0)}`,
-          timestamp: run.completed_at || run.created_at,
+          description: `${run.passedTests} tests passed in ${formatDuration(run.durationMs || 0)}`,
+          timestamp: run.completedAt || run.createdAt,
         });
       } else if (run.status === 'failed') {
         items.push({
           id: `${run.id}-failed`,
           type: 'test_failed',
           title: `Test run "${run.name || 'Test Run'}" failed`,
-          description: `${run.failed_tests} of ${run.total_tests} tests failed`,
-          timestamp: run.completed_at || run.created_at,
+          description: `${run.failedTests} of ${run.totalTests} tests failed`,
+          timestamp: run.completedAt || run.createdAt,
         });
       } else if (run.status === 'running') {
         items.push({
           id: `${run.id}-running`,
           type: 'test_run',
           title: `Test run "${run.name || 'Test Run'}" started`,
-          description: `Running ${run.total_tests} tests`,
-          timestamp: run.started_at || run.created_at,
+          description: `Running ${run.totalTests} tests`,
+          timestamp: run.createdAt,
         });
       }
     });
@@ -169,7 +170,7 @@ export default function DashboardPage() {
       await runTestMutation.mutateAsync({
         projectId: currentProjectId,
         appUrl: currentProject.app_url,
-        tests: tests as Test[],
+        tests: tests as LegacyTest[],
         browser: 'chromium',
       });
       refetchStats();
@@ -232,7 +233,7 @@ export default function DashboardPage() {
               }
               stats={{
                 testsToday: recentRuns.filter(
-                  (r) => new Date(r.created_at).toDateString() === new Date().toDateString()
+                  (r) => new Date(r.createdAt).toDateString() === new Date().toDateString()
                 ).length,
                 passRate: Math.round(metrics.passRate),
                 avgDuration: formatDuration((metrics.avgDuration || 0) * 1000),

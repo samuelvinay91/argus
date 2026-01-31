@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { Message } from 'ai/react';
-import type { ChatMessage, Json } from '@/lib/supabase/types';
+import type { ChatMessage } from '@/lib/supabase/types';
 
 // UUID validation helper
 function isValidUUID(str: string | null | undefined): str is string {
@@ -243,13 +243,11 @@ function ChatPageContent() {
     if (isStored) return;
 
     try {
-      const messageId = crypto.randomUUID();
       await addMessage.mutateAsync({
-        id: messageId,
         conversation_id: currentConversationId,
         role: latestMessage.role as 'user' | 'assistant' | 'system',
         content: latestMessage.content,
-        tool_invocations: latestMessage.toolInvocations as unknown as Json | null,
+        tool_invocations: latestMessage.toolInvocations as unknown as Record<string, unknown> | null,
       });
     } catch (error) {
       console.error('Failed to save message:', error);
