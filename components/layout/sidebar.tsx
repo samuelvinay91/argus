@@ -338,16 +338,14 @@ function CollapsibleSection({
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  // When sidebar is collapsed, show only section icon with tooltip
+  // When sidebar is collapsed, render only nav items without section header
+  // This prevents duplicate icons and clutter in the narrow collapsed view
   if (sidebarCollapsed) {
     return (
-      <div className="py-2 border-t border-border/30 first:border-t-0">
-        <Tooltip content={title} side="right" sideOffset={12}>
-          <div className="flex justify-center p-2">
-            <SectionIcon className="h-4 w-4 text-muted-foreground/70" />
-          </div>
-        </Tooltip>
-        {/* Show navigation items as icons */}
+      <div className="pt-2 first:pt-0">
+        {/* Minimal separator line for visual grouping */}
+        <div className="mx-2 mb-1.5 h-px bg-border/40" />
+        {/* Nav items only - no section header icon */}
         <div className="space-y-0.5">
           {children}
         </div>
@@ -524,8 +522,8 @@ function SidebarContent({ onNavigate, isMobile = false }: { onNavigate?: () => v
 
       {/* Main Navigation */}
       <nav ref={navRef} className={cn(
-        'flex-1 overflow-y-auto space-y-4',
-        collapsed ? 'px-2' : 'px-3'
+        'flex-1 overflow-y-auto',
+        collapsed ? 'px-2 space-y-1' : 'px-3 space-y-4'
       )}>
         {/* Core Section - Always visible */}
         <div className="space-y-0.5">
