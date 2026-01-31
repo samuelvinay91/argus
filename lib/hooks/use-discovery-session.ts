@@ -239,28 +239,21 @@ export function useDiscoveredPages(sessionId: string | null) {
       const pages = await discoveryApi.getPages(sessionId);
 
       // Transform API response to legacy format
+      // Note: Supabase type expects project_id as string, but API doesn't return it
+      // So we use empty string as a fallback
       return pages.map((page) => ({
         id: page.id,
         discovery_session_id: page.sessionId,
-        project_id: null,
+        project_id: '', // API doesn't return project_id, use empty string
         url: page.url,
         title: page.title,
-        description: page.description,
-        page_type: page.pageType as DiscoveredPage['page_type'],
-        screenshot_url: page.screenshotUrl,
+        page_type: page.pageType,
         element_count: page.elementsCount,
         form_count: page.formsCount,
         link_count: page.linksCount,
-        depth: null,
-        parent_url: null,
-        load_time_ms: page.loadTimeMs,
-        html_snapshot: null,
-        ai_analysis: page.aiAnalysis,
-        accessibility_issues: null,
-        seo_analysis: null,
-        metadata: null,
+        screenshot_url: page.screenshotUrl,
+        metadata: {} as Json,
         created_at: page.discoveredAt,
-        updated_at: page.discoveredAt,
       }));
     },
     enabled: !!sessionId,
@@ -282,26 +275,18 @@ export function useDiscoveredFlows(sessionId: string | null) {
       const flows = await discoveryApi.getFlows(sessionId);
 
       // Transform API response to legacy format
+      // Supabase type is simpler - only core fields
       return flows.map((flow) => ({
         id: flow.id,
         discovery_session_id: flow.sessionId,
+        project_id: '', // API doesn't return project_id
         name: flow.name,
         description: flow.description,
-        flow_type: flow.category as DiscoveredFlow['flow_type'],
-        category: flow.category,
+        steps: flow.steps as Json,
+        step_count: flow.steps?.length ?? 0,
         priority: flow.priority as DiscoveredFlow['priority'],
-        steps: flow.steps,
-        entry_points: flow.startUrl ? [{ url: flow.startUrl }] : [],
-        page_ids: flow.pagesInvolved,
-        complexity_score: flow.complexityScore,
-        confidence_score: null,
-        business_value_score: null,
-        execution_time_estimate: flow.estimatedDuration,
-        validated: flow.validated,
-        validation_result: flow.validationResult,
-        auto_generated_test: flow.testGenerated ? {} : null,
+        converted_to_test_id: flow.testGenerated ? flow.id : null,
         created_at: flow.createdAt,
-        updated_at: flow.updatedAt,
       }));
     },
     enabled: !!sessionId,
@@ -327,35 +312,25 @@ export function useUpdateFlow() {
     }): Promise<DiscoveredFlow> => {
       const apiUpdates = {
         name: updates.name,
-        description: updates.description,
+        description: updates.description ?? undefined,
         priority: updates.priority,
-        steps: updates.steps,
-        category: updates.category || updates.flow_type,
+        steps: updates.steps as Record<string, unknown>[] | undefined,
       };
 
       const flow = await discoveryApi.updateFlow(flowId, apiUpdates);
 
-      // Transform API response to legacy format
+      // Transform API response to legacy format (matching Supabase type)
       return {
         id: flow.id,
         discovery_session_id: flow.sessionId,
+        project_id: '', // API doesn't return project_id
         name: flow.name,
         description: flow.description,
-        flow_type: flow.category as DiscoveredFlow['flow_type'],
-        category: flow.category,
+        steps: flow.steps as Json,
+        step_count: flow.steps?.length ?? 0,
         priority: flow.priority as DiscoveredFlow['priority'],
-        steps: flow.steps,
-        entry_points: flow.startUrl ? [{ url: flow.startUrl }] : [],
-        page_ids: flow.pagesInvolved,
-        complexity_score: flow.complexityScore,
-        confidence_score: null,
-        business_value_score: null,
-        execution_time_estimate: flow.estimatedDuration,
-        validated: flow.validated,
-        validation_result: flow.validationResult,
-        auto_generated_test: flow.testGenerated ? {} : null,
+        converted_to_test_id: flow.testGenerated ? flow.id : null,
         created_at: flow.createdAt,
-        updated_at: flow.updatedAt,
       };
     },
     onSuccess: (data) => {

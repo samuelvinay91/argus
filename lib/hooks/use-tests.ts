@@ -265,22 +265,22 @@ export function useTestRunSubscription(projectId: string | null) {
 // RUN TEST
 // ============================================
 
-interface LegacyTest {
+export interface LegacyTest {
   id: string;
   name: string;
   steps: Array<string | { instruction?: string; action?: string }>;
 }
 
-interface LegacyTestRun {
+export interface LegacyTestRun {
   id: string;
   project_id: string;
   status: string;
   passed_tests: number;
   failed_tests: number;
-  total_tests: number;
-  duration_ms: number | null;
-  started_at: string | null;
-  completed_at: string | null;
+  total_tests?: number;
+  duration_ms?: number | null;
+  started_at?: string | null;
+  completed_at?: string | null;
 }
 
 interface LegacyTestResult {

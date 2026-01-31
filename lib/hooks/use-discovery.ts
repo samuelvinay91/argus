@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { discoveryApi } from '@/lib/api-client';
-import type { DiscoverySession, DiscoveredPage, DiscoveredFlow } from '@/lib/supabase/types';
+import type { DiscoverySession, DiscoveredPage, DiscoveredFlow, Json } from '@/lib/supabase/types';
 
 /**
  * Transform API discovery session to legacy Supabase format
@@ -26,38 +26,20 @@ function transformSessionToLegacy(session: {
   videoArtifactId: string | null;
   recordingUrl: string | null;
 }): DiscoverySession {
+  // Return only fields that exist in the Supabase type
   return {
     id: session.id,
     project_id: session.projectId,
     status: session.status as DiscoverySession['status'],
     app_url: session.appUrl,
-    start_url: session.appUrl,
-    mode: session.mode as DiscoverySession['mode'],
-    strategy: session.strategy as DiscoverySession['strategy'],
-    max_pages: session.maxPages,
-    max_depth: session.maxDepth,
     pages_found: session.pagesFound,
     flows_found: session.flowsFound,
-    elements_found: session.elementsFound,
     forms_found: session.formsFound,
+    elements_found: session.elementsFound,
     started_at: session.startedAt,
     completed_at: session.completedAt,
-    created_at: session.startedAt,
-    updated_at: session.completedAt || session.startedAt,
-    quality_score: session.coverageScore,
-    video_artifact_id: session.videoArtifactId,
-    recording_url: session.recordingUrl,
-    // Default values for fields not returned by API
-    name: null,
-    config: null,
-    progress_percentage: null,
-    pages_discovered: session.pagesFound,
-    pages_analyzed: null,
-    insights: null,
-    patterns_detected: null,
-    recommendations: null,
-    error_message: null,
     triggered_by: null,
+    created_at: session.startedAt,
   };
 }
 
@@ -79,29 +61,20 @@ function transformPageToLegacy(page: {
   loadTimeMs: number | null;
   aiAnalysis: Record<string, unknown> | null;
 }): DiscoveredPage {
+  // Return only fields that exist in the Supabase type
   return {
     id: page.id,
     discovery_session_id: page.sessionId,
+    project_id: '', // API doesn't return project_id
     url: page.url,
     title: page.title,
-    description: page.description,
-    page_type: page.pageType as DiscoveredPage['page_type'],
-    screenshot_url: page.screenshotUrl,
+    page_type: page.pageType,
     element_count: page.elementsCount,
     form_count: page.formsCount,
     link_count: page.linksCount,
+    screenshot_url: page.screenshotUrl,
+    metadata: {} as Json,
     created_at: page.discoveredAt,
-    updated_at: page.discoveredAt,
-    load_time_ms: page.loadTimeMs,
-    ai_analysis: page.aiAnalysis,
-    // Default values for fields not returned by API
-    project_id: null,
-    depth: null,
-    parent_url: null,
-    html_snapshot: null,
-    accessibility_issues: null,
-    seo_analysis: null,
-    metadata: null,
   };
 }
 
@@ -126,27 +99,18 @@ function transformFlowToLegacy(flow: {
   createdAt: string;
   updatedAt: string | null;
 }): DiscoveredFlow {
+  // Return only fields that exist in the Supabase type
   return {
     id: flow.id,
     discovery_session_id: flow.sessionId,
+    project_id: '', // API doesn't return project_id
     name: flow.name,
     description: flow.description,
-    flow_type: flow.category as DiscoveredFlow['flow_type'],
-    category: flow.category,
+    steps: flow.steps as Json,
+    step_count: flow.steps?.length ?? 0,
     priority: flow.priority as DiscoveredFlow['priority'],
-    steps: flow.steps,
-    entry_points: flow.startUrl ? [{ url: flow.startUrl }] : [],
-    page_ids: flow.pagesInvolved,
-    complexity_score: flow.complexityScore,
-    validated: flow.validated,
-    validation_result: flow.validationResult,
-    auto_generated_test: flow.testGenerated ? {} : null,
+    converted_to_test_id: flow.testGenerated ? flow.id : null,
     created_at: flow.createdAt,
-    updated_at: flow.updatedAt,
-    // Default values for fields not returned by API
-    confidence_score: null,
-    business_value_score: null,
-    execution_time_estimate: flow.estimatedDuration,
   };
 }
 

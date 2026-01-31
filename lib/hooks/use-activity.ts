@@ -4,31 +4,17 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useProjects } from './use-projects';
+import {
+  activityApi,
+  type ActivityEventApi,
+  type ActivityEventType as ApiActivityEventType,
+} from '@/lib/api-client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
-// Activity event types
-export type ActivityEventType =
-  | 'test_started'
-  | 'test_passed'
-  | 'test_failed'
-  | 'test_created'
-  | 'test_updated'
-  | 'test_deleted'
-  | 'project_created'
-  | 'project_updated'
-  | 'healing_applied'
-  | 'healing_suggested'
-  | 'schedule_triggered'
-  | 'user_joined'
-  | 'settings_changed'
-  | 'integration_connected'
-  | 'discovery_started'
-  | 'discovery_completed'
-  | 'visual_test_started'
-  | 'visual_test_completed'
-  | 'quality_audit_started'
-  | 'quality_audit_completed';
+// Activity event types (re-export from api-client for backward compatibility)
+export type ActivityEventType = ApiActivityEventType;
 
+// Legacy ActivityEvent interface for backward compatibility
 export interface ActivityEvent {
   id: string;
   type: ActivityEventType;
@@ -49,7 +35,33 @@ export interface ActivityEvent {
   };
 }
 
-// Map database activity_logs to our ActivityEvent format
+/**
+ * Transform API response to legacy ActivityEvent format
+ * Ensures backward compatibility with existing consumers
+ */
+function transformApiEventToLegacy(apiEvent: ActivityEventApi): ActivityEvent {
+  return {
+    id: apiEvent.id,
+    type: apiEvent.type,
+    title: apiEvent.title,
+    description: apiEvent.description,
+    timestamp: apiEvent.timestamp,
+    user: apiEvent.user ? {
+      name: apiEvent.user.name,
+      avatar: apiEvent.user.avatar ?? undefined,
+    } : undefined,
+    metadata: apiEvent.metadata ? {
+      projectId: apiEvent.metadata.projectId ?? undefined,
+      projectName: apiEvent.metadata.projectName ?? undefined,
+      testId: apiEvent.metadata.testId ?? undefined,
+      testName: apiEvent.metadata.testName ?? undefined,
+      duration: apiEvent.metadata.duration ?? undefined,
+      link: apiEvent.metadata.link ?? undefined,
+    } : undefined,
+  };
+}
+
+// Map database activity_logs to our ActivityEvent format (kept for realtime subscriptions)
 function mapActivityLogToEvent(log: {
   id: string;
   project_id: string;
@@ -115,238 +127,38 @@ function getActivityLink(activityType: string): string {
   }
 }
 
-// Fetch activity from various sources
+/**
+ * Fetch activity feed from the backend API.
+ * Aggregates data from activity_logs, test_runs, discovery_sessions,
+ * healing_patterns, and schedule_runs.
+ */
 export function useActivityFeed(limit = 50) {
-  const supabase = getSupabaseClient();
   const { data: projects = [] } = useProjects();
   const projectIds = projects.map(p => p.id);
-  const projectsMap = Object.fromEntries(projects.map(p => [p.id, p.name]));
 
   return useQuery({
     queryKey: ['activity-feed', projectIds, limit],
-    queryFn: async () => {
+    queryFn: async (): Promise<ActivityEvent[]> => {
       if (projectIds.length === 0) return [];
 
-      const activities: ActivityEvent[] = [];
+      const response = await activityApi.getFeed({
+        projectIds,
+        limit,
+      });
 
-      // 1. Get activity_logs
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: activityLogs } = await (supabase.from('activity_logs') as any)
-        .select('*')
-        .in('project_id', projectIds)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (activityLogs) {
-        activities.push(
-          ...activityLogs.map((log: {
-            id: string;
-            project_id: string;
-            session_id: string;
-            activity_type: string;
-            event_type: string;
-            title: string;
-            description: string | null;
-            metadata: Record<string, unknown> | null;
-            screenshot_url: string | null;
-            duration_ms: number | null;
-            created_at: string;
-          }) => mapActivityLogToEvent(log, projectsMap[log.project_id]))
-        );
-      }
-
-      // 2. Get recent test runs
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: testRuns } = await (supabase.from('test_runs') as any)
-        .select('id, project_id, name, status, trigger, total_tests, passed_tests, failed_tests, duration_ms, created_at, started_at, completed_at')
-        .in('project_id', projectIds)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (testRuns) {
-        testRuns.forEach((run: {
-          id: string;
-          project_id: string;
-          name: string | null;
-          status: string;
-          trigger: string;
-          total_tests: number;
-          passed_tests: number;
-          failed_tests: number;
-          duration_ms: number | null;
-          created_at: string;
-          started_at: string | null;
-          completed_at: string | null;
-        }) => {
-          let type: ActivityEventType = 'test_started';
-          let title = 'Test run started';
-          let description = `${run.name || 'Test run'} started`;
-
-          if (run.status === 'passed') {
-            type = 'test_passed';
-            title = 'Test run completed successfully';
-            description = `${run.name || 'Test run'} passed all ${run.total_tests} tests`;
-          } else if (run.status === 'failed') {
-            type = 'test_failed';
-            title = 'Test run failed';
-            description = `${run.name || 'Test run'} failed: ${run.failed_tests}/${run.total_tests} tests failed`;
-          } else if (run.status === 'running') {
-            type = 'test_started';
-            title = 'Test run in progress';
-            description = `${run.name || 'Test run'} is currently running`;
-          }
-
-          activities.push({
-            id: `run-${run.id}`,
-            type,
-            title,
-            description,
-            timestamp: run.completed_at || run.started_at || run.created_at,
-            user: { name: run.trigger === 'scheduled' ? 'Scheduler' : 'System' },
-            metadata: {
-              projectId: run.project_id,
-              projectName: projectsMap[run.project_id],
-              duration: run.duration_ms || undefined,
-              link: '/tests',
-            },
-          });
-        });
-      }
-
-      // 3. Get recent discoveries
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: discoveries } = await (supabase.from('discovery_sessions') as any)
-        .select('id, project_id, status, pages_found, flows_found, created_at, completed_at')
-        .in('project_id', projectIds)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (discoveries) {
-        discoveries.forEach((disc: {
-          id: string;
-          project_id: string;
-          status: string;
-          pages_found: number;
-          flows_found: number;
-          created_at: string;
-          completed_at: string | null;
-        }) => {
-          const isComplete = disc.status === 'completed';
-          activities.push({
-            id: `disc-${disc.id}`,
-            type: isComplete ? 'discovery_completed' : 'discovery_started',
-            title: isComplete ? 'Discovery completed' : 'Discovery started',
-            description: isComplete
-              ? `Found ${disc.pages_found} pages and ${disc.flows_found} flows`
-              : 'AI discovery session started',
-            timestamp: disc.completed_at || disc.created_at,
-            user: { name: 'Argus AI' },
-            metadata: {
-              projectId: disc.project_id,
-              projectName: projectsMap[disc.project_id],
-              link: '/discovery',
-            },
-          });
-        });
-      }
-
-      // 4. Get recent healing events
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: healings } = await (supabase.from('healing_patterns') as any)
-        .select('id, project_id, error_type, original_selector, healed_selector, confidence, success_count, created_at')
-        .in('project_id', projectIds)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (healings) {
-        healings.forEach((heal: {
-          id: string;
-          project_id: string;
-          error_type: string | null;
-          original_selector: string | null;
-          healed_selector: string | null;
-          confidence: number | null;
-          success_count: number;
-          created_at: string;
-        }) => {
-          const isApplied = heal.success_count > 0;
-          activities.push({
-            id: `heal-${heal.id}`,
-            type: isApplied ? 'healing_applied' : 'healing_suggested',
-            title: isApplied ? 'Self-healing fix applied' : 'Healing suggestion available',
-            description: heal.original_selector && heal.healed_selector
-              ? `Updated selector: ${heal.original_selector.substring(0, 30)}... -> ${heal.healed_selector.substring(0, 30)}...`
-              : 'Fix identified for test issue',
-            timestamp: heal.created_at,
-            user: { name: 'Argus AI' },
-            metadata: {
-              projectId: heal.project_id,
-              projectName: projectsMap[heal.project_id],
-              link: '/healing',
-            },
-          });
-        });
-      }
-
-      // 5. Get recent schedule runs
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: scheduleRuns } = await (supabase.from('schedule_runs') as any)
-        .select(`
-          id,
-          schedule_id,
-          status,
-          trigger_type,
-          tests_total,
-          tests_failed,
-          triggered_at,
-          test_schedules (
-            name,
-            project_id
-          )
-        `)
-        .order('triggered_at', { ascending: false })
-        .limit(10);
-
-      if (scheduleRuns) {
-        scheduleRuns.forEach((run: {
-          id: string;
-          schedule_id: string;
-          status: string;
-          trigger_type: string;
-          tests_total: number;
-          tests_failed: number;
-          triggered_at: string;
-          test_schedules: { name: string; project_id: string } | null;
-        }) => {
-          if (!run.test_schedules) return;
-
-          activities.push({
-            id: `sched-${run.id}`,
-            type: 'schedule_triggered',
-            title: 'Scheduled run triggered',
-            description: `${run.test_schedules.name} ${run.trigger_type === 'manual' ? 'manually triggered' : 'started'} (${run.tests_total} tests)`,
-            timestamp: run.triggered_at,
-            user: { name: run.trigger_type === 'manual' ? 'User' : 'Scheduler' },
-            metadata: {
-              projectId: run.test_schedules.project_id,
-              projectName: projectsMap[run.test_schedules.project_id],
-              link: '/schedules',
-            },
-          });
-        });
-      }
-
-      // Sort all activities by timestamp and return top limit
-      return activities
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        .slice(0, limit);
+      // Transform API response to legacy format
+      return response.activities.map(transformApiEventToLegacy);
     },
     enabled: projectIds.length > 0,
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 }
 
-// Real-time activity stream using Supabase subscriptions
+/**
+ * Real-time activity stream using Supabase subscriptions.
+ * Note: This still uses Supabase realtime for immediate updates,
+ * but invalidates the API-based feed on changes.
+ */
 export function useRealtimeActivity() {
   const supabase = getSupabaseClient();
   const { data: projects = [] } = useProjects();
@@ -421,19 +233,39 @@ export function useRealtimeActivity() {
   };
 }
 
-// Activity stats
+/**
+ * Activity statistics for dashboard widgets.
+ * Uses the dedicated stats endpoint for efficiency.
+ */
 export function useActivityStats() {
-  const { data: activities = [] } = useActivityFeed(100);
+  const { data: projects = [] } = useProjects();
+  const projectIds = projects.map(p => p.id);
 
-  const now = Date.now();
-  const oneHourAgo = now - 60 * 60 * 1000;
+  const { data: statsData } = useQuery({
+    queryKey: ['activity-stats', projectIds],
+    queryFn: async () => {
+      if (projectIds.length === 0) {
+        return { lastHour: 0, testRuns: 0, healsApplied: 0, failures: 0 };
+      }
 
-  const stats = {
-    lastHour: activities.filter(a => new Date(a.timestamp).getTime() > oneHourAgo).length,
-    testRuns: activities.filter(a => a.type === 'test_passed' || a.type === 'test_failed').length,
-    healsApplied: activities.filter(a => a.type === 'healing_applied').length,
-    failures: activities.filter(a => a.type === 'test_failed').length,
+      const response = await activityApi.getStats({ projectIds });
+
+      return {
+        lastHour: response.lastHour,
+        testRuns: response.testRuns,
+        healsApplied: response.healsApplied,
+        failures: response.failures,
+      };
+    },
+    enabled: projectIds.length > 0,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  // Return default stats if query hasn't loaded yet
+  return statsData ?? {
+    lastHour: 0,
+    testRuns: 0,
+    healsApplied: 0,
+    failures: 0,
   };
-
-  return stats;
 }

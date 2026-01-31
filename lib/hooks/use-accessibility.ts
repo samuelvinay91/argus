@@ -1,9 +1,13 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSupabaseClient } from '@/lib/supabase/client';
 import type { QualityAudit, AccessibilityIssue } from '@/lib/supabase/types';
-import { BACKEND_URL } from '@/lib/config/api-endpoints';
+import {
+  accessibilityApi,
+  type QualityAuditApi,
+  type AccessibilityIssueApi,
+  BACKEND_URL,
+} from '@/lib/api-client';
 
 // Types for extended accessibility audit data
 export interface AccessibilityAuditResult {
@@ -168,6 +172,57 @@ const RULE_EXPLANATIONS: Record<string, { plain: string; affected: string[]; fix
   },
 };
 
+// =============================================================================
+// Transform Functions (API to Legacy Format)
+// =============================================================================
+
+/**
+ * Transform API audit response to legacy QualityAudit format
+ */
+function transformAuditToLegacy(apiAudit: QualityAuditApi): QualityAudit {
+  return {
+    id: apiAudit.id,
+    project_id: apiAudit.project_id,
+    url: apiAudit.url,
+    status: apiAudit.status,
+    accessibility_score: apiAudit.accessibility_score,
+    performance_score: apiAudit.performance_score,
+    best_practices_score: apiAudit.best_practices_score,
+    seo_score: apiAudit.seo_score,
+    lcp_ms: apiAudit.lcp_ms,
+    fid_ms: apiAudit.fid_ms,
+    cls: apiAudit.cls,
+    ttfb_ms: apiAudit.ttfb_ms,
+    fcp_ms: apiAudit.fcp_ms,
+    tti_ms: apiAudit.tti_ms,
+    started_at: apiAudit.started_at,
+    completed_at: apiAudit.completed_at,
+    triggered_by: apiAudit.triggered_by,
+    created_at: apiAudit.created_at,
+  };
+}
+
+/**
+ * Transform API issue response to legacy AccessibilityIssue format
+ */
+function transformIssueToLegacy(apiIssue: AccessibilityIssueApi): AccessibilityIssue {
+  return {
+    id: apiIssue.id,
+    audit_id: apiIssue.audit_id,
+    rule: apiIssue.rule,
+    severity: apiIssue.severity,
+    element_selector: apiIssue.element_selector,
+    description: apiIssue.description,
+    suggested_fix: apiIssue.suggested_fix,
+    wcag_criteria: apiIssue.wcag_criteria,
+    created_at: apiIssue.created_at,
+  };
+}
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
 function getWCAGLevel(criteria: string[]): 'A' | 'AA' | 'AAA' | null {
   if (!criteria || criteria.length === 0) return null;
 
@@ -240,347 +295,6 @@ function generateAIExplanations(issues: AccessibilityIssue[]): AIExplanation[] {
   });
 }
 
-/**
- * Get the latest accessibility audit for a project
- */
-export function useAccessibilityAudit(projectId: string | null) {
-  const supabase = getSupabaseClient();
-
-  return useQuery({
-    queryKey: ['accessibility-audit', projectId],
-    queryFn: async (): Promise<AccessibilityAuditResult | null> => {
-      if (!projectId) return null;
-
-      // Get latest completed audit
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: audits, error: auditError } = await (supabase.from('quality_audits') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (auditError) throw auditError;
-      if (!audits || audits.length === 0) return null;
-
-      const audit = audits[0] as QualityAudit;
-
-      // Get accessibility issues for this audit
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: issues, error: issuesError } = await (supabase.from('accessibility_issues') as any)
-        .select('*')
-        .eq('audit_id', audit.id)
-        .order('severity', { ascending: true });
-
-      if (issuesError) throw issuesError;
-
-      const issueList = (issues || []) as AccessibilityIssue[];
-
-      return {
-        audit,
-        issues: issueList,
-        wcagCompliance: calculateWCAGCompliance(issueList),
-        issuesByImpact: groupIssuesByImpact(issueList),
-        aiExplanations: generateAIExplanations(issueList),
-      };
-    },
-    enabled: !!projectId,
-  });
-}
-
-/**
- * Get accessibility audit history for a project
- */
-export function useAccessibilityHistory(projectId: string | null, limit = 10) {
-  const supabase = getSupabaseClient();
-
-  return useQuery({
-    queryKey: ['accessibility-history', projectId, limit],
-    queryFn: async () => {
-      if (!projectId) return [];
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('quality_audits') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-      return data as QualityAudit[];
-    },
-    enabled: !!projectId,
-  });
-}
-
-/**
- * Trigger a new accessibility audit
- */
-export function useRunAccessibilityAudit() {
-  const supabase = getSupabaseClient();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      projectId,
-      url,
-      triggeredBy,
-    }: {
-      projectId: string;
-      url: string;
-      triggeredBy?: string | null;
-    }): Promise<AccessibilityAuditResult> => {
-      // 1. Create audit with 'running' status
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: audit, error: auditError } = await (supabase.from('quality_audits') as any)
-        .insert({
-          project_id: projectId,
-          url,
-          status: 'running',
-          started_at: new Date().toISOString(),
-          triggered_by: triggeredBy || null,
-        })
-        .select()
-        .single();
-
-      if (auditError) throw auditError;
-
-      try {
-        // 2. Call backend to run accessibility check
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 90000);
-
-        const response = await fetch(`${BACKEND_URL}/api/v1/accessibility/audit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url,
-            projectId,
-            auditId: audit.id,
-            wcagLevel: 'AA',
-            includeBestPractices: true,
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          // If backend doesn't have the endpoint, fall back to browser observe
-          if (response.status === 404) {
-            return await runFallbackAudit(supabase, audit, url, projectId);
-          }
-          throw new Error(`Accessibility audit failed: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        // 3. Save issues from backend response
-        const issues = result.issues || [];
-
-        if (issues.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase.from('accessibility_issues') as any)
-            .insert(issues.map((issue: any) => ({
-              ...issue,
-              audit_id: audit.id,
-            })));
-        }
-
-        // 4. Update audit with results
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: updatedAudit } = await (supabase.from('quality_audits') as any)
-          .update({
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            accessibility_score: result.score || calculateScore(issues),
-          })
-          .eq('id', audit.id)
-          .select()
-          .single();
-
-        const issueList = issues as AccessibilityIssue[];
-
-        return {
-          audit: updatedAudit as QualityAudit,
-          issues: issueList,
-          wcagCompliance: calculateWCAGCompliance(issueList),
-          issuesByImpact: groupIssuesByImpact(issueList),
-          aiExplanations: generateAIExplanations(issueList),
-        };
-      } catch (error) {
-        // Update audit to failed status
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.from('quality_audits') as any)
-          .update({
-            status: 'failed',
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', audit.id);
-
-        throw error;
-      }
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['accessibility-audit', data.audit.project_id] });
-      queryClient.invalidateQueries({ queryKey: ['accessibility-history', data.audit.project_id] });
-      queryClient.invalidateQueries({ queryKey: ['quality-audits', data.audit.project_id] });
-      queryClient.invalidateQueries({ queryKey: ['latest-audit', data.audit.project_id] });
-    },
-  });
-}
-
-// Fallback audit using browser observe endpoint
-async function runFallbackAudit(
-  supabase: ReturnType<typeof getSupabaseClient>,
-  audit: QualityAudit,
-  url: string,
-  projectId: string
-): Promise<AccessibilityAuditResult> {
-  const response = await fetch(`${BACKEND_URL}/api/v1/browser/observe`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      url,
-      instruction: 'Analyze this page for accessibility issues, missing alt text, form labels, color contrast problems, keyboard navigation issues, and ARIA usage.',
-      projectId,
-      activityType: 'accessibility_audit',
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Browser observe failed: ${response.status}`);
-  }
-
-  const observeResult = await response.json();
-  const actions = observeResult.actions || [];
-
-  // Analyze actions for accessibility patterns
-  const issues: Array<{
-    rule: string;
-    severity: 'critical' | 'serious' | 'moderate' | 'minor';
-    element_selector: string;
-    description: string;
-    suggested_fix: string;
-    wcag_criteria: string[];
-  }> = [];
-
-  // Check for elements that might have accessibility issues
-  const imageActions = actions.filter((a: any) =>
-    a.selector?.includes('img') || a.description?.toLowerCase().includes('image')
-  );
-  const inputActions = actions.filter((a: any) =>
-    a.selector?.includes('input') || a.description?.toLowerCase().includes('input')
-  );
-  const buttonActions = actions.filter((a: any) =>
-    a.selector?.includes('button') || a.description?.toLowerCase().includes('button')
-  );
-  const linkActions = actions.filter((a: any) =>
-    a.selector?.includes('a.') || a.selector?.includes('a[') || a.description?.toLowerCase().includes('link')
-  );
-
-  // Images without descriptive alt
-  imageActions.forEach((img: any) => {
-    if (!img.description || img.description === 'Image' || img.description.length < 10) {
-      issues.push({
-        rule: 'image-alt',
-        severity: 'critical',
-        element_selector: img.selector || 'img',
-        description: 'Image is missing descriptive alt text. Screen reader users will not know what this image shows.',
-        suggested_fix: 'Add an alt attribute that describes the image content, or alt="" for decorative images.',
-        wcag_criteria: ['1.1.1'],
-      });
-    }
-  });
-
-  // Inputs without labels
-  inputActions.forEach((input: any) => {
-    if (!input.description || input.description === 'Input' || input.description.length < 5) {
-      issues.push({
-        rule: 'label',
-        severity: 'serious',
-        element_selector: input.selector || 'input',
-        description: 'Form input is missing an associated label. Users will not know what information to enter.',
-        suggested_fix: 'Add a <label> element connected to this input, or use aria-label for custom inputs.',
-        wcag_criteria: ['1.3.1', '3.3.2'],
-      });
-    }
-  });
-
-  // Buttons without accessible names
-  buttonActions.forEach((btn: any) => {
-    if (!btn.description || btn.description === 'Button' || btn.description.length < 5) {
-      issues.push({
-        rule: 'button-name',
-        severity: 'critical',
-        element_selector: btn.selector || 'button',
-        description: 'Button has no accessible name. Screen reader users will not know what this button does.',
-        suggested_fix: 'Add text content inside the button, or use aria-label for icon-only buttons.',
-        wcag_criteria: ['4.1.2'],
-      });
-    }
-  });
-
-  // Links without accessible names
-  linkActions.forEach((link: any) => {
-    if (!link.description || link.description === 'Link' || link.description.length < 5) {
-      issues.push({
-        rule: 'link-name',
-        severity: 'serious',
-        element_selector: link.selector || 'a',
-        description: 'Link has no accessible name. Users will not know where this link goes.',
-        suggested_fix: 'Add descriptive text inside the link that describes the destination.',
-        wcag_criteria: ['2.4.4'],
-      });
-    }
-  });
-
-  // Save issues
-  if (issues.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('accessibility_issues') as any)
-      .insert(issues.map(issue => ({
-        ...issue,
-        audit_id: audit.id,
-      })));
-  }
-
-  const accessibilityScore = calculateScore(issues);
-
-  // Update audit
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: updatedAudit } = await (supabase.from('quality_audits') as any)
-    .update({
-      status: 'completed',
-      completed_at: new Date().toISOString(),
-      accessibility_score: accessibilityScore,
-    })
-    .eq('id', audit.id)
-    .select()
-    .single();
-
-  // Map to AccessibilityIssue type
-  const issueList = issues.map((issue, index) => ({
-    id: `temp-${index}`,
-    audit_id: audit.id,
-    rule: issue.rule,
-    severity: issue.severity,
-    element_selector: issue.element_selector,
-    description: issue.description,
-    suggested_fix: issue.suggested_fix,
-    wcag_criteria: issue.wcag_criteria,
-    created_at: new Date().toISOString(),
-  })) as AccessibilityIssue[];
-
-  return {
-    audit: updatedAudit as QualityAudit,
-    issues: issueList,
-    wcagCompliance: calculateWCAGCompliance(issueList),
-    issuesByImpact: groupIssuesByImpact(issueList),
-    aiExplanations: generateAIExplanations(issueList),
-  };
-}
-
 function calculateScore(issues: Array<{ severity: string }>): number {
   if (!issues || issues.length === 0) return 100;
 
@@ -597,4 +311,234 @@ function calculateScore(issues: Array<{ severity: string }>): number {
   );
 
   return Math.max(0, 100 - totalDeduction);
+}
+
+/**
+ * Get the latest accessibility audit for a project
+ */
+export function useAccessibilityAudit(projectId: string | null) {
+  return useQuery({
+    queryKey: ['accessibility-audit', projectId],
+    queryFn: async (): Promise<AccessibilityAuditResult | null> => {
+      if (!projectId) return null;
+
+      const response = await accessibilityApi.getLatestAudit(projectId);
+
+      if (!response) return null;
+
+      // Transform API response to legacy format
+      const audit = transformAuditToLegacy(response.audit);
+      const issues = response.issues.map(transformIssueToLegacy);
+
+      return {
+        audit,
+        issues,
+        wcagCompliance: calculateWCAGCompliance(issues),
+        issuesByImpact: groupIssuesByImpact(issues),
+        aiExplanations: generateAIExplanations(issues),
+      };
+    },
+    enabled: !!projectId,
+  });
+}
+
+/**
+ * Get accessibility audit history for a project
+ */
+export function useAccessibilityHistory(projectId: string | null, limit = 10) {
+  return useQuery({
+    queryKey: ['accessibility-history', projectId, limit],
+    queryFn: async () => {
+      if (!projectId) return [];
+
+      const response = await accessibilityApi.getAuditHistory(projectId, { limit });
+      return response.audits.map(transformAuditToLegacy);
+    },
+    enabled: !!projectId,
+  });
+}
+
+/**
+ * Trigger a new accessibility audit
+ */
+export function useRunAccessibilityAudit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      url,
+      triggeredBy,
+    }: {
+      projectId: string;
+      url: string;
+      triggeredBy?: string | null;
+    }): Promise<AccessibilityAuditResult> => {
+      // 1. Start the audit via API
+      const startResponse = await accessibilityApi.runAudit({
+        projectId,
+        url,
+        triggeredBy,
+        wcagLevel: 'AA',
+        includeBestPractices: true,
+      });
+
+      if (!startResponse.success || !startResponse.audit_id) {
+        throw new Error(startResponse.message || 'Failed to start audit');
+      }
+
+      const auditId = startResponse.audit_id;
+
+      try {
+        // 2. Call backend accessibility endpoint for actual analysis
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+        const response = await fetch(`${BACKEND_URL}/api/v1/browser/observe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url,
+            instruction: 'Analyze this page for accessibility issues, missing alt text, form labels, color contrast problems, keyboard navigation issues, and ARIA usage.',
+            projectId,
+            activityType: 'accessibility_audit',
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`Browser observe failed: ${response.status}`);
+        }
+
+        const observeResult = await response.json();
+        const actions = observeResult.actions || [];
+
+        // 3. Analyze actions for accessibility patterns
+        const issues: Array<{
+          rule: string;
+          severity: 'critical' | 'serious' | 'moderate' | 'minor';
+          elementSelector: string;
+          description: string;
+          suggestedFix: string;
+          wcagCriteria: string[];
+        }> = [];
+
+        // Check for elements that might have accessibility issues
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const imageActions = actions.filter((a: any) =>
+          a.selector?.includes('img') || a.description?.toLowerCase().includes('image')
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const inputActions = actions.filter((a: any) =>
+          a.selector?.includes('input') || a.description?.toLowerCase().includes('input')
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const buttonActions = actions.filter((a: any) =>
+          a.selector?.includes('button') || a.description?.toLowerCase().includes('button')
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const linkActions = actions.filter((a: any) =>
+          a.selector?.includes('a.') || a.selector?.includes('a[') || a.description?.toLowerCase().includes('link')
+        );
+
+        // Images without descriptive alt
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        imageActions.forEach((img: any) => {
+          if (!img.description || img.description === 'Image' || img.description.length < 10) {
+            issues.push({
+              rule: 'image-alt',
+              severity: 'critical',
+              elementSelector: img.selector || 'img',
+              description: 'Image is missing descriptive alt text. Screen reader users will not know what this image shows.',
+              suggestedFix: 'Add an alt attribute that describes the image content, or alt="" for decorative images.',
+              wcagCriteria: ['1.1.1'],
+            });
+          }
+        });
+
+        // Inputs without labels
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        inputActions.forEach((input: any) => {
+          if (!input.description || input.description === 'Input' || input.description.length < 5) {
+            issues.push({
+              rule: 'label',
+              severity: 'serious',
+              elementSelector: input.selector || 'input',
+              description: 'Form input is missing an associated label. Users will not know what information to enter.',
+              suggestedFix: 'Add a <label> element connected to this input, or use aria-label for custom inputs.',
+              wcagCriteria: ['1.3.1', '3.3.2'],
+            });
+          }
+        });
+
+        // Buttons without accessible names
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        buttonActions.forEach((btn: any) => {
+          if (!btn.description || btn.description === 'Button' || btn.description.length < 5) {
+            issues.push({
+              rule: 'button-name',
+              severity: 'critical',
+              elementSelector: btn.selector || 'button',
+              description: 'Button has no accessible name. Screen reader users will not know what this button does.',
+              suggestedFix: 'Add text content inside the button, or use aria-label for icon-only buttons.',
+              wcagCriteria: ['4.1.2'],
+            });
+          }
+        });
+
+        // Links without accessible names
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        linkActions.forEach((link: any) => {
+          if (!link.description || link.description === 'Link' || link.description.length < 5) {
+            issues.push({
+              rule: 'link-name',
+              severity: 'serious',
+              elementSelector: link.selector || 'a',
+              description: 'Link has no accessible name. Users will not know where this link goes.',
+              suggestedFix: 'Add descriptive text inside the link that describes the destination.',
+              wcagCriteria: ['2.4.4'],
+            });
+          }
+        });
+
+        // 4. Save issues via API
+        if (issues.length > 0) {
+          await accessibilityApi.createIssuesBatch(auditId, issues);
+        }
+
+        const accessibilityScore = calculateScore(issues);
+
+        // 5. Update audit as completed
+        await accessibilityApi.updateAudit(auditId, {
+          status: 'completed',
+          accessibilityScore,
+        });
+
+        // 6. Fetch the completed audit
+        const completedAudit = await accessibilityApi.getAudit(auditId);
+        const audit = transformAuditToLegacy(completedAudit.audit);
+        const issueList = completedAudit.issues.map(transformIssueToLegacy);
+
+        return {
+          audit,
+          issues: issueList,
+          wcagCompliance: calculateWCAGCompliance(issueList),
+          issuesByImpact: groupIssuesByImpact(issueList),
+          aiExplanations: generateAIExplanations(issueList),
+        };
+      } catch (error) {
+        // Update audit to failed status
+        await accessibilityApi.updateAudit(auditId, { status: 'failed' });
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['accessibility-audit', data.audit.project_id] });
+      queryClient.invalidateQueries({ queryKey: ['accessibility-history', data.audit.project_id] });
+      queryClient.invalidateQueries({ queryKey: ['quality-audits', data.audit.project_id] });
+      queryClient.invalidateQueries({ queryKey: ['latest-audit', data.audit.project_id] });
+    },
+  });
 }

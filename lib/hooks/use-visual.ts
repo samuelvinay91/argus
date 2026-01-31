@@ -1,22 +1,115 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSupabaseClient } from '@/lib/supabase/client';
 import type { VisualBaseline, VisualComparison } from '@/lib/supabase/types';
-import { useAuthApi } from './use-auth-api';
+import {
+  visualApi,
+  type VisualBaselineApi,
+  type VisualComparisonApi,
+  type AIExplainResponse,
+  type VisualAccessibilityResult,
+  type BrowserCaptureResponse,
+  type BrowserCompareResponse,
+} from '@/lib/api-client';
 
-// Backend API response type for visual capture
-interface VisualCaptureResponse {
-  id: string;
-  url: string;
-  screenshot_url: string;
-  viewport: { width: number; height: number };
-  browser: string;
-  captured_at: string;
-  metadata?: Record<string, unknown>;
+// ============================================================================
+// Transform Functions - Convert API responses to legacy Supabase types
+// ============================================================================
+
+/**
+ * Transform API baseline response to legacy Supabase VisualBaseline format
+ */
+function transformBaselineToLegacy(baseline: VisualBaselineApi): VisualBaseline {
+  return {
+    id: baseline.id,
+    project_id: baseline.projectId,
+    name: baseline.name,
+    selector: null, // Not in API response
+    page_url: baseline.url,
+    viewport: '1440x900', // Default, could be extracted from API if available
+    screenshot_url: baseline.screenshotUrl || '',
+    screenshot_hash: null, // Not in API response
+    is_active: true, // Default to active
+    created_by: null, // Not in API response
+    created_at: baseline.createdAt,
+  };
 }
 
-// Simple pixel diffing using canvas
+/**
+ * Transform API comparison response to legacy Supabase VisualComparison format
+ */
+function transformComparisonToLegacy(comparison: VisualComparisonApi): VisualComparison {
+  // Map API status to legacy status
+  let status: VisualComparison['status'] = 'pending';
+  if (comparison.match) {
+    status = 'match';
+  } else if (comparison.hasRegressions) {
+    status = 'mismatch';
+  }
+
+  return {
+    id: comparison.id,
+    project_id: '', // Not directly in API response, populated from context
+    baseline_id: comparison.baselineId,
+    name: comparison.summary?.substring(0, 100) || 'Visual Comparison',
+    status,
+    match_percentage: comparison.matchPercentage,
+    difference_count: comparison.differences?.length || 0,
+    baseline_url: null, // Not directly in API response
+    current_url: '', // Not directly in API response
+    diff_url: null, // Not directly in API response
+    threshold: 0.1, // Default threshold
+    approved_by: null, // Not in API response
+    approved_at: null, // Not in API response
+    created_at: comparison.comparedAt,
+  };
+}
+
+/**
+ * Transform raw API comparison data (from list endpoint) to legacy format
+ */
+function transformRawComparisonToLegacy(raw: Record<string, unknown>): VisualComparison {
+  return {
+    id: String(raw.id || ''),
+    project_id: String(raw.project_id || ''),
+    baseline_id: raw.baseline_id as string | null,
+    name: String(raw.name || ''),
+    status: (raw.status as VisualComparison['status']) || 'pending',
+    match_percentage: raw.match_percentage as number | null,
+    difference_count: Number(raw.difference_count || 0),
+    baseline_url: raw.baseline_url as string | null,
+    current_url: String(raw.current_url || ''),
+    diff_url: raw.diff_url as string | null,
+    threshold: Number(raw.threshold || 0.1),
+    approved_by: raw.approved_by as string | null,
+    approved_at: raw.approved_at as string | null,
+    created_at: String(raw.created_at || new Date().toISOString()),
+  };
+}
+
+/**
+ * Transform raw API baseline data (from list endpoint) to legacy format
+ */
+function transformRawBaselineToLegacy(raw: Record<string, unknown>): VisualBaseline {
+  return {
+    id: String(raw.id || ''),
+    project_id: String(raw.project_id || ''),
+    name: String(raw.name || ''),
+    selector: raw.selector as string | null,
+    page_url: String(raw.page_url || raw.url || ''),
+    viewport: String(raw.viewport || `${raw.viewport_width || 1440}x${raw.viewport_height || 900}`),
+    screenshot_url: String(raw.screenshot_url || raw.screenshot_path || ''),
+    screenshot_hash: raw.screenshot_hash as string | null,
+    is_active: raw.is_active !== false, // Default to true
+    created_by: raw.created_by as string | null,
+    created_at: String(raw.created_at || new Date().toISOString()),
+  };
+}
+
+// ============================================================================
+// Simple pixel diffing using canvas (kept for local comparison)
+// ============================================================================
+
 async function compareScreenshots(
   baselineBase64: string,
   currentBase64: string
@@ -96,73 +189,63 @@ async function compareScreenshots(
   });
 }
 
-export function useVisualBaselines(projectId: string | null) {
-  const supabase = getSupabaseClient();
+// ============================================================================
+// Hooks
+// ============================================================================
 
+export function useVisualBaselines(projectId: string | null) {
   return useQuery({
     queryKey: ['visual-baselines', projectId],
     queryFn: async () => {
       if (!projectId) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('visual_baselines') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as VisualBaseline[];
+      const response = await visualApi.listBaselines(projectId);
+      // Handle both new API format and legacy format
+      if ('baselines' in response && Array.isArray(response.baselines)) {
+        return response.baselines.map((b) => transformRawBaselineToLegacy(b as unknown as Record<string, unknown>));
+      }
+      // Fallback for unexpected format
+      return [];
     },
     enabled: !!projectId,
   });
 }
 
 export function useVisualComparisons(projectId: string | null, limit = 20) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['visual-comparisons', projectId, limit],
     queryFn: async () => {
       if (!projectId) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('visual_comparisons') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-      return data as VisualComparison[];
+      const response = await visualApi.listComparisons({ projectId, limit });
+      // Handle both new API format and legacy format
+      if ('comparisons' in response && Array.isArray(response.comparisons)) {
+        return response.comparisons.map((c) => transformRawComparisonToLegacy(c as unknown as Record<string, unknown>));
+      }
+      // Fallback for unexpected format
+      return [];
     },
     enabled: !!projectId,
   });
 }
 
 export function useVisualComparison(comparisonId: string | null) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['visual-comparison', comparisonId],
     queryFn: async () => {
       if (!comparisonId) return null;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('visual_comparisons') as any)
-        .select('*')
-        .eq('id', comparisonId)
-        .single();
-
-      if (error) throw error;
-      return data as VisualComparison;
+      const response = await visualApi.getComparison(comparisonId);
+      if (response.comparison) {
+        return transformRawComparisonToLegacy(response.comparison as unknown as Record<string, unknown>);
+      }
+      return null;
     },
     enabled: !!comparisonId,
   });
 }
 
 export function useApproveComparison() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -175,19 +258,25 @@ export function useApproveComparison() {
       projectId: string;
       approvedBy?: string | null;
     }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('visual_comparisons') as any)
-        .update({
-          status: 'match',
-          approved_by: approvedBy || null,
-          approved_at: new Date().toISOString(),
-        })
-        .eq('id', comparisonId)
-        .select()
-        .single();
+      const response = await visualApi.approveComparison(comparisonId, {
+        notes: approvedBy ? `Approved by ${approvedBy}` : undefined,
+        updateBaseline: false,
+      });
 
-      if (error) throw error;
-      return { comparison: data as VisualComparison, projectId };
+      if (!response.success) {
+        throw new Error('Failed to approve comparison');
+      }
+
+      // Return a synthetic comparison for cache invalidation
+      return {
+        comparison: {
+          id: comparisonId,
+          project_id: projectId,
+          status: 'match' as const,
+          approved_at: response.reviewedAt,
+        } as VisualComparison,
+        projectId,
+      };
     },
     onSuccess: ({ comparison, projectId }) => {
       queryClient.invalidateQueries({ queryKey: ['visual-comparisons', projectId] });
@@ -203,9 +292,7 @@ interface VisualTestResult {
 }
 
 export function useRunVisualTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
-  const { fetchJson } = useAuthApi();
 
   return useMutation({
     mutationFn: async ({
@@ -224,30 +311,17 @@ export function useRunVisualTest() {
       // Parse viewport
       const [width, height] = viewport.split('x').map(Number);
 
-      // 1. Capture screenshot using backend Visual AI API (with authentication, cost tracking, baseline management)
-      const captureResponse = await fetchJson<VisualCaptureResponse>(
-        '/api/v1/visual/capture',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            url,
-            viewport: { width, height },
-            browser: 'chromium',
-            project_id: projectId,
-            name: name || undefined,
-          }),
-          timeout: 90000, // 90 second timeout for screenshot capture
-        }
-      );
-
-      if (captureResponse.error || !captureResponse.data) {
-        throw new Error(captureResponse.error || 'Failed to capture screenshot');
-      }
-
-      const captureResult = captureResponse.data;
+      // 1. Capture screenshot using backend Visual AI API
+      const captureResult = await visualApi.capture({
+        url,
+        viewport: { width, height },
+        browser: 'chromium',
+        projectId,
+        name: name || undefined,
+      });
 
       // Get screenshot URL from backend response
-      const screenshotDataUrl = captureResult.screenshot_url;
+      const screenshotDataUrl = captureResult.screenshotUrl;
       if (!screenshotDataUrl) {
         throw new Error('No screenshot captured');
       }
@@ -262,91 +336,80 @@ export function useRunVisualTest() {
         }
       }
 
-      // 2. Check for existing baseline
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: existingBaselines } = await (supabase.from('visual_baselines') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('page_url', url)
-        .eq('viewport', viewport)
-        .eq('is_active', true)
-        .limit(1);
-
-      const existingBaseline = existingBaselines?.[0] as VisualBaseline | undefined;
+      // 2. Check for existing baseline via API
+      const baselinesResponse = await visualApi.listBaselines(projectId);
+      const existingBaseline = baselinesResponse.baselines?.find(
+        (b) => b.url === url
+      );
 
       if (!existingBaseline) {
-        // 3a. No baseline - create new baseline and comparison marked as "new"
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: newBaseline, error: baselineError } = await (supabase.from('visual_baselines') as any)
-          .insert({
-            project_id: projectId,
-            name: testName,
-            page_url: url,
-            viewport,
-            screenshot_url: screenshotDataUrl,
-            is_active: true,
-          })
-          .select()
-          .single();
+        // 3a. No baseline - create new baseline via API
+        const newBaseline = await visualApi.createBaseline(
+          url,
+          testName,
+          projectId,
+          { width, height },
+          'chromium'
+        );
 
-        if (baselineError) throw baselineError;
+        // Transform to legacy format
+        const legacyBaseline = transformRawBaselineToLegacy(newBaseline as unknown as Record<string, unknown>);
 
-        // Create comparison marked as new
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: comparison, error: compError } = await (supabase.from('visual_comparisons') as any)
-          .insert({
-            project_id: projectId,
-            baseline_id: newBaseline.id,
-            name: testName,
-            status: 'new',
-            match_percentage: 100,
-            difference_count: 0,
-            baseline_url: screenshotDataUrl,
-            current_url: screenshotDataUrl,
-            threshold,
-          })
-          .select()
-          .single();
-
-        if (compError) throw compError;
+        // Create a synthetic comparison marked as new
+        const comparison: VisualComparison = {
+          id: captureResult.id,
+          project_id: projectId,
+          baseline_id: newBaseline.id,
+          name: testName,
+          status: 'new',
+          match_percentage: 100,
+          difference_count: 0,
+          baseline_url: screenshotDataUrl,
+          current_url: screenshotDataUrl,
+          diff_url: null,
+          threshold,
+          approved_by: null,
+          approved_at: null,
+          created_at: new Date().toISOString(),
+        };
 
         return {
-          comparison: comparison as VisualComparison,
-          baseline: newBaseline as VisualBaseline,
+          comparison,
+          baseline: legacyBaseline,
           isNew: true,
         };
       } else {
-        // 3b. Baseline exists - compare screenshots
+        // 3b. Baseline exists - compare screenshots locally
+        // Use camelCase properties from VisualBaselineApi
+        const baselineScreenshotUrl = existingBaseline.screenshotUrl || '';
         const { matchPercentage, diffBase64 } = await compareScreenshots(
-          existingBaseline.screenshot_url,
+          baselineScreenshotUrl,
           screenshotDataUrl
         );
 
         const status = matchPercentage >= (100 - threshold * 100) ? 'match' : 'mismatch';
         const differenceCount = Math.round((100 - matchPercentage) * 100);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: comparison, error: compError } = await (supabase.from('visual_comparisons') as any)
-          .insert({
-            project_id: projectId,
-            baseline_id: existingBaseline.id,
-            name: testName,
-            status,
-            match_percentage: matchPercentage,
-            difference_count: differenceCount,
-            baseline_url: existingBaseline.screenshot_url,
-            current_url: screenshotDataUrl,
-            diff_url: diffBase64 || null,
-            threshold,
-          })
-          .select()
-          .single();
-
-        if (compError) throw compError;
+        const comparison: VisualComparison = {
+          id: captureResult.id,
+          project_id: projectId,
+          baseline_id: existingBaseline.id,
+          name: testName,
+          status,
+          match_percentage: matchPercentage,
+          difference_count: differenceCount,
+          baseline_url: baselineScreenshotUrl,
+          current_url: screenshotDataUrl,
+          diff_url: diffBase64 || null,
+          threshold,
+          approved_by: null,
+          approved_at: null,
+          created_at: new Date().toISOString(),
+        };
 
         return {
-          comparison: comparison as VisualComparison,
-          baseline: existingBaseline,
+          comparison,
+          baseline: transformRawBaselineToLegacy(existingBaseline as unknown as Record<string, unknown>),
           isNew: false,
         };
       }
@@ -395,7 +458,6 @@ export interface ResponsiveCompareResult {
  */
 export function useRunResponsiveTest() {
   const queryClient = useQueryClient();
-  const { fetchJson } = useAuthApi();
 
   return useMutation({
     mutationFn: async ({
@@ -410,64 +472,56 @@ export function useRunResponsiveTest() {
       threshold?: number;
     }): Promise<ResponsiveCompareResult> => {
       // 1. Capture screenshots at multiple viewports
-      const captureResponse = await fetchJson<{
-        url: string;
-        viewports: Array<{
-          name: string;
-          width: number;
-          height: number;
-          screenshot_url: string;
-          captured_at: string;
-        }>;
-        project_id: string;
-      }>(
-        '/api/v1/visual/responsive/capture',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            url,
-            viewports: viewports.map((vp) => ({
-              name: vp.name,
-              width: vp.width,
-              height: vp.height,
-            })),
-            project_id: projectId,
-          }),
-          timeout: 120000, // 2 minute timeout for multiple captures
-        }
-      );
+      const captureResult = await visualApi.captureResponsive({
+        url,
+        viewports: viewports.map((vp) => ({
+          name: vp.name,
+          width: vp.width,
+          height: vp.height,
+        })),
+        projectId,
+      });
 
-      if (captureResponse.error || !captureResponse.data) {
-        throw new Error(captureResponse.error || 'Responsive capture failed');
+      if (!captureResult.success) {
+        throw new Error('Responsive capture failed');
       }
-
-      const captureResult = captureResponse.data;
 
       // 2. Compare against baselines
-      const compareResponse = await fetchJson<ResponsiveCompareResult>(
-        '/api/v1/visual/responsive/compare',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            url,
-            viewports: captureResult.viewports.map((vp) => ({
-              name: vp.name,
-              width: vp.width,
-              height: vp.height,
-              screenshot_url: vp.screenshot_url,
-            })),
-            project_id: projectId,
-            threshold,
-          }),
-          timeout: 60000, // 1 minute timeout for comparisons
-        }
-      );
+      const compareResult = await visualApi.compareResponsive({
+        url,
+        viewports: captureResult.results
+          .filter(r => r.success && r.screenshotUrl)
+          .map((vp) => ({
+            name: vp.viewport.name,
+            width: vp.viewport.width,
+            height: vp.viewport.height,
+            screenshotUrl: vp.screenshotUrl!,
+          })),
+        projectId,
+        threshold,
+      });
 
-      if (compareResponse.error || !compareResponse.data) {
-        throw new Error(compareResponse.error || 'Responsive compare failed');
-      }
-
-      return compareResponse.data;
+      // Transform to legacy format
+      return {
+        url: compareResult.url,
+        results: compareResult.results.map(r => ({
+          viewport: r.viewport,
+          width: r.width,
+          height: r.height,
+          status: r.status,
+          match_percentage: r.matchPercentage,
+          baseline_url: r.baselineUrl,
+          current_url: r.currentUrl,
+          diff_url: r.diffUrl,
+          error: r.error,
+        })),
+        summary: {
+          total: compareResult.summary.total,
+          passed: compareResult.summary.passed,
+          failed: compareResult.summary.failed,
+          new_baselines: compareResult.summary.newBaselines,
+        },
+      };
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['visual-baselines', variables.projectId] });
@@ -485,11 +539,28 @@ export interface AIExplainChangeDetail {
   risk_level: 'high' | 'medium' | 'low';
 }
 
-export interface AIExplainResponse {
+export interface AIExplainResponseLegacy {
   summary: string;
   changes_explained: AIExplainChangeDetail[];
   recommendations: string[];
   overall_assessment: string;
+}
+
+/**
+ * Transform API AI explanation to legacy format
+ */
+function transformAIExplainToLegacy(response: AIExplainResponse): AIExplainResponseLegacy {
+  return {
+    summary: response.summary,
+    changes_explained: response.changesExplained.map(c => ({
+      change: c.change,
+      likely_cause: c.likelyCause,
+      intentional_likelihood: c.intentionalLikelihood,
+      risk_level: c.riskLevel,
+    })),
+    recommendations: response.recommendations,
+    overall_assessment: response.overallAssessment,
+  };
 }
 
 /**
@@ -498,11 +569,9 @@ export interface AIExplainResponse {
  * Results are cached by comparison ID to avoid repeated API calls.
  */
 export function useAIExplain(comparisonId: string | null, comparison: VisualComparison | null) {
-  const { fetchJson } = useAuthApi();
-
   return useQuery({
     queryKey: ['ai-explain', comparisonId],
-    queryFn: async (): Promise<AIExplainResponse | null> => {
+    queryFn: async (): Promise<AIExplainResponseLegacy | null> => {
       if (!comparisonId || !comparison) return null;
 
       // Only fetch AI explanation for mismatches with visual differences
@@ -510,23 +579,13 @@ export function useAIExplain(comparisonId: string | null, comparison: VisualComp
         return null;
       }
 
-      const response = await fetchJson<AIExplainResponse>('/api/v1/visual/ai/explain', {
-        method: 'POST',
-        body: JSON.stringify({
-          comparison_id: comparisonId,
-          baseline_url: comparison.baseline_url,
-          current_url: comparison.current_url,
-          diff_url: comparison.diff_url,
-          match_percentage: comparison.match_percentage,
-          name: comparison.name,
-        }),
-      });
+      const response = await visualApi.explain(comparisonId);
 
-      if (response.error) {
-        throw new Error(`AI explanation failed: ${response.error}`);
+      if (!response.success || !response.explanation) {
+        throw new Error('AI explanation failed');
       }
 
-      return response.data;
+      return transformAIExplainToLegacy(response.explanation);
     },
     enabled: !!comparisonId && !!comparison && comparison.status === 'mismatch',
     staleTime: 1000 * 60 * 30, // Cache for 30 minutes
@@ -552,9 +611,27 @@ export interface AccessibilityAnalysisResult {
   summary: string;
 }
 
+/**
+ * Transform API accessibility result to legacy format
+ */
+function transformAccessibilityToLegacy(result: VisualAccessibilityResult): AccessibilityAnalysisResult {
+  return {
+    overall_score: result.overallScore,
+    level_compliance: result.levelCompliance,
+    issues: result.issues.map(i => ({
+      criterion: i.criterion,
+      severity: i.severity,
+      description: i.description,
+      location: i.location,
+      recommendation: i.recommendation,
+    })),
+    passed_criteria: result.passedCriteria,
+    summary: result.summary,
+  };
+}
+
 export function useAccessibilityAnalysis() {
   const queryClient = useQueryClient();
-  const { fetchJson } = useAuthApi();
 
   return useMutation({
     mutationFn: async ({
@@ -567,47 +644,26 @@ export function useAccessibilityAnalysis() {
       wcagLevel?: 'A' | 'AA' | 'AAA';
     }): Promise<AccessibilityAnalysisResult> => {
       // Step 1: Capture a screenshot first
-      const captureResponse = await fetchJson<{
-        id: string;
-        url: string;
-        screenshot_url: string;
-        viewport: { width: number; height: number };
-        browser: string;
-        captured_at: string;
-      }>('/api/v1/visual/capture', {
-        method: 'POST',
-        body: JSON.stringify({
-          url,
-          viewport: { width: 1920, height: 1080 },
-          browser: 'chromium',
-          project_id: projectId,
-          name: `accessibility-${url.replace(/https?:\/\//, '').split('/')[0]}`,
-        }),
-        timeout: 90000,
+      const captureResult = await visualApi.capture({
+        url,
+        viewport: { width: 1920, height: 1080 },
+        browser: 'chromium',
+        projectId,
+        name: `accessibility-${url.replace(/https?:\/\//, '').split('/')[0]}`,
       });
 
-      if (captureResponse.error || !captureResponse.data) {
-        throw new Error(`Screenshot capture failed: ${captureResponse.error || 'Unknown error'}`);
+      if (!captureResult.id) {
+        throw new Error('Screenshot capture failed');
       }
-
-      const snapshotId = captureResponse.data.id;
 
       // Step 2: Analyze the screenshot for accessibility issues
-      const analysisResponse = await fetchJson<{
-        success: boolean;
-        snapshot_id: string;
-        wcag_level: string;
-        accessibility: AccessibilityAnalysisResult;
-        analyzed_at: string;
-      }>(`/api/v1/visual/accessibility/analyze?snapshot_id=${encodeURIComponent(snapshotId)}&wcag_level=${wcagLevel}`, {
-        method: 'POST',
-      });
+      const analysisResponse = await visualApi.analyzeAccessibility(captureResult.id, wcagLevel);
 
-      if (analysisResponse.error || !analysisResponse.data) {
-        throw new Error(`Accessibility analysis failed: ${analysisResponse.error || 'Unknown error'}`);
+      if (!analysisResponse.success || !analysisResponse.accessibility) {
+        throw new Error('Accessibility analysis failed');
       }
 
-      return analysisResponse.data.accessibility;
+      return transformAccessibilityToLegacy(analysisResponse.accessibility);
     },
     onSuccess: (_data, variables) => {
       if (variables.projectId) {
@@ -618,7 +674,6 @@ export function useAccessibilityAnalysis() {
 }
 
 export function useUpdateBaseline() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -629,39 +684,25 @@ export function useUpdateBaseline() {
       comparisonId: string;
       projectId: string;
     }) => {
-      // Get the comparison
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: comparison, error: compError } = await (supabase.from('visual_comparisons') as any)
-        .select('*')
-        .eq('id', comparisonId)
-        .single();
+      // Approve the comparison and update the baseline
+      const response = await visualApi.approveComparison(comparisonId, {
+        updateBaseline: true,
+        notes: 'Baseline updated from dashboard',
+      });
 
-      if (compError || !comparison) throw new Error('Comparison not found');
-
-      // Update the baseline with the current screenshot
-      if (comparison.baseline_id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.from('visual_baselines') as any)
-          .update({
-            screenshot_url: comparison.current_url,
-          })
-          .eq('id', comparison.baseline_id);
+      if (!response.success) {
+        throw new Error('Failed to update baseline');
       }
 
-      // Mark comparison as approved
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: updated, error: updateError } = await (supabase.from('visual_comparisons') as any)
-        .update({
-          status: 'match',
-          approved_at: new Date().toISOString(),
-        })
-        .eq('id', comparisonId)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-
-      return { comparison: updated as VisualComparison, projectId };
+      return {
+        comparison: {
+          id: comparisonId,
+          project_id: projectId,
+          status: 'match' as const,
+          approved_at: response.reviewedAt,
+        } as VisualComparison,
+        projectId,
+      };
     },
     onSuccess: ({ comparison, projectId }) => {
       queryClient.invalidateQueries({ queryKey: ['visual-baselines', projectId] });
@@ -721,12 +762,55 @@ export interface CrossBrowserTestResult {
 }
 
 /**
+ * Transform API browser capture response to legacy format
+ */
+function transformBrowserCaptureToLegacy(response: BrowserCaptureResponse): CrossBrowserCaptureResponse {
+  return {
+    success: response.success,
+    url: response.url,
+    results: response.results.map(r => ({
+      id: r.id,
+      browser: r.browser,
+      success: r.success,
+      screenshot_url: r.screenshotUrl,
+      error: r.error,
+    })),
+    captured_at: response.capturedAt,
+  };
+}
+
+/**
+ * Transform API browser compare response to legacy format
+ */
+function transformBrowserCompareToLegacy(response: BrowserCompareResponse): CrossBrowserCompareResponse {
+  return {
+    success: response.success,
+    url: response.url,
+    reference_browser: response.referenceBrowser,
+    results: response.results.map(r => ({
+      browser: r.browser,
+      is_reference: r.isReference,
+      reference_browser: r.referenceBrowser,
+      match: r.match,
+      match_percentage: r.matchPercentage,
+      differences: r.differences?.map(d => ({
+        type: d.type,
+        severity: d.severity,
+        description: d.description,
+        location: d.location,
+      })),
+      error: r.error,
+    })),
+    compared_at: response.comparedAt,
+  };
+}
+
+/**
  * Hook for running cross-browser visual tests.
  * Captures screenshots in multiple browsers and compares them.
  */
 export function useCrossBrowserTest() {
   const queryClient = useQueryClient();
-  const { fetchJson } = useAuthApi();
 
   return useMutation({
     mutationFn: async ({
@@ -744,59 +828,31 @@ export function useCrossBrowserTest() {
       name?: string;
       compareAfterCapture?: boolean;
     }): Promise<CrossBrowserTestResult> => {
-      // Build request payload
-      const requestPayload: {
-        url: string;
-        browsers: string[];
-        viewport?: { width: number; height: number };
-        project_id?: string;
-        name?: string;
-      } = {
+      // Step 1: Capture screenshots in multiple browsers using authenticated API
+      const captureResponse = await visualApi.captureBrowsers({
         url,
         browsers,
-      };
+        viewport,
+        projectId,
+        name,
+      });
 
-      if (viewport) {
-        requestPayload.viewport = viewport;
-      }
-      if (projectId) {
-        requestPayload.project_id = projectId;
-      }
-      if (name) {
-        requestPayload.name = name;
-      }
-
-      // Step 1: Capture screenshots in multiple browsers using authenticated API
-      const captureResponse = await fetchJson<CrossBrowserCaptureResponse>(
-        '/api/v1/visual/browsers/capture',
-        {
-          method: 'POST',
-          body: JSON.stringify(requestPayload),
-          timeout: 120000, // 2 minute timeout for multi-browser capture
-        }
-      );
-
-      if (captureResponse.error || !captureResponse.data) {
-        throw new Error(captureResponse.error || 'Cross-browser capture failed');
-      }
-
-      const captureResults = captureResponse.data;
+      const captureResults = transformBrowserCaptureToLegacy(captureResponse);
 
       // Step 2: Compare browsers if requested and capture was successful
       let compareResults: CrossBrowserCompareResponse | null = null;
 
       if (compareAfterCapture && captureResults.success) {
-        const compareResponse = await fetchJson<CrossBrowserCompareResponse>(
-          '/api/v1/visual/browsers/compare',
-          {
-            method: 'POST',
-            body: JSON.stringify(requestPayload),
-            timeout: 120000,
-          }
-        );
+        const compareResponse = await visualApi.compareBrowsers({
+          url,
+          browsers,
+          viewport,
+          projectId,
+          name,
+        });
 
-        if (compareResponse.data) {
-          compareResults = compareResponse.data;
+        if (compareResponse) {
+          compareResults = transformBrowserCompareToLegacy(compareResponse);
         }
       }
 

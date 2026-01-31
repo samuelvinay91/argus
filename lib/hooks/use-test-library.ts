@@ -1,9 +1,22 @@
 'use client';
 
+/**
+ * Test Library Hooks - Migrated to Backend API
+ *
+ * This module uses the FastAPI backend for all CRUD operations,
+ * replacing direct Supabase queries.
+ *
+ * Migration: Tests Library Domain
+ */
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSupabaseClient } from '@/lib/supabase/client';
 import { useProjects } from './use-projects';
-import type { Test, InsertTables } from '@/lib/supabase/types';
+import {
+  testsApi,
+  type Test as ApiTest,
+  type CreateTestRequest,
+  type UpdateTestRequest,
+} from '@/lib/api-client';
 
 // ============================================
 // Types for Test Library
@@ -26,12 +39,82 @@ export interface TestLibraryStats {
   recentTests: number;
 }
 
+// Legacy type for backward compatibility (snake_case)
+export interface LegacyTest {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  steps: Array<{ instruction?: string; action?: string; target?: string; value?: string; order?: number }>;
+  tags: string[];
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  is_active: boolean;
+  source: 'manual' | 'discovered' | 'generated' | 'imported';
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
+// Transform Functions
+// ============================================
+
+/**
+ * Transform API test response (camelCase) to legacy format (snake_case)
+ */
+function transformToLegacyTest(test: ApiTest): LegacyTest {
+  return {
+    id: test.id,
+    project_id: test.projectId,
+    name: test.name,
+    description: test.description,
+    steps: test.steps?.map((step, index) => ({
+      instruction: step.description || `${step.action}${step.target ? ` on ${step.target}` : ''}${step.value ? ` with "${step.value}"` : ''}`,
+      action: step.action,
+      target: step.target,
+      value: step.value,
+      order: index + 1,
+    })) || [],
+    tags: test.tags || [],
+    priority: test.priority,
+    is_active: test.isActive,
+    source: test.source,
+    created_by: test.createdBy,
+    created_at: test.createdAt,
+    updated_at: test.updatedAt || test.createdAt,
+  };
+}
+
+/**
+ * Transform SavedTestData to API CreateTestRequest
+ */
+function transformToCreateRequest(
+  projectId: string,
+  testData: SavedTestData,
+  createdBy?: string | null
+): CreateTestRequest {
+  return {
+    projectId,
+    name: testData.name,
+    description: testData.description || `Test with ${testData.steps.length} steps`,
+    steps: testData.steps.map((step) => ({
+      action: step.action,
+      target: step.target,
+      value: step.value,
+      description: step.description || `${step.action}${step.target ? ` on ${step.target}` : ''}${step.value ? ` with "${step.value}"` : ''}`,
+    })),
+    tags: testData.tags || [],
+    priority: testData.priority || 'medium',
+    source: 'generated',
+    isActive: true,
+  };
+}
+
 // ============================================
 // Fetch all library tests for current projects
 // ============================================
 
 export function useTestLibrary(projectId?: string | null) {
-  const supabase = getSupabaseClient();
   const { data: projects = [] } = useProjects();
 
   // Use provided projectId or fall back to first project
@@ -42,15 +125,29 @@ export function useTestLibrary(projectId?: string | null) {
     queryFn: async () => {
       if (!effectiveProjectId) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('tests') as any)
-        .select('*')
-        .eq('project_id', effectiveProjectId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      const response = await testsApi.list({
+        projectId: effectiveProjectId,
+        isActive: true,
+        limit: 500,
+      });
 
-      if (error) throw error;
-      return data as Test[];
+      // Transform to legacy format for backward compatibility
+      return response.tests.map((test) => ({
+        id: test.id,
+        project_id: test.projectId,
+        name: test.name,
+        description: test.description,
+        // Note: list endpoint returns stepCount, not full steps
+        // Full steps are only available via get endpoint
+        steps: [] as Array<{ instruction?: string; action?: string; target?: string; value?: string; order?: number }>,
+        tags: test.tags,
+        priority: test.priority,
+        is_active: test.isActive,
+        source: test.source,
+        created_by: null as string | null,
+        created_at: test.createdAt,
+        updated_at: test.createdAt,
+      })) as LegacyTest[];
     },
     enabled: !!effectiveProjectId,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -92,7 +189,6 @@ export function useTestLibraryStats(projectId?: string | null) {
 // ============================================
 
 export function useSaveToLibrary() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -105,35 +201,9 @@ export function useSaveToLibrary() {
       testData: SavedTestData;
       createdBy?: string | null;
     }) => {
-      // Convert test steps to the format expected by the database
-      const steps = testData.steps.map((step, index) => ({
-        instruction: step.description || `${step.action}${step.target ? ` on ${step.target}` : ''}${step.value ? ` with "${step.value}"` : ''}`,
-        action: step.action,
-        target: step.target,
-        value: step.value,
-        order: index + 1,
-      }));
-
-      const insertData: InsertTables<'tests'> = {
-        project_id: projectId,
-        name: testData.name,
-        description: testData.description || `Test with ${steps.length} steps`,
-        steps: steps,
-        tags: testData.tags || [],
-        priority: testData.priority || 'medium',
-        source: 'generated',
-        is_active: true,
-        created_by: createdBy || null,
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('tests') as any)
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as Test;
+      const createRequest = transformToCreateRequest(projectId, testData, createdBy);
+      const response = await testsApi.create(createRequest);
+      return transformToLegacyTest(response);
     },
     onSuccess: (data) => {
       // Invalidate both test-library and tests queries
@@ -148,7 +218,6 @@ export function useSaveToLibrary() {
 // ============================================
 
 export function useUpdateLibraryTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -159,32 +228,31 @@ export function useUpdateLibraryTest() {
       id: string;
       updates: Partial<SavedTestData>;
     }) => {
-      const updateData: Partial<Test> = {
-        ...(updates.name && { name: updates.name }),
-        ...(updates.description !== undefined && { description: updates.description }),
-        ...(updates.tags && { tags: updates.tags }),
-        ...(updates.priority && { priority: updates.priority }),
-        ...(updates.steps && {
-          steps: updates.steps.map((step, index) => ({
-            instruction: step.description || `${step.action}${step.target ? ` on ${step.target}` : ''}${step.value ? ` with "${step.value}"` : ''}`,
-            action: step.action,
-            target: step.target,
-            value: step.value,
-            order: index + 1,
-          })),
-        }),
-        updated_at: new Date().toISOString(),
-      };
+      const updateData: UpdateTestRequest = {};
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('tests') as any)
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
+      if (updates.name) {
+        updateData.name = updates.name;
+      }
+      if (updates.description !== undefined) {
+        updateData.description = updates.description;
+      }
+      if (updates.tags) {
+        updateData.tags = updates.tags;
+      }
+      if (updates.priority) {
+        updateData.priority = updates.priority;
+      }
+      if (updates.steps) {
+        updateData.steps = updates.steps.map((step) => ({
+          action: step.action,
+          target: step.target,
+          value: step.value,
+          description: step.description || `${step.action}${step.target ? ` on ${step.target}` : ''}${step.value ? ` with "${step.value}"` : ''}`,
+        }));
+      }
 
-      if (error) throw error;
-      return data as Test;
+      const response = await testsApi.update(id, updateData);
+      return transformToLegacyTest(response);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['test-library', data.project_id] });
@@ -198,18 +266,12 @@ export function useUpdateLibraryTest() {
 // ============================================
 
 export function useDeleteLibraryTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ testId, projectId }: { testId: string; projectId: string }) => {
-      // Soft delete by setting is_active to false
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('tests') as any)
-        .update({ is_active: false })
-        .eq('id', testId);
-
-      if (error) throw error;
+      // Soft delete by setting is_active to false via API
+      await testsApi.update(testId, { isActive: false });
       return { testId, projectId };
     },
     onSuccess: ({ projectId }) => {
@@ -224,31 +286,32 @@ export function useDeleteLibraryTest() {
 // ============================================
 
 export function useDuplicateLibraryTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ test, newName }: { test: Test; newName?: string }) => {
-      const insertData: InsertTables<'tests'> = {
-        project_id: test.project_id,
-        name: newName || `${test.name} (Copy)`,
-        description: test.description,
-        steps: test.steps,
-        tags: test.tags,
-        priority: test.priority,
-        source: test.source,
-        is_active: true,
-        created_by: test.created_by,
+    mutationFn: async ({ test, newName }: { test: { id: string }; newName?: string }) => {
+      // First, get the full test data to get steps
+      const fullTest = await testsApi.get(test.id);
+
+      // Create a new test with the duplicated data
+      const createRequest: CreateTestRequest = {
+        projectId: fullTest.projectId,
+        name: newName || `${fullTest.name} (Copy)`,
+        description: fullTest.description || undefined,
+        steps: fullTest.steps?.map((step) => ({
+          action: step.action,
+          target: step.target,
+          value: step.value,
+          description: step.description,
+        })),
+        tags: fullTest.tags,
+        priority: fullTest.priority,
+        source: fullTest.source,
+        isActive: true,
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('tests') as any)
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as Test;
+      const response = await testsApi.create(createRequest);
+      return transformToLegacyTest(response);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['test-library', data.project_id] });
@@ -262,21 +325,13 @@ export function useDuplicateLibraryTest() {
 // ============================================
 
 export function useLibraryTest(testId: string | null) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['library-test', testId],
     queryFn: async () => {
       if (!testId) return null;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('tests') as any)
-        .select('*')
-        .eq('id', testId)
-        .single();
-
-      if (error) throw error;
-      return data as Test;
+      const response = await testsApi.get(testId);
+      return transformToLegacyTest(response);
     },
     enabled: !!testId,
   });
@@ -287,24 +342,33 @@ export function useLibraryTest(testId: string | null) {
 // ============================================
 
 export function useSearchLibraryTests(projectId: string | null, searchQuery: string) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['test-library-search', projectId, searchQuery],
     queryFn: async () => {
       if (!projectId || !searchQuery) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('tests') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('is_active', true)
-        .or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
-        .order('created_at', { ascending: false })
-        .limit(20);
+      const response = await testsApi.list({
+        projectId,
+        isActive: true,
+        search: searchQuery,
+        limit: 20,
+      });
 
-      if (error) throw error;
-      return data as Test[];
+      // Transform to legacy format for backward compatibility
+      return response.tests.map((test) => ({
+        id: test.id,
+        project_id: test.projectId,
+        name: test.name,
+        description: test.description,
+        steps: [] as Array<{ instruction?: string; action?: string; target?: string; value?: string; order?: number }>,
+        tags: test.tags,
+        priority: test.priority,
+        is_active: test.isActive,
+        source: test.source,
+        created_by: null as string | null,
+        created_at: test.createdAt,
+        updated_at: test.createdAt,
+      })) as LegacyTest[];
     },
     enabled: !!projectId && searchQuery.length >= 2,
     staleTime: 30 * 1000, // 30 seconds
@@ -316,23 +380,33 @@ export function useSearchLibraryTests(projectId: string | null, searchQuery: str
 // ============================================
 
 export function useTestsByTag(projectId: string | null, tag: string) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['test-library-by-tag', projectId, tag],
     queryFn: async () => {
       if (!projectId || !tag) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('tests') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('is_active', true)
-        .contains('tags', [tag])
-        .order('created_at', { ascending: false });
+      const response = await testsApi.list({
+        projectId,
+        isActive: true,
+        tags: tag,
+        limit: 500,
+      });
 
-      if (error) throw error;
-      return data as Test[];
+      // Transform to legacy format for backward compatibility
+      return response.tests.map((test) => ({
+        id: test.id,
+        project_id: test.projectId,
+        name: test.name,
+        description: test.description,
+        steps: [] as Array<{ instruction?: string; action?: string; target?: string; value?: string; order?: number }>,
+        tags: test.tags,
+        priority: test.priority,
+        is_active: test.isActive,
+        source: test.source,
+        created_by: null as string | null,
+        created_at: test.createdAt,
+        updated_at: test.createdAt,
+      })) as LegacyTest[];
     },
     enabled: !!projectId && !!tag,
   });

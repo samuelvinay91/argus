@@ -1,15 +1,33 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSupabaseClient } from '@/lib/supabase/client';
-import { BACKEND_URL } from '@/lib/config/api-endpoints';
+import {
+  performanceApi,
+  PerformanceTestApi,
+  PerformanceTrendPointApi,
+  PerformanceIssueApi,
+} from '@/lib/api-client';
 
-// Types for performance metrics
+// ============================================================================
+// Legacy Types (for backward compatibility)
+// ============================================================================
+
+// Types for performance metrics (legacy snake_case format)
 export interface CoreWebVitals {
   lcp_ms: number;       // Largest Contentful Paint
   fid_ms: number;       // First Input Delay
   cls: number;          // Cumulative Layout Shift
   inp_ms?: number;      // Interaction to Next Paint
+}
+
+export interface PerformanceIssue {
+  category: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  savings_ms?: number;
+  savings_kb?: number;
+  fix_suggestion?: string;
 }
 
 export interface PerformanceMetrics {
@@ -59,16 +77,6 @@ export interface PerformanceMetrics {
   created_at: string;
 }
 
-export interface PerformanceIssue {
-  category: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  title: string;
-  description: string;
-  savings_ms?: number;
-  savings_kb?: number;
-  fix_suggestion?: string;
-}
-
 export interface PerformanceTrend {
   date: string;
   lcp_ms: number;
@@ -77,7 +85,81 @@ export interface PerformanceTrend {
   performance_score: number;
 }
 
-// Grade helper functions
+// ============================================================================
+// Transform Functions (API camelCase -> Legacy snake_case)
+// ============================================================================
+
+/**
+ * Transform API issue to legacy format
+ */
+function transformIssue(issue: PerformanceIssueApi): PerformanceIssue {
+  return {
+    category: issue.category,
+    severity: issue.severity,
+    title: issue.title,
+    description: issue.description,
+    savings_ms: issue.savingsMs ?? undefined,
+    savings_kb: issue.savingsKb ?? undefined,
+    fix_suggestion: issue.fixSuggestion ?? undefined,
+  };
+}
+
+/**
+ * Transform API response to legacy format
+ */
+function transformToLegacy(test: PerformanceTestApi): PerformanceMetrics {
+  return {
+    id: test.id,
+    project_id: test.projectId,
+    url: test.url,
+    device: test.device,
+    status: test.status,
+    lcp_ms: test.lcpMs,
+    fid_ms: test.fidMs,
+    cls: test.cls,
+    inp_ms: test.inpMs,
+    ttfb_ms: test.ttfbMs,
+    fcp_ms: test.fcpMs,
+    speed_index: test.speedIndex,
+    tti_ms: test.ttiMs,
+    tbt_ms: test.tbtMs,
+    total_requests: test.totalRequests,
+    total_transfer_size_kb: test.totalTransferSizeKb,
+    js_execution_time_ms: test.jsExecutionTimeMs,
+    dom_content_loaded_ms: test.domContentLoadedMs,
+    load_time_ms: test.loadTimeMs,
+    performance_score: test.performanceScore,
+    accessibility_score: test.accessibilityScore,
+    best_practices_score: test.bestPracticesScore,
+    seo_score: test.seoScore,
+    overall_grade: test.overallGrade,
+    recommendations: test.recommendations,
+    issues: test.issues.map(transformIssue),
+    summary: test.summary,
+    started_at: test.startedAt,
+    completed_at: test.completedAt,
+    triggered_by: test.triggeredBy,
+    created_at: test.createdAt,
+  };
+}
+
+/**
+ * Transform API trend point to legacy format
+ */
+function transformTrend(trend: PerformanceTrendPointApi): PerformanceTrend {
+  return {
+    date: trend.date,
+    lcp_ms: trend.lcpMs,
+    fid_ms: trend.fidMs,
+    cls: trend.cls,
+    performance_score: trend.performanceScore,
+  };
+}
+
+// ============================================================================
+// Grade Helper Functions
+// ============================================================================
+
 export function getLCPGrade(lcp_ms: number | null): 'good' | 'needs_work' | 'poor' {
   if (lcp_ms === null) return 'poor';
   if (lcp_ms <= 2500) return 'good';
@@ -125,93 +207,73 @@ export function getGradeColor(score: number | null): string {
   return 'text-error';
 }
 
-// Fetch performance tests for a project
-export function usePerformanceTests(projectId: string | null, limit = 10) {
-  const supabase = getSupabaseClient();
+// ============================================================================
+// Hooks
+// ============================================================================
 
+/**
+ * Fetch performance tests for a project
+ */
+export function usePerformanceTests(projectId: string | null, limit = 10) {
   return useQuery({
     queryKey: ['performance-tests', projectId, limit],
     queryFn: async () => {
       if (!projectId) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('performance_tests') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const response = await performanceApi.list({
+        projectId,
+        limit,
+      });
 
-      if (error) throw error;
-      return data as PerformanceMetrics[];
+      return response.tests.map(transformToLegacy);
     },
     enabled: !!projectId,
   });
 }
 
-// Fetch latest performance test
+/**
+ * Fetch latest performance test
+ */
 export function useLatestPerformanceTest(projectId: string | null) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['latest-performance-test', projectId],
     queryFn: async () => {
       if (!projectId) return null;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('performance_tests') as any)
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const response = await performanceApi.getLatest(projectId);
 
-      if (error) throw error;
-      if (!data || data.length === 0) return null;
+      if (!response) return null;
 
-      return data[0] as PerformanceMetrics;
+      return transformToLegacy(response);
     },
     enabled: !!projectId,
   });
 }
 
-// Fetch performance trends over time
+/**
+ * Fetch performance trends over time
+ */
 export function usePerformanceTrends(projectId: string | null, days = 30) {
-  const supabase = getSupabaseClient();
-
   return useQuery({
     queryKey: ['performance-trends', projectId, days],
     queryFn: async () => {
       if (!projectId) return [];
 
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
+      const response = await performanceApi.getTrends({
+        projectId,
+        days,
+      });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('performance_tests') as any)
-        .select('created_at, lcp_ms, fid_ms, cls, performance_score')
-        .eq('project_id', projectId)
-        .eq('status', 'completed')
-        .gte('created_at', startDate.toISOString())
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      // Transform to trend format
-      return (data || []).map((item: PerformanceMetrics) => ({
-        date: new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        lcp_ms: item.lcp_ms || 0,
-        fid_ms: item.fid_ms || 0,
-        cls: item.cls || 0,
-        performance_score: item.performance_score || 0,
-      })) as PerformanceTrend[];
+      return response.trends.map(transformTrend);
     },
     enabled: !!projectId,
   });
 }
 
-// Run a performance test
+/**
+ * Run a performance test
+ */
 export function useRunPerformanceTest() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -219,106 +281,19 @@ export function useRunPerformanceTest() {
       projectId,
       url,
       device = 'mobile',
-      triggeredBy,
     }: {
       projectId: string;
       url: string;
       device?: 'mobile' | 'desktop';
       triggeredBy?: string | null;
     }) => {
-      // 1. Create performance test record with 'running' status
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: test, error: testError } = await (supabase.from('performance_tests') as any)
-        .insert({
-          project_id: projectId,
-          url,
-          device,
-          status: 'running',
-          started_at: new Date().toISOString(),
-          triggered_by: triggeredBy || null,
-          recommendations: [],
-          issues: [],
-        })
-        .select()
-        .single();
+      const response = await performanceApi.run({
+        projectId,
+        url,
+        device,
+      });
 
-      if (testError) throw testError;
-
-      try {
-        // 2. Call backend performance analyzer
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
-
-        const response = await fetch(`${BACKEND_URL}/api/v1/performance/analyze`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url,
-            device,
-            projectId,
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          throw new Error(`Performance analysis failed: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        // 3. Update test with results
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: updatedTest } = await (supabase.from('performance_tests') as any)
-          .update({
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            // Core Web Vitals
-            lcp_ms: result.metrics?.core_vitals?.lcp_ms || null,
-            fid_ms: result.metrics?.core_vitals?.fid_ms || null,
-            cls: result.metrics?.core_vitals?.cls || null,
-            inp_ms: result.metrics?.core_vitals?.inp_ms || null,
-            // Timing metrics
-            ttfb_ms: result.metrics?.ttfb_ms || null,
-            fcp_ms: result.metrics?.fcp_ms || null,
-            speed_index: result.metrics?.speed_index || null,
-            tti_ms: result.metrics?.tti_ms || null,
-            tbt_ms: result.metrics?.tbt_ms || null,
-            // Resource metrics
-            total_requests: result.metrics?.total_requests || null,
-            total_transfer_size_kb: result.metrics?.total_transfer_size_kb || null,
-            js_execution_time_ms: result.metrics?.js_execution_time_ms || null,
-            dom_content_loaded_ms: result.metrics?.dom_content_loaded_ms || null,
-            load_time_ms: result.metrics?.load_time_ms || null,
-            // Scores
-            performance_score: result.metrics?.performance_score || null,
-            accessibility_score: result.metrics?.accessibility_score || null,
-            best_practices_score: result.metrics?.best_practices_score || null,
-            seo_score: result.metrics?.seo_score || null,
-            // Analysis
-            overall_grade: result.overall_grade || null,
-            recommendations: result.recommendations || [],
-            issues: result.issues || [],
-            summary: result.summary || null,
-          })
-          .eq('id', test.id)
-          .select()
-          .single();
-
-        return updatedTest as PerformanceMetrics;
-      } catch (error) {
-        // Update test to failed status
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.from('performance_tests') as any)
-          .update({
-            status: 'failed',
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', test.id);
-
-        throw error;
-      }
+      return transformToLegacy(response);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['performance-tests', data.project_id] });
@@ -328,7 +303,12 @@ export function useRunPerformanceTest() {
   });
 }
 
-// Get performance metrics summary for a project
+/**
+ * Get performance metrics summary for a project
+ *
+ * This is a convenience hook that combines multiple queries into a single result.
+ * For better performance, prefer using usePerformanceSummary() which uses a single API call.
+ */
 export function usePerformanceMetrics(projectId: string | null) {
   const { data: latestTest, isLoading: testLoading } = useLatestPerformanceTest(projectId);
   const { data: trends, isLoading: trendsLoading } = usePerformanceTrends(projectId, 30);
@@ -353,4 +333,34 @@ export function usePerformanceMetrics(projectId: string | null) {
     averages,
     isLoading,
   };
+}
+
+/**
+ * Get performance summary using a single API call (more efficient)
+ */
+export function usePerformanceSummary(projectId: string | null, limit = 50) {
+  return useQuery({
+    queryKey: ['performance-summary', projectId, limit],
+    queryFn: async () => {
+      if (!projectId) return null;
+
+      const response = await performanceApi.getSummary({
+        projectId,
+        limit,
+      });
+
+      return {
+        latestTest: response.latestTest ? transformToLegacy(response.latestTest) : null,
+        trends: response.trends.map(transformTrend),
+        averages: response.averages ? {
+          avgLCP: response.averages.avgLcp,
+          avgFID: response.averages.avgFid,
+          avgCLS: response.averages.avgCls,
+          avgScore: response.averages.avgScore,
+        } : null,
+        totalTests: response.totalTests,
+      };
+    },
+    enabled: !!projectId,
+  });
 }

@@ -1,16 +1,26 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSupabaseClient } from '@/lib/supabase/client';
+import { useAuthApi } from './use-auth-api';
 import type { Json } from '@/lib/supabase/types';
+import type {
+  NotificationChannelApi,
+  NotificationLogApi,
+  NotificationChannelType,
+  NotificationPriority,
+  NotificationLogStatus,
+} from '@/lib/api-client';
 
-// Types for notifications based on the database schema
+// ============================================================================
+// Legacy Types (snake_case for backward compatibility)
+// ============================================================================
+
 export interface NotificationChannel {
   id: string;
   organization_id: string;
   project_id: string | null;
   name: string;
-  channel_type: 'slack' | 'email' | 'webhook' | 'discord' | 'teams' | 'pagerduty' | 'opsgenie';
+  channel_type: NotificationChannelType;
   config: Json;
   enabled: boolean;
   verified: boolean;
@@ -34,7 +44,7 @@ export interface NotificationRule {
   event_type: string;
   conditions: Json;
   message_template: string | null;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
+  priority: NotificationPriority;
   cooldown_minutes: number;
   last_triggered_at: string | null;
   enabled: boolean;
@@ -49,7 +59,7 @@ export interface NotificationLog {
   event_type: string;
   event_id: string | null;
   payload: Json;
-  status: 'pending' | 'queued' | 'sent' | 'delivered' | 'failed' | 'bounced' | 'suppressed';
+  status: NotificationLogStatus;
   response_code: number | null;
   response_body: string | null;
   error_message: string | null;
@@ -70,139 +80,210 @@ export type ChannelConfig = Record<string, unknown>;
 
 export interface ChannelFormData {
   name: string;
-  channel_type: 'slack' | 'email' | 'webhook' | 'discord' | 'teams' | 'pagerduty' | 'opsgenie';
+  channel_type: NotificationChannelType;
   config: ChannelConfig;
   enabled: boolean;
   rate_limit_per_hour: number;
   rules: {
     event_type: string;
     conditions?: Record<string, unknown>;
-    priority?: 'low' | 'normal' | 'high' | 'urgent';
+    priority?: NotificationPriority;
     cooldown_minutes?: number;
   }[];
 }
 
-// Default organization ID - in production this would come from auth context
-const DEFAULT_ORG_ID = 'default';
+// ============================================================================
+// Transform Functions
+// ============================================================================
 
-// Fetch all notification channels
+/**
+ * Transform API response (camelCase) to legacy format (snake_case)
+ */
+function transformChannelToLegacy(channel: NotificationChannelApi): NotificationChannel {
+  return {
+    id: channel.id,
+    organization_id: channel.organizationId,
+    project_id: channel.projectId,
+    name: channel.name,
+    channel_type: channel.channelType,
+    config: channel.config as Json,
+    enabled: channel.enabled,
+    verified: channel.verified,
+    verification_token: null, // Not returned by API
+    verified_at: null, // Not returned by API
+    rate_limit_per_hour: channel.rateLimitPerHour,
+    last_sent_at: channel.lastSentAt,
+    sent_today: channel.sentToday,
+    created_by: null, // Not returned by API
+    created_at: channel.createdAt,
+    updated_at: channel.updatedAt,
+    rules_count: 0, // Will be populated separately
+  };
+}
+
+/**
+ * Transform API log response to legacy format
+ */
+function transformLogToLegacy(log: NotificationLogApi): NotificationLog {
+  return {
+    id: log.id,
+    channel_id: log.channelId,
+    rule_id: log.ruleId,
+    event_type: log.eventType,
+    event_id: null,
+    payload: {} as Json,
+    status: log.status,
+    response_code: log.responseCode,
+    response_body: null,
+    error_message: log.errorMessage,
+    retry_count: 0,
+    max_retries: 3,
+    next_retry_at: null,
+    queued_at: log.createdAt,
+    sent_at: log.sentAt,
+    delivered_at: null,
+    created_at: log.createdAt,
+    channel_name: log.channelName,
+    channel_type: log.channelType,
+  };
+}
+
+// ============================================================================
+// Hooks
+// ============================================================================
+
+/**
+ * Fetch all notification channels
+ */
 export function useNotificationChannels() {
-  const supabase = getSupabaseClient();
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
 
   return useQuery({
     queryKey: ['notification-channels'],
     queryFn: async () => {
-      // Get channels
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: channels, error } = await (supabase.from('notification_channels') as any)
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch channels from backend API
+      const channelsResponse = await fetchJson<NotificationChannelApi[]>(
+        '/api/v1/notifications/channels'
+      );
 
-      if (error) throw error;
+      if (channelsResponse.error) {
+        throw new Error(channelsResponse.error);
+      }
 
-      // Get rule counts for each channel
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: rules, error: rulesError } = await (supabase.from('notification_rules') as any)
-        .select('channel_id');
+      const channels = channelsResponse.data || [];
 
-      if (rulesError) throw rulesError;
+      // Fetch rules to count per channel
+      const rulesResponse = await fetchJson<Array<{ id: string; channelId: string }>>(
+        '/api/v1/notifications/rules'
+      );
+
+      const rules = rulesResponse.data || [];
 
       // Count rules per channel
       const ruleCounts: Record<string, number> = {};
-      (rules || []).forEach((r: { channel_id: string }) => {
-        ruleCounts[r.channel_id] = (ruleCounts[r.channel_id] || 0) + 1;
+      rules.forEach((r) => {
+        const channelId = r.channelId;
+        ruleCounts[channelId] = (ruleCounts[channelId] || 0) + 1;
       });
 
-      // Add rules_count to channels
-      const channelsWithRules = (channels || []).map((c: NotificationChannel) => ({
-        ...c,
+      // Transform to legacy format and add rules_count
+      const channelsWithRules = channels.map((c) => ({
+        ...transformChannelToLegacy(c),
         rules_count: ruleCounts[c.id] || 0,
       }));
 
       return channelsWithRules as NotificationChannel[];
     },
+    enabled: isLoaded && isSignedIn,
   });
 }
 
-// Fetch notification logs
+/**
+ * Fetch notification logs
+ */
 export function useNotificationLogs(limit = 50) {
-  const supabase = getSupabaseClient();
+  const { fetchJson, isLoaded, isSignedIn } = useAuthApi();
 
   return useQuery({
     queryKey: ['notification-logs', limit],
     queryFn: async () => {
-      // Get logs with channel info
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: logs, error } = await (supabase.from('notification_logs') as any)
-        .select(`
-          *,
-          notification_channels (
-            name,
-            channel_type
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const response = await fetchJson<NotificationLogApi[]>(
+        `/api/v1/notifications/logs?limit=${limit}`
+      );
 
-      if (error) throw error;
+      if (response.error) {
+        throw new Error(response.error);
+      }
 
-      // Flatten the joined data
-      const flattenedLogs = (logs || []).map((log: NotificationLog & { notification_channels?: { name: string; channel_type: string } }) => ({
-        ...log,
-        channel_name: log.notification_channels?.name,
-        channel_type: log.notification_channels?.channel_type,
-        notification_channels: undefined,
-      }));
+      const logs = response.data || [];
 
-      return flattenedLogs as NotificationLog[];
+      // Transform to legacy format
+      return logs.map(transformLogToLegacy) as NotificationLog[];
     },
+    enabled: isLoaded && isSignedIn,
   });
 }
 
-// Create a new notification channel
+/**
+ * Create a new notification channel
+ */
 export function useCreateNotificationChannel() {
-  const supabase = getSupabaseClient();
+  const { fetchJson } = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: ChannelFormData) => {
-      // Create channel
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: channel, error } = await (supabase.from('notification_channels') as any)
-        .insert({
-          organization_id: DEFAULT_ORG_ID,
-          name: data.name,
-          channel_type: data.channel_type,
-          config: data.config as unknown as Json,
-          enabled: data.enabled,
-          rate_limit_per_hour: data.rate_limit_per_hour,
-        })
-        .select()
-        .single();
+      // Create channel via API
+      const channelResponse = await fetchJson<NotificationChannelApi>(
+        '/api/v1/notifications/channels',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            organization_id: 'default', // Backend will use actual org from auth
+            name: data.name,
+            channel_type: data.channel_type,
+            config: data.config,
+            enabled: data.enabled,
+            rate_limit_per_hour: data.rate_limit_per_hour,
+          }),
+        }
+      );
 
-      if (error) throw error;
+      if (channelResponse.error) {
+        throw new Error(channelResponse.error);
+      }
+
+      if (!channelResponse.data) {
+        throw new Error('Failed to create channel');
+      }
+
+      const channel = channelResponse.data;
 
       // Create rules if provided
       if (data.rules && data.rules.length > 0) {
-        const rulesToInsert = data.rules.map(rule => ({
-          channel_id: channel.id,
-          event_type: rule.event_type,
-          conditions: rule.conditions || {},
-          priority: rule.priority || 'normal',
-          cooldown_minutes: rule.cooldown_minutes || 0,
-          enabled: true,
-        }));
+        for (const rule of data.rules) {
+          const ruleResponse = await fetchJson(
+            '/api/v1/notifications/rules',
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                channel_id: channel.id,
+                event_type: rule.event_type,
+                conditions: rule.conditions || {},
+                priority: rule.priority || 'normal',
+                cooldown_minutes: rule.cooldown_minutes || 0,
+                enabled: true,
+              }),
+            }
+          );
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: rulesError } = await (supabase.from('notification_rules') as any)
-          .insert(rulesToInsert);
-
-        if (rulesError) {
-          console.error('Failed to create rules:', rulesError);
+          if (ruleResponse.error) {
+            console.error('Failed to create rule:', ruleResponse.error);
+          }
         }
       }
 
-      return channel as NotificationChannel;
+      return transformChannelToLegacy(channel);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notification-channels'] });
@@ -210,28 +291,38 @@ export function useCreateNotificationChannel() {
   });
 }
 
-// Update a notification channel
+/**
+ * Update a notification channel
+ */
 export function useUpdateNotificationChannel() {
-  const supabase = getSupabaseClient();
+  const { fetchJson } = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: ChannelFormData }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: channel, error } = await (supabase.from('notification_channels') as any)
-        .update({
-          name: data.name,
-          channel_type: data.channel_type,
-          config: data.config as unknown as Json,
-          enabled: data.enabled,
-          rate_limit_per_hour: data.rate_limit_per_hour,
-        })
-        .eq('id', id)
-        .select()
-        .single();
+      const response = await fetchJson<NotificationChannelApi>(
+        `/api/v1/notifications/channels/${id}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            name: data.name,
+            channel_type: data.channel_type,
+            config: data.config,
+            enabled: data.enabled,
+            rate_limit_per_hour: data.rate_limit_per_hour,
+          }),
+        }
+      );
 
-      if (error) throw error;
-      return channel as NotificationChannel;
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      if (!response.data) {
+        throw new Error('Failed to update channel');
+      }
+
+      return transformChannelToLegacy(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notification-channels'] });
@@ -239,19 +330,25 @@ export function useUpdateNotificationChannel() {
   });
 }
 
-// Delete a notification channel
+/**
+ * Delete a notification channel
+ */
 export function useDeleteNotificationChannel() {
-  const supabase = getSupabaseClient();
+  const { fetchJson } = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('notification_channels') as any)
-        .delete()
-        .eq('id', id);
+      const response = await fetchJson<{ success: boolean }>(
+        `/api/v1/notifications/channels/${id}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
-      if (error) throw error;
+      if (response.error) {
+        throw new Error(response.error);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notification-channels'] });
@@ -259,49 +356,43 @@ export function useDeleteNotificationChannel() {
   });
 }
 
-// Test a notification channel
+/**
+ * Test a notification channel
+ */
 export function useTestNotificationChannel() {
-  const supabase = getSupabaseClient();
+  const { fetchJson } = useAuthApi();
 
   return useMutation({
     mutationFn: async (channelId: string) => {
-      // Queue a test notification
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('notification_logs') as any)
-        .insert({
-          channel_id: channelId,
-          event_type: 'test.notification',
-          payload: { message: 'Test notification from Argus' },
-          status: 'queued',
-        })
-        .select()
-        .single();
+      const response = await fetchJson<{ success: boolean; message: string }>(
+        `/api/v1/notifications/channels/${channelId}/test`,
+        {
+          method: 'POST',
+        }
+      );
 
-      if (error) throw error;
-      return data;
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data;
     },
   });
 }
 
-// Retry a failed notification
+/**
+ * Retry a failed notification
+ * Note: This operation requires backend support for log updates
+ */
 export function useRetryNotification() {
-  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (logId: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('notification_logs') as any)
-        .update({
-          status: 'queued',
-          next_retry_at: null,
-        })
-        .eq('id', logId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as NotificationLog;
+    mutationFn: async (_logId: string) => {
+      // The backend doesn't currently expose a retry endpoint for logs
+      // This would need to be implemented on the backend side
+      // For now, we'll just invalidate the cache to refresh the list
+      throw new Error('Retry functionality requires backend implementation');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notification-logs'] });
@@ -309,21 +400,25 @@ export function useRetryNotification() {
   });
 }
 
-// Calculate notification stats
+/**
+ * Calculate notification stats from channels and logs
+ */
 export function useNotificationStats() {
   const { data: channels = [] } = useNotificationChannels();
   const { data: logs = [] } = useNotificationLogs();
 
   const stats = {
     totalChannels: channels.length,
-    enabledChannels: channels.filter(c => c.enabled).length,
-    verifiedChannels: channels.filter(c => c.verified).length,
+    enabledChannels: channels.filter((c) => c.enabled).length,
+    verifiedChannels: channels.filter((c) => c.verified).length,
     notificationsSentToday: channels.reduce((sum, c) => sum + c.sent_today, 0),
-    failedToday: logs.filter(l => l.status === 'failed' || l.status === 'bounced').length,
+    failedToday: logs.filter((l) => l.status === 'failed' || l.status === 'bounced').length,
     successRate: 0,
   };
 
-  const successfulLogs = logs.filter(l => l.status === 'sent' || l.status === 'delivered').length;
+  const successfulLogs = logs.filter(
+    (l) => l.status === 'sent' || l.status === 'delivered'
+  ).length;
   const totalLogs = stats.failedToday + successfulLogs;
   stats.successRate = totalLogs > 0 ? (successfulLogs / totalLogs) * 100 : 100;
 
