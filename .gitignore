@@ -76,3 +76,7 @@ playwright/.cache/
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Generated service worker
+public/sw.js
+public/sw.js.map

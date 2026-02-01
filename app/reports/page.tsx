@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import {
   BarChart3,
   TrendingUp,
@@ -243,7 +243,7 @@ export default function ReportsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{run.name || 'Test Run'}</div>
                         <div className="text-sm text-muted-foreground">
-                          {formatDistanceToNow(new Date(run.createdAt), { addSuffix: true })}
+                          {safeFormatDistanceToNow(run.createdAt, { addSuffix: true })}
                         </div>
                       </div>
                       <Badge variant="error">{run.failedTests} failed</Badge>
@@ -279,7 +279,7 @@ export default function ReportsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{run.name || 'Test Run'}</div>
                       <div className="text-sm text-muted-foreground">
-                        {formatDistanceToNow(new Date(run.createdAt), { addSuffix: true })}
+                        {safeFormatDistanceToNow(run.createdAt, { addSuffix: true })}
                       </div>
                     </div>
                     <div className="text-sm text-muted-foreground">

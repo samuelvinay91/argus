@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import {
   CheckCircle2,
   XCircle,
@@ -143,7 +143,7 @@ export function RecentRunsTable({
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>
-                        {formatDistanceToNow(new Date(run.createdAt), { addSuffix: true })}
+                        {safeFormatDistanceToNow(run.createdAt, { addSuffix: true })}
                       </span>
                     </div>
                   </div>

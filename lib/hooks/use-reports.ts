@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { testRunsApi, type TestRunListItem } from '@/lib/api-client';
+import { isValidDate } from '@/lib/utils';
 
 // ============================================================================
 // Types for hook return values (backward compatible with legacy Supabase types)
@@ -41,6 +42,7 @@ function calculateDailyStats(runs: TestRunListItem[], days: number): DailyStat[]
     const dayEnd = new Date(date.setHours(23, 59, 59, 999));
 
     const dayRuns = runs.filter((r) => {
+      if (!isValidDate(r.createdAt)) return false;
       const runDate = new Date(r.createdAt);
       return runDate >= dayStart && runDate <= dayEnd;
     });
@@ -119,6 +121,7 @@ export function useReportsStats(projectId: string | null, days = 7) {
       startDate.setDate(startDate.getDate() - days);
 
       const runsInRange = allRuns.filter((run) => {
+        if (!isValidDate(run.createdAt)) return false;
         const runDate = new Date(run.createdAt);
         return runDate >= startDate;
       });
