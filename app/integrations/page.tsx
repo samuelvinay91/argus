@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1247,10 +1248,98 @@ export default function IntegrationsPage() {
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [connectingIntegration, setConnectingIntegration] = useState<IntegrationMeta | null>(null);
 
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   // API hooks
-  const { data: connectedIntegrations, isLoading } = useIntegrations();
+  const { data: connectedIntegrations, isLoading, refetch } = useIntegrations();
   const connectMutation = useConnectIntegration();
   const disconnectMutation = useDisconnectIntegration();
+
+  // Handle OAuth callback - when redirected back with success=true&platform=xxx
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const platform = searchParams.get('platform');
+    const error = searchParams.get('error');
+
+    if (success === 'true' && platform) {
+      // Find the integration metadata for display name
+      const integrationMeta = integrations.find(i => i.id === platform);
+      const displayName = integrationMeta?.name || platform;
+
+      // If we're in a popup (opened by OAuth flow), notify parent and close
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(
+          { type: 'oauth-success', platform, displayName },
+          window.location.origin
+        );
+        window.close();
+        return;
+      }
+
+      // Otherwise, show toast in current window
+      toast({
+        title: 'Connected!',
+        description: `Successfully connected to ${displayName}`,
+      });
+
+      // Refresh the integrations list to show the new connection
+      refetch();
+
+      // Clean up URL by removing query params
+      router.replace('/integrations', { scroll: false });
+    } else if (error) {
+      const errorPlatform = searchParams.get('platform');
+      const integrationMeta = errorPlatform ? integrations.find(i => i.id === errorPlatform) : null;
+      const displayName = integrationMeta?.name || errorPlatform || 'the service';
+
+      // If we're in a popup, notify parent and close
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(
+          { type: 'oauth-error', platform: errorPlatform, error, displayName },
+          window.location.origin
+        );
+        window.close();
+        return;
+      }
+
+      toast({
+        title: 'Connection Failed',
+        description: `Failed to connect to ${displayName}: ${error}`,
+        variant: 'destructive',
+      });
+
+      // Clean up URL
+      router.replace('/integrations', { scroll: false });
+    }
+  }, [searchParams, refetch, router]);
+
+  // Listen for OAuth messages from popup window
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from same origin
+      if (event.origin !== window.location.origin) return;
+
+      const { type, platform, displayName, error } = event.data || {};
+
+      if (type === 'oauth-success') {
+        toast({
+          title: 'Connected!',
+          description: `Successfully connected to ${displayName || platform}`,
+        });
+        refetch();
+      } else if (type === 'oauth-error') {
+        toast({
+          title: 'Connection Failed',
+          description: `Failed to connect to ${displayName || platform}: ${error}`,
+          variant: 'destructive',
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [refetch]);
 
   // Filter integrations
   const filteredIntegrations = useMemo(() => {
