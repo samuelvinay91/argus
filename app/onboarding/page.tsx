@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
@@ -111,12 +111,12 @@ export default function OnboardingPage() {
   const [projectUrl, setProjectUrl] = useState('');
 
   // Initialize with Clerk user data
-  useState(() => {
+  useEffect(() => {
     if (isUserLoaded && user) {
       setDisplayName(user.fullName || user.firstName || '');
       setAvatarUrl(user.imageUrl || null);
     }
-  });
+  }, [isUserLoaded, user]);
 
   const getInitials = (name: string) => {
     return name

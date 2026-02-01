@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import {
   CheckCircle2,
@@ -60,11 +60,11 @@ export function ResultsView({
   const { data: iterationResults = [], isLoading: iterationsLoading } = useIterationResults(selectedResultId);
 
   // Auto-select most recent result
-  useState(() => {
+  useEffect(() => {
     if (results.length > 0 && !selectedResultId) {
       setSelectedResultId(results[0].id);
     }
-  });
+  }, [results, selectedResultId]);
 
   // Filter iteration results by status
   const filteredIterations = useMemo(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Code2,
@@ -99,11 +99,11 @@ function CodeResultCard({ result, isExpanded, onToggle, onCopy }: {
   const [style, setStyle] = useState<Record<string, React.CSSProperties> | null>(null);
 
   // Load syntax highlighter theme
-  useState(() => {
+  useEffect(() => {
     import('react-syntax-highlighter/dist/esm/styles/prism/one-dark').then(mod => {
       setStyle(mod.default);
     });
-  });
+  }, []);
 
   const langColors = LANGUAGE_COLORS[result.language.toLowerCase()] || LANGUAGE_COLORS.default;
   const chunkConfig = CHUNK_TYPE_CONFIG[result.chunk_type.toLowerCase()] || CHUNK_TYPE_CONFIG.unknown;

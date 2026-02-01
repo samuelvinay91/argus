@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Play,
   Clock,
@@ -70,11 +70,11 @@ export function ExecutionPreview({
   const runTest = useRunParameterizedTest();
 
   // Initialize app URL from project
-  useState(() => {
+  useEffect(() => {
     if (currentProject?.app_url && !appUrl) {
       setAppUrl(currentProject.app_url);
     }
-  });
+  }, [currentProject?.app_url, appUrl]);
 
   // Filter sets by tag
   const filteredSets = useMemo(() => {

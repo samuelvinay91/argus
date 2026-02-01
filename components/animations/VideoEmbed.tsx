@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Play, Pause, Volume2, VolumeX, Maximize2, X } from 'lucide-react';
 
@@ -110,7 +110,7 @@ export function VideoEmbed({
   };
 
   // Auto-play on view
-  useState(() => {
+  useEffect(() => {
     if (!autoPlayOnView || !videoRef.current) return;
 
     if (isInView && !isPlaying) {
@@ -125,7 +125,7 @@ export function VideoEmbed({
       videoRef.current.pause();
       setIsPlaying(false);
     }
-  });
+  }, [autoPlayOnView, isInView, isPlaying]);
 
   return (
     <motion.div

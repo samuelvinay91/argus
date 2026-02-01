@@ -78,15 +78,25 @@ export function useSidebar() {
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebar-collapsed') === 'true';
-  });
+  // Initialize with false to match server render, then hydrate from localStorage in useEffect
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Persist collapsed state to localStorage
+  // Hydrate collapsed state from localStorage after mount (prevents hydration mismatch)
   useEffect(() => {
-    localStorage.setItem('sidebar-collapsed', isCollapsed.toString());
-  }, [isCollapsed]);
+    const saved = localStorage.getItem('sidebar-collapsed');
+    if (saved === 'true') {
+      setIsCollapsed(true);
+    }
+    setIsHydrated(true);
+  }, []);
+
+  // Persist collapsed state to localStorage (only after hydration)
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem('sidebar-collapsed', isCollapsed.toString());
+    }
+  }, [isCollapsed, isHydrated]);
 
   return (
     <SidebarContext.Provider value={{ isOpen, setIsOpen, isCollapsed, setIsCollapsed }}>
