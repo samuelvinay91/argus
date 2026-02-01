@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import {
   Play,
   Edit,
@@ -171,7 +171,7 @@ export function ParameterizedTestCard({
             <span className="text-sm capitalize">{test.last_run_status}</span>
             {test.last_run_at && (
               <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(test.last_run_at), { addSuffix: true })}
+                {safeFormatDistanceToNow(test.last_run_at, { addSuffix: true })}
               </span>
             )}
           </div>

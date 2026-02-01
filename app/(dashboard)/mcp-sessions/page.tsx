@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import Link from 'next/link';
 import { SignInButton } from '@clerk/nextjs';
 import {
@@ -253,7 +253,7 @@ export default function MCPSessionsPage() {
                       <div className="flex gap-6 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1.5">
                           <Clock className="h-4 w-4" />
-                          {formatDistanceToNow(new Date(session.last_activity_at), { addSuffix: true })}
+                          {safeFormatDistanceToNow(session.last_activity_at, { addSuffix: true })}
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Activity className="h-4 w-4" />

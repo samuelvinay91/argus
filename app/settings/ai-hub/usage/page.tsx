@@ -30,7 +30,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { safeFormat } from '@/lib/utils';
 import {
   Card,
   CardContent,
@@ -233,10 +234,10 @@ function CostOverTimeChart({ data, timeRange }: CostOverTimeChartProps) {
   const formatXAxis = (date: string) => {
     try {
       const d = parseISO(date);
-      if (timeRange === 'day') return format(d, 'HH:mm');
-      if (timeRange === 'week') return format(d, 'EEE');
-      if (timeRange === 'month') return format(d, 'MMM d');
-      return format(d, 'MMM yyyy');
+      if (timeRange === 'day') return safeFormat(d, 'HH:mm');
+      if (timeRange === 'week') return safeFormat(d, 'EEE');
+      if (timeRange === 'month') return safeFormat(d, 'MMM d');
+      return safeFormat(d, 'MMM yyyy');
     } catch {
       return date;
     }
@@ -261,7 +262,7 @@ function CostOverTimeChart({ data, timeRange }: CostOverTimeChartProps) {
           formatter={(value: number) => [formatCurrency(value), 'Cost']}
           labelFormatter={(label) => {
             try {
-              return format(parseISO(label), 'PPP');
+              return safeFormat(parseISO(label), 'PPP', label);
             } catch {
               return label;
             }
@@ -546,7 +547,7 @@ function ActivityLogTable({
                 paginatedRecords.map((record) => (
                   <tr key={record.id} className="border-b last:border-0 hover:bg-muted/50">
                     <td className="px-4 py-3 text-sm">
-                      {format(new Date(record.created_at), 'MMM d, HH:mm')}
+                      {safeFormat(record.created_at, 'MMM d, HH:mm')}
                     </td>
                     <td className="px-4 py-3 text-sm capitalize">{record.provider}</td>
                     <td className="px-4 py-3 text-sm font-medium">{record.model}</td>
@@ -702,7 +703,7 @@ export default function AIUsageAnalyticsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ai-usage-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `ai-usage-${safeFormat(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

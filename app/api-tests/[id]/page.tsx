@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { formatDistanceToNow, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import {
   ArrowLeft,
   Play,
@@ -156,7 +156,7 @@ function ResultCard({ result }: { result: APITestResult }) {
             )}
           </div>
           <div className="text-xs text-muted-foreground mt-0.5" suppressHydrationWarning>
-            {formatDistanceToNow(new Date(result.started_at), { addSuffix: true })}
+            {safeFormatDistanceToNow(result.started_at, { addSuffix: true })}
           </div>
         </div>
 
@@ -499,14 +499,14 @@ export default function APITestDetailPage() {
                 <div className="p-3 flex justify-between">
                   <span className="text-sm text-muted-foreground">Created</span>
                   <span className="text-sm" suppressHydrationWarning>
-                    {format(new Date(test.created_at), 'MMM d, yyyy')}
+                    {safeFormat(test.created_at, 'MMM d, yyyy')}
                   </span>
                 </div>
                 {test.updated_at && (
                   <div className="p-3 flex justify-between">
                     <span className="text-sm text-muted-foreground">Updated</span>
                     <span className="text-sm" suppressHydrationWarning>
-                      {format(new Date(test.updated_at), 'MMM d, yyyy')}
+                      {safeFormat(test.updated_at, 'MMM d, yyyy')}
                     </span>
                   </div>
                 )}

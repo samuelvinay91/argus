@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import {
   MoreVertical,
   Edit,
@@ -266,7 +266,7 @@ export function ChannelCard({
             {/* Last Sent */}
             {channel.last_sent_at && (
               <div className="mt-2 text-xs text-muted-foreground">
-                Last sent: {formatDistanceToNow(new Date(channel.last_sent_at), { addSuffix: true })}
+                Last sent: {safeFormatDistanceToNow(channel.last_sent_at, { addSuffix: true })}
               </div>
             )}
 

@@ -10,7 +10,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatDistanceToNow, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import { SignInButton } from '@clerk/nextjs';
 import {
   ArrowLeft,
@@ -223,7 +223,7 @@ export default function MCPSessionDetailPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold">
-                  {formatDistanceToNow(new Date(session.connected_at), { addSuffix: true })}
+                  {safeFormatDistanceToNow(session.connected_at, { addSuffix: true })}
                 </p>
               </CardContent>
             </Card>
@@ -258,7 +258,7 @@ export default function MCPSessionDetailPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold">
-                  {formatDistanceToNow(new Date(session.last_activity_at), { addSuffix: true })}
+                  {safeFormatDistanceToNow(session.last_activity_at, { addSuffix: true })}
                 </p>
               </CardContent>
             </Card>
@@ -316,7 +316,7 @@ export default function MCPSessionDetailPage() {
                             {activity.tool_name || activity.activity_type}
                           </span>
                           <span className="text-sm text-muted-foreground flex-shrink-0">
-                            {format(new Date(activity.created_at), 'HH:mm:ss')}
+                            {safeFormat(activity.created_at, 'HH:mm:ss')}
                           </span>
                         </div>
                         {activity.duration_ms && (

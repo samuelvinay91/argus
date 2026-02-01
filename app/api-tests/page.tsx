@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { type ColumnDef } from '@tanstack/react-table';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import {
   Play,
   Plus,
@@ -229,7 +229,7 @@ export default function APITestsPage() {
       header: 'Created',
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground" suppressHydrationWarning>
-          {formatDistanceToNow(new Date(row.original.created_at), { addSuffix: true })}
+          {safeFormatDistanceToNow(row.original.created_at, { addSuffix: true })}
         </span>
       ),
     },

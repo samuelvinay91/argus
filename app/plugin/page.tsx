@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatDistanceToNow, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import {
   usePluginEvents,
   usePluginSessions,
@@ -132,7 +132,7 @@ function EventRow({ event }: { event: any }) {
         <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            {formatDistanceToNow(new Date(event.started_at), { addSuffix: true })}
+            {safeFormatDistanceToNow(event.started_at, { addSuffix: true })}
           </span>
           {event.duration_ms && (
             <span>{event.duration_ms}ms</span>
@@ -175,7 +175,7 @@ function SessionRow({ session }: { session: any }) {
                 )}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                Started {format(new Date(session.started_at), 'MMM d, yyyy HH:mm')}
+                Started {safeFormat(session.started_at, 'MMM d, yyyy HH:mm')}
               </div>
             </div>
           </div>

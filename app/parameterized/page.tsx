@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { type ColumnDef } from '@tanstack/react-table';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import {
   Play,
   Plus,
@@ -234,7 +234,7 @@ export default function ParameterizedTestsPage() {
             <span className="text-sm capitalize">{status}</span>
             {lastRunAt && (
               <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(lastRunAt), { addSuffix: true })}
+                {safeFormatDistanceToNow(lastRunAt, { addSuffix: true })}
               </span>
             )}
           </div>

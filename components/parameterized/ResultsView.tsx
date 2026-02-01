@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import {
   CheckCircle2,
   XCircle,
@@ -126,7 +126,7 @@ export function ResultsView({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${test.name}-results-${format(new Date(selectedResult.created_at), 'yyyy-MM-dd-HHmm')}.csv`;
+    a.download = `${test.name}-results-${safeFormat(selectedResult.created_at, 'yyyy-MM-dd-HHmm')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -193,7 +193,7 @@ export function ResultsView({
                       <span className="text-sm font-medium capitalize">{result.status}</span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(result.created_at), { addSuffix: true })}
+                      {safeFormatDistanceToNow(result.created_at, { addSuffix: true })}
                     </div>
                     <div className="flex items-center gap-2 mt-2 text-xs">
                       <span className="text-success">{result.passed} passed</span>

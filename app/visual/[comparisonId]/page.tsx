@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { formatDistanceToNow, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import {
   ArrowLeft,
   Check,
@@ -321,7 +321,7 @@ export default function ComparisonDetailPage() {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>{formatDistanceToNow(new Date(comparison.created_at), { addSuffix: true })}</span>
+            <span>{safeFormatDistanceToNow(comparison.created_at, { addSuffix: true })}</span>
           </div>
         </header>
 
@@ -437,7 +437,7 @@ export default function ComparisonDetailPage() {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Created</p>
-                <p className="font-medium">{format(new Date(metadata.createdAt), 'PPp')}</p>
+                <p className="font-medium">{safeFormat(metadata.createdAt, 'PPp')}</p>
               </div>
             </div>
 
@@ -496,7 +496,7 @@ export default function ComparisonDetailPage() {
             {metadata.approvedAt && (
               <div className="flex items-center gap-2 text-sm text-success mt-2">
                 <Check className="h-4 w-4" />
-                <span>Approved {formatDistanceToNow(new Date(metadata.approvedAt), { addSuffix: true })}</span>
+                <span>Approved {safeFormatDistanceToNow(metadata.approvedAt, { addSuffix: true })}</span>
               </div>
             )}
           </div>
