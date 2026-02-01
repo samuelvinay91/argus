@@ -32,22 +32,16 @@ const serwist = new Serwist({
       matcher: /\/stream(\?|$)/i,
       handler: new NetworkOnly(),
     },
-    // Cache API responses with NetworkFirst (fresh data preferred)
-    // Excludes streaming endpoints
+    // API responses should NEVER be cached - always fetch fresh data
+    // This prevents stale data and CORS error caching issues
     {
-      matcher: /^https:\/\/argus-brain-production\.up\.railway\.app\/api\/(?!.*\/stream).*/i,
-      handler: new NetworkFirst({
-        cacheName: 'api-cache',
-        networkTimeoutSeconds: 10,
-      }),
+      matcher: /^https:\/\/argus-brain-production\.up\.railway\.app\/api\/.*/i,
+      handler: new NetworkOnly(),
     },
-    // Cache Supabase API with NetworkFirst
+    // Supabase API should also not be cached - real-time data
     {
       matcher: /^https:\/\/.*\.supabase\.co\/.*/i,
-      handler: new NetworkFirst({
-        cacheName: 'supabase-cache',
-        networkTimeoutSeconds: 10,
-      }),
+      handler: new NetworkOnly(),
     },
     // Include default caching strategies for Next.js assets
     ...defaultCache,
