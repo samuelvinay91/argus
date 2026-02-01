@@ -123,7 +123,7 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground" suppressHydrationWarning>
             &copy; {currentYear} Argus Technologies. All rights reserved.
           </p>
           <div className="flex gap-6">

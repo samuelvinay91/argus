@@ -91,7 +91,7 @@ export function AboutSection() {
         </div>
 
         <div className="pt-4 border-t text-center text-sm text-muted-foreground">
-          <p>2024-{currentYear} Argus. All rights reserved.</p>
+          <p suppressHydrationWarning>2024-{currentYear} Argus. All rights reserved.</p>
           <p className="mt-1">Built with care for better testing</p>
         </div>
       </CardContent>

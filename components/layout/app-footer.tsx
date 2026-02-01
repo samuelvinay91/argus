@@ -1,9 +1,16 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Eye, Github, Twitter, Linkedin, ExternalLink } from 'lucide-react';
 
 export function AppFooter() {
+  // Defer year calculation to client to prevent hydration mismatch
+  const [year, setYear] = useState<number | null>(null);
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+
   return (
     <footer className="border-t border-border bg-card/50 mt-auto">
       <div className="px-6 py-6">
@@ -16,8 +23,8 @@ export function AppFooter() {
               </div>
               <span className="text-sm font-semibold">Argus</span>
             </div>
-            <span className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} Argus. All rights reserved.
+            <span className="text-xs text-muted-foreground" suppressHydrationWarning>
+              © {year ?? new Date().getFullYear()} Argus. All rights reserved.
             </span>
           </div>
 

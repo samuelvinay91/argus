@@ -1470,7 +1470,7 @@ export function LandingPage() {
 
           {/* Bottom Bar */}
           <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground" suppressHydrationWarning>
               © {new Date().getFullYear()} Argus. All rights reserved.
             </p>
           </div>
