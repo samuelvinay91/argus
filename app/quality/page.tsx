@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import {
@@ -95,7 +95,7 @@ export default function QualityPage() {
             </select>
             {audit && (
               <div className="text-sm text-muted-foreground ml-4">
-                Last audit: {formatDistanceToNow(new Date(audit.created_at), { addSuffix: true })}
+                Last audit: {safeFormatDistanceToNow(audit.created_at, { addSuffix: true })}
               </div>
             )}
             <div className="flex-1" />

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import {
   Plus,
   FolderKanban,
@@ -267,7 +267,7 @@ function ProjectCard({
       <div className="text-xs text-muted-foreground mt-3">
         {stats.lastRun ? (
           <span>
-            Last run: {formatDistanceToNow(stats.lastRun, { addSuffix: true })}
+            Last run: {safeFormatDistanceToNow(stats.lastRun, { addSuffix: true })}
           </span>
         ) : (
           <span>No tests run yet</span>
@@ -301,7 +301,7 @@ function ProjectRow({
       </div>
 
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>Created {formatDistanceToNow(new Date(project.created_at), { addSuffix: true })}</span>
+        <span>Created {safeFormatDistanceToNow(project.created_at, { addSuffix: true })}</span>
       </div>
 
       <div className="flex items-center gap-2">

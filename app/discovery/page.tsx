@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1488,7 +1488,7 @@ export default function DiscoveryPage() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="h-4 w-4" />
                   Last discovery:{' '}
-                  {formatDistanceToNow(new Date(discoveryData.session.created_at), {
+                  {safeFormatDistanceToNow(discoveryData.session.created_at, {
                     addSuffix: true,
                   })}
                   <span className="mx-2">|</span>
@@ -1607,7 +1607,7 @@ export default function DiscoveryPage() {
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
                               {session.startedAt
-                                ? formatDistanceToNow(new Date(session.startedAt), {
+                                ? safeFormatDistanceToNow(session.startedAt, {
                                     addSuffix: true,
                                   })
                                 : 'Not started'}

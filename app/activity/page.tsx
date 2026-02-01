@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -131,7 +131,7 @@ function ActivityItem({ event }: { event: ActivityEvent }) {
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
             <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
+              {safeFormatDistanceToNow(event.timestamp, { addSuffix: true })}
             </span>
             {event.metadata?.link && (
               <Link

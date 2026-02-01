@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDistanceToNow, formatDistanceToNowStrict, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormatDistanceToNowStrict, safeFormat } from '@/lib/utils';
 import {
   Calendar,
   Clock,
@@ -123,11 +123,13 @@ function getNextRunCountdown(nextRunAt: string | undefined): string {
   if (!nextRunAt) return 'Not scheduled';
 
   const nextRun = new Date(nextRunAt);
+  if (isNaN(nextRun.getTime())) return 'Not scheduled';
+
   const now = new Date();
 
   if (nextRun <= now) return 'Running soon...';
 
-  return formatDistanceToNowStrict(nextRun, { addSuffix: true });
+  return safeFormatDistanceToNowStrict(nextRun, { addSuffix: true });
 }
 
 // Failure Category Badge Component
@@ -510,7 +512,7 @@ export function ScheduleCard({
             {schedule.last_run_at && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span>Last run:</span>
-                <span>{formatDistanceToNow(new Date(schedule.last_run_at), { addSuffix: true })}</span>
+                <span>{safeFormatDistanceToNow(schedule.last_run_at, { addSuffix: true })}</span>
               </div>
             )}
           </div>

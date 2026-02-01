@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import {
   TestTube,
   CheckCircle2,
@@ -157,7 +157,7 @@ export function TeamActivityFeed({
                           )}
                         </div>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {formatDistanceToNow(new Date(activity.timestamp), {
+                          {safeFormatDistanceToNow(activity.timestamp, {
                             addSuffix: true,
                           })}
                         </span>

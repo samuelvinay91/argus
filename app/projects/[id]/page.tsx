@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow, safeLocaleDateString } from '@/lib/utils';
 import {
   ArrowLeft,
   Settings,
@@ -266,7 +266,7 @@ function OverviewTab({ projectId, appUrl }: { projectId: string; appUrl: string 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{run.name || 'Test Run'}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
+                      {safeFormatDistanceToNow(run.created_at, { addSuffix: true })}
                     </p>
                   </div>
                   <span className={cn(
@@ -419,7 +419,7 @@ function DiscoveryTab({ projectId }: { projectId: string }) {
                   {session.status}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  {formatDistanceToNow(new Date(session.created_at), { addSuffix: true })}
+                  {safeFormatDistanceToNow(session.created_at, { addSuffix: true })}
                 </span>
               </div>
               <p className="text-sm mt-2">
@@ -529,7 +529,7 @@ function QualityTab({ projectId }: { projectId: string }) {
             <ScoreCard label="SEO" score={latestAudit.seo_score} />
           </div>
           <p className="text-sm text-muted-foreground">
-            Last audit: {formatDistanceToNow(new Date(latestAudit.created_at), { addSuffix: true })}
+            Last audit: {safeFormatDistanceToNow(latestAudit.created_at, { addSuffix: true })}
           </p>
         </div>
       ) : (
@@ -752,7 +752,7 @@ function RecentActivityList({ projectId }: { projectId: string }) {
               </p>
             )}
             <p className="text-xs text-muted-foreground mt-1">
-              {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+              {safeFormatDistanceToNow(activity.created_at, { addSuffix: true })}
             </p>
           </div>
         </div>
@@ -867,7 +867,7 @@ function SettingsTab({ project }: { project: any }) {
           <div>
             <label className="text-sm font-medium">Created</label>
             <p className="mt-1 text-muted-foreground">
-              {new Date(project.created_at).toLocaleDateString()}
+              {safeLocaleDateString(project.created_at)}
             </p>
           </div>
         </div>

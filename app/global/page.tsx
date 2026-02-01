@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -191,7 +191,7 @@ export default function GlobalTestingPage() {
             </select>
             {test && (
               <div className="text-sm text-muted-foreground ml-4">
-                Last test: {formatDistanceToNow(new Date(test.created_at), { addSuffix: true })}
+                Last test: {safeFormatDistanceToNow(test.created_at, { addSuffix: true })}
               </div>
             )}
             <div className="flex-1" />
@@ -594,7 +594,7 @@ export default function GlobalTestingPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Completed:</span>{' '}
-                      {test.completed_at ? formatDistanceToNow(new Date(test.completed_at), { addSuffix: true }) : 'In progress'}
+                      {test.completed_at ? safeFormatDistanceToNow(test.completed_at, { addSuffix: true }) : 'In progress'}
                     </div>
                   </div>
                 </div>

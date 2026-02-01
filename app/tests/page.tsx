@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { type ColumnDef } from '@tanstack/react-table';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import {
   Play,
   Plus,
@@ -269,7 +269,7 @@ export default function TestsPage() {
       header: 'Created',
       cell: ({ row }) => (
         <span className="text-muted-foreground text-sm" suppressHydrationWarning>
-          {formatDistanceToNow(new Date(row.original.created_at), { addSuffix: true })}
+          {safeFormatDistanceToNow(row.original.created_at, { addSuffix: true })}
         </span>
       ),
     },
@@ -323,7 +323,7 @@ export default function TestsPage() {
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1" suppressHydrationWarning>
-            Created {formatDistanceToNow(new Date(test.created_at), { addSuffix: true })}
+            Created {safeFormatDistanceToNow(test.created_at, { addSuffix: true })}
           </p>
         </div>
       </div>
@@ -579,7 +579,7 @@ export default function TestsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{run.name || 'Test Run'}</div>
                       <div className="text-xs text-muted-foreground" suppressHydrationWarning>
-                        {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
+                        {safeFormatDistanceToNow(run.created_at, { addSuffix: true })}
                       </div>
                     </div>
                     {run.status === 'running' ? (

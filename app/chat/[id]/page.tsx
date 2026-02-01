@@ -32,7 +32,7 @@ import {
   Bot,
   AlertCircle,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import type { Message } from 'ai/react';
 import type { ChatMessage } from '@/lib/supabase/types';
 
@@ -98,7 +98,7 @@ function ConversationList({
               )}
               <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
-                {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true })}
+                {safeFormatDistanceToNow(conv.updated_at, { addSuffix: true })}
               </div>
             </div>
             <Button

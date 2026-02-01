@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import {
@@ -431,7 +431,7 @@ export default function AccessibilityPage() {
           </select>
           {auditResult?.audit && (
             <div className="text-sm text-muted-foreground">
-              Last audit: {formatDistanceToNow(new Date(auditResult.audit.created_at), { addSuffix: true })}
+              Last audit: {safeFormatDistanceToNow(auditResult.audit.created_at, { addSuffix: true })}
             </div>
           )}
           <div className="flex-1" />
@@ -633,7 +633,7 @@ export default function AccessibilityPage() {
                               {audit.accessibility_score !== null ? `Score: ${audit.accessibility_score}` : 'Pending'}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {formatDistanceToNow(new Date(audit.created_at), { addSuffix: true })}
+                              {safeFormatDistanceToNow(audit.created_at, { addSuffix: true })}
                             </div>
                           </div>
                         </div>

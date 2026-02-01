@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { CheckCircle2, XCircle, Loader2, Play, AlertTriangle, Sparkles, Calendar, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -157,7 +157,7 @@ export function RealtimeActivityFeed({ projectId, maxItems = 20, className }: Re
               <div className="flex-1 min-w-0">
                 <p className="text-sm leading-tight">{activity.message}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                  {safeFormatDistanceToNow(activity.timestamp, { addSuffix: true })}
                 </p>
               </div>
             </div>

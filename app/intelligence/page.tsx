@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -192,7 +192,7 @@ export default function IntelligencePage() {
             <div className="flex items-center gap-2">
               {stats?.last_event_received_at && (
                 <span className="text-xs text-muted-foreground">
-                  Last event: {formatDistanceToNow(new Date(stats.last_event_received_at), { addSuffix: true })}
+                  Last event: {safeFormatDistanceToNow(stats.last_event_received_at, { addSuffix: true })}
                 </span>
               )}
             </div>
@@ -648,7 +648,7 @@ export default function IntelligencePage() {
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+                              {safeFormatDistanceToNow(event.created_at, { addSuffix: true })}
                             </span>
                             {event.url && (
                               <span className="truncate max-w-[200px]">{event.url}</span>

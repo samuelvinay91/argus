@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import {
@@ -315,7 +315,7 @@ export default function PerformancePage() {
 
           {latestTest && (
             <div className="text-sm text-muted-foreground">
-              Last test: {formatDistanceToNow(new Date(latestTest.created_at), { addSuffix: true })}
+              Last test: {safeFormatDistanceToNow(latestTest.created_at, { addSuffix: true })}
             </div>
           )}
 
@@ -633,7 +633,7 @@ export default function PerformancePage() {
                       <div>
                         <div className="font-medium text-sm">{test.url}</div>
                         <div className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(test.created_at), { addSuffix: true })}
+                          {safeFormatDistanceToNow(test.created_at, { addSuffix: true })}
                           {' - '}
                           {test.device === 'mobile' ? 'Mobile' : 'Desktop'}
                         </div>

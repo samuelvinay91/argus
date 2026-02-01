@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Play, ExternalLink, Loader2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,7 @@ export function ActiveExecutionsWidget({
 
   const getElapsedTime = (execution: TestRun): string => {
     if (!execution.started_at) return 'Starting...';
-    return formatDistanceToNow(new Date(execution.started_at), { addSuffix: false });
+    return safeFormatDistanceToNow(execution.started_at, { addSuffix: false });
   };
 
   return (

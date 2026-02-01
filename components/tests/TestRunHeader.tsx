@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { formatDistanceToNow, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import {
   ArrowLeft,
   ChevronRight,
@@ -130,11 +130,11 @@ export function TestRunHeader({
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4" />
                   <span
-                    title={testRun.started_at ? format(new Date(testRun.started_at), 'PPpp') : undefined}
+                    title={testRun.started_at ? safeFormat(testRun.started_at, 'PPpp') : undefined}
                     suppressHydrationWarning
                   >
                     {testRun.started_at
-                      ? formatDistanceToNow(new Date(testRun.started_at), { addSuffix: true })
+                      ? safeFormatDistanceToNow(testRun.started_at, { addSuffix: true })
                       : 'Not started'}
                   </span>
                 </div>

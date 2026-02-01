@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import {
   CheckCircle,
   XCircle,
@@ -162,7 +162,7 @@ function LogRow({
               <span>{log.channel_name || log.channel_type}</span>
             </div>
             <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+              {safeFormatDistanceToNow(log.created_at, { addSuffix: true })}
             </span>
           </div>
         </div>
@@ -236,14 +236,14 @@ function LogRow({
             <div>
               <div className="text-muted-foreground">Queued</div>
               <div className="font-medium">
-                {format(new Date(log.queued_at), 'MMM d, HH:mm:ss')}
+                {safeFormat(log.queued_at, 'MMM d, HH:mm:ss')}
               </div>
             </div>
             {log.sent_at && (
               <div>
                 <div className="text-muted-foreground">Sent</div>
                 <div className="font-medium">
-                  {format(new Date(log.sent_at), 'MMM d, HH:mm:ss')}
+                  {safeFormat(log.sent_at, 'MMM d, HH:mm:ss')}
                 </div>
               </div>
             )}
@@ -251,7 +251,7 @@ function LogRow({
               <div>
                 <div className="text-muted-foreground">Delivered</div>
                 <div className="font-medium">
-                  {format(new Date(log.delivered_at), 'MMM d, HH:mm:ss')}
+                  {safeFormat(log.delivered_at, 'MMM d, HH:mm:ss')}
                 </div>
               </div>
             )}

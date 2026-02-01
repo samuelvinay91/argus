@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { formatDistanceToNow, format, subDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { subDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -298,7 +299,7 @@ function ComparisonCard({
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm truncate">{comparison.name}</div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              {formatDistanceToNow(new Date(comparison.created_at), { addSuffix: true })}
+              {safeFormatDistanceToNow(comparison.created_at, { addSuffix: true })}
             </div>
           </div>
           <Badge
@@ -1452,7 +1453,7 @@ function HistoryTimeline({ comparisons }: { comparisons: VisualComparison[] }) {
     const groups: Record<string, VisualComparison[]> = {};
 
     comparisons.forEach((c) => {
-      const date = format(new Date(c.created_at), 'yyyy-MM-dd');
+      const date = safeFormat(c.created_at, 'yyyy-MM-dd');
       if (!groups[date]) {
         groups[date] = [];
       }
@@ -1479,7 +1480,7 @@ function HistoryTimeline({ comparisons }: { comparisons: VisualComparison[] }) {
           <div className="flex items-center gap-3 mb-3">
             <div className="h-px flex-1 bg-border" />
             <span className="text-sm font-medium text-muted-foreground">
-              {format(new Date(date), 'MMMM d, yyyy')}
+              {safeFormat(date, 'MMMM d, yyyy')}
             </span>
             <div className="h-px flex-1 bg-border" />
           </div>
@@ -1516,7 +1517,7 @@ function HistoryTimeline({ comparisons }: { comparisons: VisualComparison[] }) {
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {format(new Date(comparison.created_at), 'h:mm a')}
+                    {safeFormat(comparison.created_at, 'h:mm a')}
                     {comparison.match_percentage !== null && comparison.status !== 'new' && (
                       <> - {comparison.match_percentage.toFixed(1)}% match</>
                     )}
@@ -2114,7 +2115,7 @@ export default function VisualPage() {
                     </Badge>
                   </SheetTitle>
                   <SheetDescription>
-                    {format(new Date(selectedComparisonData.created_at), 'PPpp')}
+                    {safeFormat(selectedComparisonData.created_at, 'PPpp')}
                     {selectedComparisonData.match_percentage !== null && (
                       <> - {selectedComparisonData.match_percentage.toFixed(1)}% match</>
                     )}

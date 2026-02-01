@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow, safeLocaleDateString } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -328,7 +328,7 @@ export default function InsightsPage() {
                               <p className="text-sm text-primary">{insight.suggested_action}</p>
                             )}
                             <div className="text-xs text-muted-foreground mt-2">
-                              {formatDistanceToNow(new Date(insight.created_at), { addSuffix: true })}
+                              {safeFormatDistanceToNow(insight.created_at, { addSuffix: true })}
                               {insight.confidence && ` | ${(insight.confidence * 100).toFixed(0)}% confidence`}
                             </div>
                           </div>
@@ -831,7 +831,7 @@ export default function InsightsPage() {
                           </Badge>
                         </CardTitle>
                         <CardDescription>
-                          {executiveSummary.period.days}-day analysis from {new Date(executiveSummary.period.start).toLocaleDateString()} to {new Date(executiveSummary.period.end).toLocaleDateString()}
+                          {executiveSummary.period.days}-day analysis from {safeLocaleDateString(executiveSummary.period.start)} to {safeLocaleDateString(executiveSummary.period.end)}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>

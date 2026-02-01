@@ -1,6 +1,10 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { formatDistanceToNow as fnsFormatDistanceToNow } from 'date-fns';
+import {
+  formatDistanceToNow as fnsFormatDistanceToNow,
+  formatDistanceToNowStrict as fnsFormatDistanceToNowStrict,
+  format as fnsFormat,
+} from 'date-fns';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -37,6 +41,42 @@ export function safeFormatDistanceToNow(
   if (isNaN(d.getTime())) return fallback;
   try {
     return fnsFormatDistanceToNow(d, options);
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Safely format distance to now (strict), returns fallback if date is invalid
+ */
+export function safeFormatDistanceToNowStrict(
+  date: string | Date | null | undefined,
+  options?: { addSuffix?: boolean },
+  fallback = 'Unknown'
+): string {
+  if (!date) return fallback;
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return fallback;
+  try {
+    return fnsFormatDistanceToNowStrict(d, options);
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Safely format a date with a pattern, returns fallback if date is invalid
+ */
+export function safeFormat(
+  date: string | Date | null | undefined,
+  formatStr: string,
+  fallback = '-'
+): string {
+  if (!date) return fallback;
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return fallback;
+  try {
+    return fnsFormat(d, formatStr);
   } catch {
     return fallback;
   }
@@ -94,6 +134,24 @@ export function getStatusBgColor(status: string): string {
       return 'bg-yellow-500/10';
     default:
       return 'bg-muted';
+  }
+}
+
+/**
+ * Safely format a date using Intl.DateTimeFormat with custom options, returns fallback if date is invalid
+ */
+export function safeLocaleDateString(
+  date: string | Date | null | undefined,
+  options?: Intl.DateTimeFormatOptions,
+  fallback = '-'
+): string {
+  if (!date) return fallback;
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return fallback;
+  try {
+    return d.toLocaleDateString(undefined, options);
+  } catch {
+    return fallback;
   }
 }
 

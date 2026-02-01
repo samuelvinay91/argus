@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -121,7 +121,7 @@ function EventCard({
             {event.source_platform}
           </span>
           <span className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(event.occurred_at), { addSuffix: true })}
+            {safeFormatDistanceToNow(event.occurred_at, { addSuffix: true })}
           </span>
         </div>
         <h4 className="font-medium text-sm truncate group-hover:text-primary transition-colors">
@@ -185,7 +185,7 @@ function Timeline({
 
   // Group events by date
   const groupedEvents = events.reduce((acc, event) => {
-    const date = format(new Date(event.occurred_at), 'yyyy-MM-dd');
+    const date = safeFormat(event.occurred_at, 'yyyy-MM-dd');
     if (!acc[date]) acc[date] = [];
     acc[date].push(event);
     return acc;
@@ -198,7 +198,7 @@ function Timeline({
           <div className="flex items-center gap-2 mb-3">
             <div className="h-px flex-1 bg-border" />
             <span className="text-xs text-muted-foreground font-medium">
-              {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+              {safeFormat(date, 'EEEE, MMMM d, yyyy')}
             </span>
             <div className="h-px flex-1 bg-border" />
           </div>
@@ -258,7 +258,7 @@ function InsightCard({
             </Badge>
           </div>
           <span className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(insight.created_at), { addSuffix: true })}
+            {safeFormatDistanceToNow(insight.created_at, { addSuffix: true })}
           </span>
         </div>
         <CardTitle className="text-base">{insight.title}</CardTitle>
@@ -337,7 +337,7 @@ function EventDetailModal({
                 <Badge variant="outline">{config.label}</Badge>
                 <span>{event.source_platform}</span>
                 <span>-</span>
-                <span>{format(new Date(event.occurred_at), 'PPpp')}</span>
+                <span>{safeFormat(event.occurred_at, 'PPpp')}</span>
               </DialogDescription>
             </div>
           </div>

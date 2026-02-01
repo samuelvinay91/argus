@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import {
   CheckCircle,
   XCircle,
@@ -444,7 +444,7 @@ function RunRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium">
-              {format(new Date(run.triggered_at), 'MMM d, HH:mm')}
+              {safeFormat(run.triggered_at, 'MMM d, HH:mm')}
             </span>
             <TriggerBadge type={run.trigger_type} />
             {/* AI Badges */}
@@ -465,7 +465,7 @@ function RunRow({
             )}
           </div>
           <div className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(run.triggered_at), { addSuffix: true })}
+            {safeFormatDistanceToNow(run.triggered_at, { addSuffix: true })}
             {hasAIInsights && (
               <span className="ml-2 text-primary">
                 <Brain className="h-3 w-3 inline-block mr-0.5" />
@@ -534,14 +534,14 @@ function RunRow({
             <div>
               <div className="text-muted-foreground">Triggered</div>
               <div className="font-medium">
-                {format(new Date(run.triggered_at), 'MMM d, yyyy HH:mm:ss')}
+                {safeFormat(run.triggered_at, 'MMM d, yyyy HH:mm:ss')}
               </div>
             </div>
             {run.started_at && (
               <div>
                 <div className="text-muted-foreground">Started</div>
                 <div className="font-medium">
-                  {format(new Date(run.started_at), 'MMM d, yyyy HH:mm:ss')}
+                  {safeFormat(run.started_at, 'MMM d, yyyy HH:mm:ss')}
                 </div>
               </div>
             )}
@@ -549,7 +549,7 @@ function RunRow({
               <div>
                 <div className="text-muted-foreground">Completed</div>
                 <div className="font-medium">
-                  {format(new Date(run.completed_at), 'MMM d, yyyy HH:mm:ss')}
+                  {safeFormat(run.completed_at, 'MMM d, yyyy HH:mm:ss')}
                 </div>
               </div>
             )}

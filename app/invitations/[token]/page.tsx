@@ -20,7 +20,7 @@ import {
   AlertCircle,
   Mail,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, safeLocaleDateString } from '@/lib/utils';
 import {
   useValidateInvitation,
   useAcceptInvitation,
@@ -375,7 +375,7 @@ export default function InvitationAcceptPage() {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
                 <span>
-                  Expires {new Date(invitation.expires_at).toLocaleDateString(undefined, {
+                  Expires {safeLocaleDateString(invitation.expires_at, {
                     month: 'long',
                     day: 'numeric',
                     year: 'numeric',

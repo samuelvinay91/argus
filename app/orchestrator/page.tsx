@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -159,7 +159,7 @@ function ExecutionCard({ execution }: { execution: GraphExecution }) {
                   {getStatusLabel(execution.status)}
                 </span>
                 <span className="text-xs text-muted-foreground" suppressHydrationWarning>
-                  {formatDistanceToNow(new Date(execution.created_at), { addSuffix: true })}
+                  {safeFormatDistanceToNow(execution.created_at, { addSuffix: true })}
                 </span>
               </div>
             </div>

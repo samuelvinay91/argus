@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import {
   History,
   ChevronRight,
@@ -33,7 +33,7 @@ export interface RunHistorySidebarProps {
 
 // Format relative time with more natural language
 function formatRelativeTime(date: string): string {
-  const distance = formatDistanceToNow(new Date(date), { addSuffix: true });
+  const distance = safeFormatDistanceToNow(date, { addSuffix: true });
   // Transform "about X hours ago" to "X hours ago"
   return distance.replace('about ', '');
 }

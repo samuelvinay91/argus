@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { type ColumnDef } from '@tanstack/react-table';
-import { formatDistanceToNow, format } from 'date-fns';
+import { safeFormatDistanceToNow, safeFormat } from '@/lib/utils';
 import {
   GitBranch,
   GitCommit,
@@ -227,7 +227,7 @@ export default function CICDPage() {
       header: 'Started',
       cell: ({ row }) => (
         <span className="text-muted-foreground text-sm" suppressHydrationWarning>
-          {formatDistanceToNow(new Date(row.original.created_at), { addSuffix: true })}
+          {safeFormatDistanceToNow(row.original.created_at, { addSuffix: true })}
         </span>
       ),
     },
@@ -365,7 +365,7 @@ export default function CICDPage() {
       header: 'Time',
       cell: ({ row }) => (
         <span className="text-muted-foreground text-sm" suppressHydrationWarning>
-          {formatDistanceToNow(new Date(row.original.created_at), { addSuffix: true })}
+          {safeFormatDistanceToNow(row.original.created_at, { addSuffix: true })}
         </span>
       ),
     },
@@ -473,7 +473,7 @@ export default function CICDPage() {
       header: 'Time',
       cell: ({ row }) => (
         <span className="text-muted-foreground text-sm" suppressHydrationWarning>
-          {formatDistanceToNow(new Date(row.original.created_at), { addSuffix: true })}
+          {safeFormatDistanceToNow(row.original.created_at, { addSuffix: true })}
         </span>
       ),
     },
@@ -706,7 +706,7 @@ export default function CICDPage() {
                           <div className="text-right text-sm text-muted-foreground">
                             <p>{formatDuration(pipeline.duration_ms)}</p>
                             <p className="text-xs" suppressHydrationWarning>
-                              {formatDistanceToNow(new Date(pipeline.created_at), { addSuffix: true })}
+                              {safeFormatDistanceToNow(pipeline.created_at, { addSuffix: true })}
                             </p>
                           </div>
                         </div>
@@ -778,7 +778,7 @@ export default function CICDPage() {
                               </code>
                             )}
                             <p className="text-xs text-muted-foreground mt-1" suppressHydrationWarning>
-                              {formatDistanceToNow(new Date(deployment.created_at), { addSuffix: true })}
+                              {safeFormatDistanceToNow(deployment.created_at, { addSuffix: true })}
                             </p>
                           </div>
                           {deployment.risk_score !== null && (

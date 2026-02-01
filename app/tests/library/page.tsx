@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { type ColumnDef } from '@tanstack/react-table';
 import {
   Play,
@@ -205,7 +205,7 @@ export default function TestLibraryPage() {
       header: 'Created',
       cell: ({ row }) => (
         <span className="text-muted-foreground text-sm">
-          {formatDistanceToNow(new Date(row.original.created_at), { addSuffix: true })}
+          {safeFormatDistanceToNow(row.original.created_at, { addSuffix: true })}
         </span>
       ),
     },

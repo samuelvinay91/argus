@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -413,7 +413,7 @@ export default function SecurityPage() {
           {scan?.completed_at && (
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />
-              Last scan: {formatDistanceToNow(new Date(scan.completed_at), { addSuffix: true })}
+              Last scan: {safeFormatDistanceToNow(scan.completed_at, { addSuffix: true })}
             </div>
           )}
           <div className="flex-1" />
