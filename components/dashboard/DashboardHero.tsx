@@ -37,12 +37,18 @@ function useAnimatedCounter(target: number, duration: number = 1500) {
   return displayValue;
 }
 
-// Get greeting based on time of day
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
+// Get greeting based on time of day (only on client to avoid hydration mismatch)
+function useGreeting(): string {
+  const [greeting, setGreeting] = React.useState('Hello');
+
+  React.useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 17) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+  }, []);
+
+  return greeting;
 }
 
 // Quality Score Ring Component
@@ -193,7 +199,7 @@ export function DashboardHero({
   todayInsight,
   stats,
 }: DashboardHeroProps) {
-  const greeting = getGreeting();
+  const greeting = useGreeting();
   const firstName = userName.split(' ')[0];
 
   return (
