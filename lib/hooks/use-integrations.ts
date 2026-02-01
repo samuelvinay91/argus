@@ -174,9 +174,9 @@ export interface ConnectIntegrationRequest {
  */
 export interface ConnectIntegrationResponse {
   success: boolean;
-  integration: Integration;
+  integration?: Integration; // Optional - not returned for OAuth redirects
   message: string;
-  // For OAuth integrations
+  // For OAuth integrations - when present, frontend should redirect user
   oauth_url?: string;
 }
 

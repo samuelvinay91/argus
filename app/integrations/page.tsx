@@ -1282,10 +1282,23 @@ export default function IntegrationsPage() {
     if (!connectingIntegration) return;
 
     try {
-      await connectMutation.mutateAsync({
+      const result = await connectMutation.mutateAsync({
         platform: connectingIntegration.id,
         config,
       });
+
+      // Handle OAuth redirect
+      if (result.oauth_url) {
+        // Open OAuth authorization in new window
+        window.open(result.oauth_url, '_blank', 'width=600,height=700');
+        toast({
+          title: 'OAuth Authorization',
+          description: 'Complete authorization in the popup window',
+        });
+        setConnectingIntegration(null);
+        return;
+      }
+
       toast({
         title: 'Connected!',
         description: `Successfully connected to ${connectingIntegration.name}`,
