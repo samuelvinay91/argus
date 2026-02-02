@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BACKEND_URL } from '@/lib/config/api-endpoints';
-import { convertKeysToCamelCase } from '@/lib/api-client';
+// No conversion imports needed - backend CamelCaseMiddleware handles all case conversion
 
 // ============================================
 // Types
@@ -138,8 +138,8 @@ async function fetchWithAuth<T = unknown>(url: string, options: RequestInit = {}
     throw new Error(error.detail || `HTTP ${response.status}`);
   }
 
-  const data = await response.json();
-  return convertKeysToCamelCase(data) as T;
+  // Backend CamelCaseMiddleware returns camelCase already
+  return await response.json() as T;
 }
 
 // ============================================

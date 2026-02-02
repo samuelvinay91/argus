@@ -10,7 +10,8 @@
  */
 
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { authenticatedFetch, BACKEND_URL, convertKeysToCamelCase } from '@/lib/api-client';
+import { authenticatedFetch, BACKEND_URL } from '@/lib/api-client';
+// No conversion imports needed - backend CamelCaseMiddleware handles all case conversion
 
 // Types
 export interface InvitationDetails {
@@ -69,8 +70,8 @@ export async function validateInvitation(token: string): Promise<InvitationValid
       };
     }
 
-    const rawInvitation = await response.json();
-    const invitation = convertKeysToCamelCase(rawInvitation) as InvitationDetails;
+    // Backend CamelCaseMiddleware returns camelCase already
+    const invitation = await response.json() as InvitationDetails;
 
     // Check if invitation is already used
     if (invitation.status === 'accepted') {
@@ -140,8 +141,8 @@ export function useAcceptInvitation() {
         throw new Error(data.detail || 'Failed to accept invitation');
       }
 
-      const data = await response.json();
-      return convertKeysToCamelCase(data);
+      // Backend CamelCaseMiddleware returns camelCase already
+      return await response.json();
     },
   });
 }

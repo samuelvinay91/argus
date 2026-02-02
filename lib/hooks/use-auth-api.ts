@@ -11,9 +11,12 @@
  */
 
 import { useAuth } from '@clerk/nextjs';
-import { useCallback, useMemo, useContext } from 'react';
+import { useCallback, useMemo } from 'react';
 import { createAuthenticatedClient } from '@/lib/auth-api';
-import { convertKeysToSnakeCase, convertKeysToCamelCase } from '@/lib/api-client';
+
+// NOTE: No case conversion needed - backend middleware handles all conversions:
+// - Incoming requests: camelCase → snake_case (by CamelCaseMiddleware)
+// - Outgoing responses: snake_case → camelCase (by CamelCaseMiddleware)
 
 // Backend URL (client-side needs NEXT_PUBLIC_ prefix)
 // Uses Next.js rewrites to proxy /api/v1/* to the production backend,
@@ -136,6 +139,7 @@ export function useAuthApi(options?: UseAuthApiOptions) {
 
       const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}${endpoint}`;
 
+      // No conversion needed - backend CamelCaseMiddleware handles camelCase → snake_case
       const response = await fetch(url, {
         ...fetchOptions,
         signal: mergedSignal,
@@ -187,8 +191,8 @@ export function useAuthApi(options?: UseAuthApiOptions) {
         };
       }
 
-      const rawData = await response.json();
-      const data = convertKeysToCamelCase(rawData) as T;
+      // No conversion needed - backend CamelCaseMiddleware returns camelCase
+      const data = await response.json() as T;
       return { data, error: null, status: response.status };
     } catch (error) {
       // Handle abort errors
@@ -228,8 +232,8 @@ export function useAuthApi(options?: UseAuthApiOptions) {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...getOrgHeaders(),
       },
-      // Convert camelCase keys to snake_case for Python backend
-      body: body ? JSON.stringify(convertKeysToSnakeCase(body)) : undefined,
+      // No conversion needed - backend CamelCaseMiddleware handles camelCase → snake_case
+      body: body ? JSON.stringify(body) : undefined,
       signal,
     });
 

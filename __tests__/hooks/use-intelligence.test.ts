@@ -444,7 +444,7 @@ describe('use-intelligence', () => {
 
   describe('useGenerateTest', () => {
     it('should generate a test via API', async () => {
-      // API returns snake_case, but convertKeysToCamelCase transforms it
+      // Backend CamelCaseMiddleware returns camelCase responses automatically
       const mockResponse = {
         success: true,
         testId: 'new-test-123',

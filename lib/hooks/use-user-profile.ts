@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { useAuthApi } from './use-auth-api';
-import { convertKeysToCamelCase } from '@/lib/api-client';
+// No conversion imports needed - backend CamelCaseMiddleware handles all case conversion
 
 /**
  * User Profile Interface
@@ -355,8 +355,8 @@ export function useUploadAvatar() {
         throw new Error(errorMessage);
       }
 
-      const rawData = await response.json();
-      return convertKeysToCamelCase(rawData) as AvatarUploadResponse;
+      // Backend CamelCaseMiddleware returns camelCase already
+      return await response.json() as AvatarUploadResponse;
     },
     onSuccess: (data) => {
       // Update the profile cache with the new avatar URL

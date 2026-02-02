@@ -23,8 +23,26 @@ const MAX_RETRIES = 2;
 const INITIAL_RETRY_DELAY_MS = 500;
 
 /**
+ * Case Conversion Utilities
+ *
+ * NOTE: These functions are ONLY needed for Supabase Realtime subscriptions.
+ *
+ * For HTTP API calls to the Python backend, NO conversion is needed!
+ * The backend CamelCaseMiddleware automatically:
+ * - Converts incoming requests from camelCase → snake_case
+ * - Converts outgoing responses from snake_case → camelCase
+ *
+ * When to use these functions:
+ * - Supabase Realtime subscriptions (payload.new, payload.old)
+ * - Direct Supabase queries (not going through backend API)
+ *
+ * When NOT to use:
+ * - Any HTTP API call to /api/v1/* endpoints
+ * - fetchJson, fetchStream, or authenticatedFetch calls
+ */
+
+/**
  * Convert camelCase to snake_case
- * Frontend uses camelCase (JS convention), backend uses snake_case (Python convention)
  */
 function camelToSnake(str: string): string {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
@@ -32,7 +50,6 @@ function camelToSnake(str: string): string {
 
 /**
  * Convert snake_case to camelCase
- * Backend uses snake_case (Python convention), frontend uses camelCase (JS convention)
  */
 function snakeToCamel(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
@@ -40,8 +57,7 @@ function snakeToCamel(str: string): string {
 
 /**
  * Recursively convert object keys from camelCase to snake_case
- * Handles nested objects and arrays
- * Exported for use in other modules (e.g., useAuthApi)
+ * USE ONLY for Supabase Realtime, NOT for HTTP API calls
  */
 export function convertKeysToSnakeCase(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
@@ -66,8 +82,7 @@ export function convertKeysToSnakeCase(obj: unknown): unknown {
 
 /**
  * Recursively convert object keys from snake_case to camelCase
- * Handles nested objects and arrays
- * Used to transform backend responses to frontend format
+ * USE ONLY for Supabase Realtime, NOT for HTTP API calls
  */
 export function convertKeysToCamelCase(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
@@ -457,9 +472,8 @@ export async function fetchJson<T>(
       throw new Error(errorMessage || `Request failed with status ${response.status}`);
     }
 
-    // Convert snake_case response keys to camelCase for frontend
-    const data = await response.json();
-    return convertKeysToCamelCase(data) as T;
+    // Backend CamelCaseMiddleware returns camelCase responses automatically
+    return await response.json() as T;
   } catch (error) {
     // Check if this was an abort
     if (error instanceof Error && error.name === 'AbortError') {
@@ -490,24 +504,24 @@ export const apiClient = {
     fetchJson<T>(url, {
       ...options,
       method: 'POST',
-      // Convert camelCase keys to snake_case for Python backend
-      body: body ? JSON.stringify(convertKeysToSnakeCase(body)) : undefined,
+      // Backend CamelCaseMiddleware converts camelCase → snake_case automatically
+      body: body ? JSON.stringify(body) : undefined,
     }),
 
   put: <T>(url: string, body?: unknown, options?: FetchOptions) =>
     fetchJson<T>(url, {
       ...options,
       method: 'PUT',
-      // Convert camelCase keys to snake_case for Python backend
-      body: body ? JSON.stringify(convertKeysToSnakeCase(body)) : undefined,
+      // Backend CamelCaseMiddleware converts camelCase → snake_case automatically
+      body: body ? JSON.stringify(body) : undefined,
     }),
 
   patch: <T>(url: string, body?: unknown, options?: FetchOptions) =>
     fetchJson<T>(url, {
       ...options,
       method: 'PATCH',
-      // Convert camelCase keys to snake_case for Python backend
-      body: body ? JSON.stringify(convertKeysToSnakeCase(body)) : undefined,
+      // Backend CamelCaseMiddleware converts camelCase → snake_case automatically
+      body: body ? JSON.stringify(body) : undefined,
     }),
 
   delete: <T>(url: string, options?: FetchOptions) =>

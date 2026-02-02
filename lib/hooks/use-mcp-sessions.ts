@@ -45,8 +45,8 @@ export function useMCPSessions(orgId: string) {
       if (!response.ok) {
         throw new Error('Failed to fetch MCP sessions');
       }
-      const data = await response.json();
-      return convertKeysToCamelCase(data) as { connections: MCPConnection[]; total: number; activeCount: number };
+      // Backend CamelCaseMiddleware returns camelCase already
+      return await response.json() as { connections: MCPConnection[]; total: number; activeCount: number };
     },
     staleTime: 30 * 1000, // 30 seconds
     // Only fetch when auth is loaded, user is signed in, and orgId is set
@@ -103,8 +103,8 @@ export function useRevokeMCPSession() {
       if (!response.ok) {
         throw new Error('Failed to revoke session');
       }
-      const data = await response.json();
-      return convertKeysToCamelCase(data);
+      // Backend CamelCaseMiddleware returns camelCase already
+      return await response.json();
     },
     onSuccess: (_, { orgId }) => {
       queryClient.invalidateQueries({ queryKey: ['mcp-sessions', orgId] });

@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BACKEND_URL } from '@/lib/config/api-endpoints';
-import { convertKeysToCamelCase } from '@/lib/api-client';
+// No conversion imports needed - backend CamelCaseMiddleware handles all case conversion
 import type { SecurityScanResult, Vulnerability, VulnerabilitySeverity } from '@/lib/supabase/types';
 
 // OWASP Top 10 2021 compliance checklist
@@ -42,7 +42,7 @@ export function useSecurityScan(projectId: string | null) {
         }
 
         const data = await response.json();
-        return convertKeysToCamelCase(data) as SecurityScanResult;
+        return data as SecurityScanResult;
       } catch (error) {
         // If backend doesn't have security endpoints yet, return mock data for UI development
         console.warn('Security scan API not available, using mock data');
@@ -74,7 +74,7 @@ export function useSecurityScans(projectId: string | null, limit = 10) {
         }
 
         const data = await response.json();
-        return convertKeysToCamelCase(data) as SecurityScanResult[];
+        return data as SecurityScanResult[];
       } catch (error) {
         console.warn('Security scans API not available, using mock data');
         const mockScan = getMockSecurityScan(projectId);
@@ -118,7 +118,7 @@ export function useVulnerabilities(
         }
 
         const data = await response.json();
-        return convertKeysToCamelCase(data) as Vulnerability[];
+        return data as Vulnerability[];
       } catch (error) {
         console.warn('Vulnerabilities API not available, using mock data');
         const mockScan = getMockSecurityScan(projectId);
@@ -162,7 +162,7 @@ export function useRunSecurityScan() {
         }
 
         const data = await response.json();
-        return convertKeysToCamelCase(data) as SecurityScanResult;
+        return data as SecurityScanResult;
       } catch (error) {
         console.warn('Security scan API not available, using mock data');
         // Simulate a running scan for UI development

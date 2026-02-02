@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
-import { convertKeysToCamelCase } from '@/lib/api-client';
+// No conversion imports needed - backend CamelCaseMiddleware handles all case conversion
 import type {
   ProductionEvent,
   GeneratedTest,
@@ -242,7 +242,7 @@ export function useGenerateTest() {
       }
 
       const data = await response.json();
-      return convertKeysToCamelCase(data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['generated-tests'] });
@@ -355,7 +355,7 @@ export function useCalculateRiskScores() {
       }
 
       const data = await response.json();
-      return convertKeysToCamelCase(data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['risk-scores'] });
@@ -439,7 +439,7 @@ export function useAIQualityScore(projectId: string | null) {
       }
 
       const data = await response.json();
-      return convertKeysToCamelCase(data) as AIQualityScore;
+      return data as AIQualityScore;
     },
     enabled: !!projectId,
     refetchInterval: 60000, // Refetch every minute
@@ -492,7 +492,7 @@ export function useSemanticSearch() {
       }
 
       const data = await response.json();
-      return convertKeysToCamelCase(data) as {
+      return data as {
         success: boolean;
         query: string;
         patterns: SimilarPattern[];
@@ -556,7 +556,7 @@ export function useAutonomousLoop() {
       }
 
       const data = await response.json();
-      return convertKeysToCamelCase(data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production-events'] });
@@ -627,7 +627,7 @@ export function usePredictiveQuality(projectId: string | null, timeframe: string
       }
 
       const data = await response.json();
-      return convertKeysToCamelCase(data) as PredictiveQualityResponse;
+      return data as PredictiveQualityResponse;
     },
     enabled: !!projectId,
     refetchInterval: 300000, // Refetch every 5 minutes
