@@ -441,9 +441,6 @@ function ChatPageContent() {
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Enhanced Desktop Header */}
-          <ChatAreaHeader />
-
           <div className="flex-1 overflow-hidden">
             {messagesLoading ? (
               <div className="flex items-center justify-center h-full">

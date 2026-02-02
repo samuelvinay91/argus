@@ -40,7 +40,7 @@ export function ChatContainer({
   return (
     <div
       className={cn(
-        'flex h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] lg:h-[calc(100vh-12rem)]',
+        'relative flex h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] lg:h-[calc(100vh-12rem)]',
         'min-w-0 w-full overflow-hidden',
         className
       )}

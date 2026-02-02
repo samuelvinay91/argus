@@ -59,13 +59,7 @@ export interface ChatInterfaceProps {
 // INNER CHAT COMPONENT (uses context)
 // =============================================================================
 
-interface ChatInterfaceInnerProps {
-  onMessagesChange?: (messages: Message[]) => void;
-}
-
-const ChatInterfaceInner = memo(function ChatInterfaceInner({
-  onMessagesChange,
-}: ChatInterfaceInnerProps) {
+const ChatInterfaceInner = memo(function ChatInterfaceInner() {
   const {
     messages,
     isLoading,
@@ -197,8 +191,9 @@ export const ChatInterface = memo(function ChatInterface({
     <ChatProvider
       conversationId={conversationId}
       initialMessages={initialMessages}
+      onMessagesChange={onMessagesChange}
     >
-      <ChatInterfaceInner onMessagesChange={onMessagesChange} />
+      <ChatInterfaceInner />
     </ChatProvider>
   );
 });
