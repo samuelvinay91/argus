@@ -86,55 +86,6 @@ const MODEL_SHORT_NAMES: Record<string, string> = {
   'qwen-2.5-72b': 'Qwen 2.5 72B',
 };
 
-// Default platform models (always available via platform API key)
-const DEFAULT_PLATFORM_MODELS: ModelInfo[] = [
-  {
-    model_id: 'claude-sonnet-4-5',
-    display_name: 'Claude Sonnet 4.5',
-    provider: 'anthropic',
-    input_price: 3.0,
-    output_price: 15.0,
-    capabilities: ['vision', 'tool_use', 'computer_use', 'json_mode', 'code_generation'],
-    is_available: true,
-    tier: 'standard',
-    context_window: 200000,
-    max_output_tokens: 8192,
-    supports_vision: true,
-    supports_function_calling: true,
-    supports_streaming: true,
-  },
-  {
-    model_id: 'claude-haiku-4-5',
-    display_name: 'Claude Haiku 4.5',
-    provider: 'anthropic',
-    input_price: 0.80,
-    output_price: 4.0,
-    capabilities: ['vision', 'tool_use', 'json_mode', 'fast_inference'],
-    is_available: true,
-    tier: 'standard',
-    context_window: 200000,
-    max_output_tokens: 8192,
-    supports_vision: true,
-    supports_function_calling: true,
-    supports_streaming: true,
-  },
-  {
-    model_id: 'claude-opus-4-5',
-    display_name: 'Claude Opus 4.5',
-    provider: 'anthropic',
-    input_price: 15.0,
-    output_price: 75.0,
-    capabilities: ['vision', 'tool_use', 'computer_use', 'json_mode', 'extended_context', 'code_generation'],
-    is_available: true,
-    tier: 'premium',
-    context_window: 200000,
-    max_output_tokens: 8192,
-    supports_vision: true,
-    supports_function_calling: true,
-    supports_streaming: true,
-  },
-];
-
 interface ChatModelSelectorProps {
   className?: string;
   compact?: boolean;
@@ -149,26 +100,21 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
   const currentModel = preferences?.default_model || 'claude-sonnet-4-5';
   const currentProvider = preferences?.default_provider || 'anthropic';
 
-  // Use API models if available, otherwise fall back to default platform models
-  const availableModels = useMemo(() => {
-    const apiModels = modelsData?.models?.filter(m => m.is_available) || [];
-    if (apiModels.length > 0) {
-      return apiModels;
-    }
-    // Fallback to default platform models
-    return DEFAULT_PLATFORM_MODELS;
-  }, [modelsData?.models]);
-
   // Get current model info
   const currentModelInfo = useMemo(() => {
-    return availableModels.find((m) => m.model_id === currentModel) || null;
-  }, [availableModels, currentModel]);
+    if (!modelsData?.models) return null;
+    return modelsData.models.find((m) => m.model_id === currentModel);
+  }, [modelsData?.models, currentModel]);
 
   // Group available models by provider
   const modelsByProvider = useMemo(() => {
-    const grouped = availableModels.reduce((acc, model) => {
-      if (!acc[model.provider]) acc[model.provider] = [];
-      acc[model.provider].push(model);
+    if (!modelsData?.models) return {};
+
+    const grouped = modelsData.models.reduce((acc, model) => {
+      if (model.is_available) {
+        if (!acc[model.provider]) acc[model.provider] = [];
+        acc[model.provider].push(model);
+      }
       return acc;
     }, {} as Record<string, ModelInfo[]>);
 
@@ -179,12 +125,12 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
         if (a.tier === 'premium' && b.tier !== 'premium') return -1;
         if (b.tier === 'premium' && a.tier !== 'premium') return 1;
         // Then by output price descending (better models usually cost more)
-        return (b.output_price ?? 0) - (a.output_price ?? 0);
+        return b.output_price - a.output_price;
       });
     });
 
     return grouped;
-  }, [availableModels]);
+  }, [modelsData?.models]);
 
   // Handle model selection
   const handleSelectModel = useCallback(
