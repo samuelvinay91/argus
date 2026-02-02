@@ -47,6 +47,7 @@ import {
 const BudgetDisplay = memo(function BudgetDisplay() {
   const { data: budget, isLoading } = useAIBudget();
 
+  // Show loading state or if budget data is incomplete
   if (isLoading || !budget) {
     return (
       <div className="animate-pulse space-y-2">
@@ -56,8 +57,13 @@ const BudgetDisplay = memo(function BudgetDisplay() {
     );
   }
 
-  const usagePercent = budget.daily_limit > 0
-    ? Math.min((budget.daily_spent / budget.daily_limit) * 100, 100)
+  // Safely get values with defaults
+  const dailySpent = budget.daily_spent ?? 0;
+  const dailyLimit = budget.daily_limit ?? 0;
+  const dailyRemaining = budget.daily_remaining ?? 0;
+
+  const usagePercent = dailyLimit > 0
+    ? Math.min((dailySpent / dailyLimit) * 100, 100)
     : 0;
 
   const isNearLimit = usagePercent >= 80;
@@ -74,7 +80,7 @@ const BudgetDisplay = memo(function BudgetDisplay() {
           'text-sm font-mono',
           isAtLimit ? 'text-destructive' : isNearLimit ? 'text-orange-500' : 'text-muted-foreground'
         )}>
-          ${budget.daily_spent.toFixed(2)} / ${budget.daily_limit.toFixed(2)}
+          ${dailySpent.toFixed(2)} / ${dailyLimit.toFixed(2)}
         </span>
       </div>
 
@@ -96,7 +102,7 @@ const BudgetDisplay = memo(function BudgetDisplay() {
       )}
 
       <div className="text-xs text-muted-foreground">
-        Remaining: ${budget.daily_remaining.toFixed(2)}
+        Remaining: ${dailyRemaining.toFixed(2)}
       </div>
     </div>
   );

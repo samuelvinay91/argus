@@ -129,8 +129,13 @@ function ChatAreaHeader() {
   const { data: preferences } = useAIPreferences();
   const { data: budget } = useAIBudget();
 
-  const budgetPercent = budget && budget.daily_limit > 0
-    ? Math.min((budget.daily_spent / budget.daily_limit) * 100, 100)
+  // Safely extract budget values with defaults
+  const dailySpent = budget?.daily_spent ?? 0;
+  const dailyLimit = budget?.daily_limit ?? 0;
+  const hasBudget = budget?.has_budget ?? false;
+
+  const budgetPercent = dailyLimit > 0
+    ? Math.min((dailySpent / dailyLimit) * 100, 100)
     : 0;
 
   const isNearLimit = budgetPercent >= 80;
@@ -163,7 +168,7 @@ function ChatAreaHeader() {
         )}
 
         {/* Budget Indicator */}
-        {budget && budget.has_budget && (
+        {hasBudget && (
           <Badge
             variant="outline"
             className={cn(
@@ -175,9 +180,9 @@ function ChatAreaHeader() {
           >
             <Wallet className="w-3 h-3" />
             <span className="hidden xl:inline">Today:</span>
-            <span className="font-mono">${budget.daily_spent.toFixed(2)}</span>
+            <span className="font-mono">${dailySpent.toFixed(2)}</span>
             <span className="text-muted-foreground">/</span>
-            <span className="font-mono">${budget.daily_limit.toFixed(2)}</span>
+            <span className="font-mono">${dailyLimit.toFixed(2)}</span>
           </Badge>
         )}
       </div>
