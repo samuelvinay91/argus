@@ -241,11 +241,34 @@ export const ChatHeader = memo(function ChatHeader({
   return (
     <div
       className={cn(
-        'absolute top-2 right-2 z-30 lg:top-4 lg:right-4',
-        'flex items-center gap-2',
+        'flex items-center justify-end gap-2',
+        'px-2 py-2 sm:px-4 sm:py-3',
+        'border-b border-border/50 bg-background/80 backdrop-blur-sm',
+        'flex-shrink-0',
         className
       )}
     >
+      {/* Phase Badge - When processing */}
+      <AnimatePresence>
+        <PhaseBadge />
+      </AnimatePresence>
+
+      {/* Active Agent - When an agent is working */}
+      <AnimatePresence>
+        <ActiveAgentIndicator />
+      </AnimatePresence>
+
+      {/* Spacer to push controls to the right */}
+      <div className="flex-1" />
+
+      {/* Artifacts Toggle */}
+      <ArtifactsToggle hasArtifact={hasArtifact} />
+
+      {/* Screenshots Toggle */}
+      {messages.length > 0 && (
+        <ScreenshotsToggle screenshotCount={screenshotCount} />
+      )}
+
       {/* Model Badge - Always visible */}
       <ChatModelSelector />
 
@@ -262,24 +285,6 @@ export const ChatHeader = memo(function ChatHeader({
           </Button>
         }
       />
-
-      {/* Phase Badge - When processing */}
-      <AnimatePresence>
-        <PhaseBadge />
-      </AnimatePresence>
-
-      {/* Active Agent - When an agent is working */}
-      <AnimatePresence>
-        <ActiveAgentIndicator />
-      </AnimatePresence>
-
-      {/* Artifacts Toggle */}
-      <ArtifactsToggle hasArtifact={hasArtifact} />
-
-      {/* Screenshots Toggle */}
-      {messages.length > 0 && (
-        <ScreenshotsToggle screenshotCount={screenshotCount} />
-      )}
     </div>
   );
 });

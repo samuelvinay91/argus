@@ -40,14 +40,14 @@ export function ChatContainer({
   return (
     <div
       className={cn(
-        'relative flex h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] lg:h-[calc(100vh-12rem)]',
-        'min-w-0 w-full overflow-hidden',
+        'flex h-full',
+        'min-w-0 w-full',
         className
       )}
     >
       {/* Main Chat Area */}
       <motion.div
-        className="flex flex-col min-w-0 overflow-hidden"
+        className="flex flex-col min-w-0 min-h-0"
         animate={{
           width: isPanelOpen ? '60%' : '100%',
         }}
@@ -123,8 +123,10 @@ export function ChatHeaderArea({ children, className }: ChatHeaderAreaProps) {
   return (
     <div
       className={cn(
-        'absolute top-2 right-2 z-30 lg:top-4 lg:right-4',
-        'flex items-center gap-2',
+        'flex items-center justify-end gap-2',
+        'px-2 py-2 sm:px-4 sm:py-3',
+        'border-b border-border/50 bg-background/80 backdrop-blur-sm',
+        'flex-shrink-0',
         className
       )}
     >
