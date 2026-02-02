@@ -31,6 +31,14 @@ function camelToSnake(str: string): string {
 }
 
 /**
+ * Convert snake_case to camelCase
+ * Backend uses snake_case (Python convention), frontend uses camelCase (JS convention)
+ */
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+/**
  * Recursively convert object keys from camelCase to snake_case
  * Handles nested objects and arrays
  * Exported for use in other modules (e.g., useAuthApi)
@@ -49,6 +57,32 @@ export function convertKeysToSnakeCase(obj: unknown): unknown {
     for (const [key, value] of Object.entries(obj)) {
       const snakeKey = camelToSnake(key);
       converted[snakeKey] = convertKeysToSnakeCase(value);
+    }
+    return converted;
+  }
+
+  return obj;
+}
+
+/**
+ * Recursively convert object keys from snake_case to camelCase
+ * Handles nested objects and arrays
+ * Used to transform backend responses to frontend format
+ */
+export function convertKeysToCamelCase(obj: unknown): unknown {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(convertKeysToCamelCase);
+  }
+
+  if (typeof obj === 'object' && obj.constructor === Object) {
+    const converted: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const camelKey = snakeToCamel(key);
+      converted[camelKey] = convertKeysToCamelCase(value);
     }
     return converted;
   }
@@ -423,7 +457,9 @@ export async function fetchJson<T>(
       throw new Error(errorMessage || `Request failed with status ${response.status}`);
     }
 
-    return response.json();
+    // Convert snake_case response keys to camelCase for frontend
+    const data = await response.json();
+    return convertKeysToCamelCase(data) as T;
   } catch (error) {
     // Check if this was an abort
     if (error instanceof Error && error.name === 'AbortError') {
