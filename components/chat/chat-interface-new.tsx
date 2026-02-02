@@ -120,7 +120,7 @@ const ChatInterfaceInner = memo(function ChatInterfaceInner() {
       <ChatHeader />
 
       {/* Message Area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 p-4">
         {messages.length === 0 ? (
           <EmptyState />
         ) : (
@@ -129,7 +129,9 @@ const ChatInterfaceInner = memo(function ChatInterfaceInner() {
       </div>
 
       {/* Input Area */}
-      <ChatInput />
+      <div className="flex-shrink-0 border-t bg-background p-4">
+        <ChatInput />
+      </div>
 
       {/* Side Panels */}
       <AnimatePresence>

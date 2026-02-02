@@ -40,14 +40,14 @@ export function ChatContainer({
   return (
     <div
       className={cn(
-        'flex h-full',
+        'flex flex-1 min-h-0',
         'min-w-0 w-full',
         className
       )}
     >
       {/* Main Chat Area */}
       <motion.div
-        className="flex flex-col min-w-0 min-h-0"
+        className="flex flex-col flex-1 min-w-0 min-h-0"
         animate={{
           width: isPanelOpen ? '60%' : '100%',
         }}

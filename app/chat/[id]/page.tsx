@@ -447,21 +447,19 @@ function ChatPageContent() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-hidden">
-            {messagesLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <ChatInterface
-                key={conversationId}
-                conversationId={conversationId}
-                initialMessages={initialMessages}
-                onMessagesChange={handleMessagesChange}
-              />
-            )}
-          </div>
+        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+          {messagesLoading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <ChatInterface
+              key={conversationId}
+              conversationId={conversationId}
+              initialMessages={initialMessages}
+              onMessagesChange={handleMessagesChange}
+            />
+          )}
 
           {/* Backend Status - Fixed at bottom left */}
           <div className="hidden lg:flex fixed bottom-4 left-[calc(16rem+16rem+1.5rem)] z-20 items-center gap-2 text-xs bg-background/80 backdrop-blur-sm border rounded-full px-3 py-1.5 shadow-sm">
