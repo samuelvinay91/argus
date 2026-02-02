@@ -13,7 +13,6 @@ import {
   Activity,
   Sparkles,
 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 export interface ActivityItem {
@@ -83,15 +82,12 @@ export function TeamActivityFeed({
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-muted-foreground" />
-          <CardTitle className="text-base font-medium">Team Activity</CardTitle>
-        </div>
-        <CardDescription>Recent activity across your projects</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="p-4">
+      <p className="text-sm text-muted-foreground flex items-center gap-2 pb-3">
+        <Activity className="h-4 w-4" />
+        Recent activity across your projects
+      </p>
+      <div>
         {isLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -175,34 +171,26 @@ export function TeamActivityFeed({
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 export function TeamActivityFeedSkeleton() {
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 bg-muted animate-pulse rounded" />
-          <div className="h-5 w-28 bg-muted animate-pulse rounded" />
-        </div>
-        <div className="h-4 w-48 bg-muted animate-pulse rounded" />
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex gap-3">
-              <div className="h-8 w-8 bg-muted animate-pulse rounded-full flex-shrink-0" />
-              <div className="flex-1">
-                <div className="h-4 w-48 bg-muted animate-pulse rounded mb-1" />
-                <div className="h-3 w-24 bg-muted animate-pulse rounded" />
-              </div>
+    <div className="p-4">
+      <div className="h-4 w-48 bg-muted animate-pulse rounded mb-3" />
+      <div className="space-y-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex gap-3">
+            <div className="h-8 w-8 bg-muted animate-pulse rounded-full flex-shrink-0" />
+            <div className="flex-1">
+              <div className="h-4 w-48 bg-muted animate-pulse rounded mb-1" />
+              <div className="h-3 w-24 bg-muted animate-pulse rounded" />
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

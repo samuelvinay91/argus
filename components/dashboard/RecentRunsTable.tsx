@@ -12,7 +12,6 @@ import {
   ChevronRight,
   MoreHorizontal,
 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusDot, Badge } from '@/components/ui/data-table';
 import { cn } from '@/lib/utils';
@@ -80,20 +79,17 @@ export function RecentRunsTable({
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <div>
-          <CardTitle className="text-base font-medium">Recent Test Runs</CardTitle>
-          <CardDescription>Latest test execution history</CardDescription>
-        </div>
+    <div>
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <p className="text-sm text-muted-foreground">Latest test execution history</p>
         <Button variant="outline" size="sm" asChild>
           <Link href="/reports" onClick={(e) => handleNavigation(e, '/reports')}>
             View All
             <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
           </Link>
         </Button>
-      </CardHeader>
-      <CardContent className="p-0">
+      </div>
+      <div>
         {isLoading ? (
           <div className="divide-y">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -201,35 +197,30 @@ export function RecentRunsTable({
             </Button>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 export function RecentRunsTableSkeleton() {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <div>
-          <div className="h-5 w-36 bg-muted animate-pulse rounded mb-2" />
-          <div className="h-4 w-48 bg-muted animate-pulse rounded" />
-        </div>
+    <div>
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <div className="h-4 w-48 bg-muted animate-pulse rounded" />
         <div className="h-9 w-20 bg-muted animate-pulse rounded-md" />
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="divide-y">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-6 py-4">
-              <div className="h-4 w-4 bg-muted animate-pulse rounded-full" />
-              <div className="flex-1">
-                <div className="h-4 w-40 bg-muted animate-pulse rounded mb-1" />
-                <div className="h-3 w-24 bg-muted animate-pulse rounded" />
-              </div>
-              <div className="h-5 w-16 bg-muted animate-pulse rounded" />
+      </div>
+      <div className="divide-y">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-6 py-4">
+            <div className="h-4 w-4 bg-muted animate-pulse rounded-full" />
+            <div className="flex-1">
+              <div className="h-4 w-40 bg-muted animate-pulse rounded mb-1" />
+              <div className="h-3 w-24 bg-muted animate-pulse rounded" />
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            <div className="h-5 w-16 bg-muted animate-pulse rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -11,13 +11,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
 // Types
+// Note: Properties use camelCase because API responses are converted from snake_case
 export interface Member {
   id: string;
   email: string;
   role: 'owner' | 'admin' | 'member' | 'viewer';
   status: 'active' | 'pending';
-  invited_at?: string;
-  accepted_at?: string;
+  invitedAt?: string;
+  acceptedAt?: string;
 }
 
 export interface Organization {
@@ -25,16 +26,16 @@ export interface Organization {
   name: string;
   slug: string;
   plan: string;
-  member_count: number;
+  memberCount: number;
 }
 
 export interface PendingInvitation {
   id: string;
   email: string;
   role: 'owner' | 'admin' | 'member' | 'viewer';
-  invited_at: string;
-  expires_at: string;
-  inviter_email?: string;
+  invitedAt: string;
+  expiresAt: string;
+  inviterEmail?: string;
   status?: string;
 }
 

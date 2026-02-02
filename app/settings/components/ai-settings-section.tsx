@@ -32,52 +32,52 @@ import { toast } from '@/lib/hooks/useToast';
 
 // Types
 export interface AIPreferences {
-  default_provider: string;
-  default_model: string;
-  cost_limit_per_day: number;
-  cost_limit_per_message: number;
-  use_platform_key_fallback: boolean;
-  show_token_costs: boolean;
-  show_model_in_chat: boolean;
+  defaultProvider: string;
+  defaultModel: string;
+  costLimitPerDay: number;
+  costLimitPerMessage: number;
+  usePlatformKeyFallback: boolean;
+  showTokenCosts: boolean;
+  showModelInChat: boolean;
 }
 
 export interface ProviderKey {
   id: string;
   provider: string;
-  key_display: string;
-  is_valid: boolean;
-  last_validated_at: string | null;
-  validation_error: string | null;
-  created_at: string;
+  keyDisplay: string;
+  isValid: boolean;
+  lastValidatedAt: string | null;
+  validationError: string | null;
+  createdAt: string;
 }
 
 export interface ModelInfo {
-  model_id: string;
-  display_name: string;
+  modelId: string;
+  displayName: string;
   provider: string;
-  input_price: number;
-  output_price: number;
+  inputPrice: number;
+  outputPrice: number;
   capabilities: string[];
-  is_available: boolean;
+  isAvailable: boolean;
 }
 
 export interface UsageSummary {
-  total_requests: number;
-  total_input_tokens: number;
-  total_output_tokens: number;
-  total_cost_usd: number;
-  platform_key_cost: number;
-  byok_cost: number;
-  usage_by_model: Record<string, { requests: number; tokens: number; cost: number }>;
-  usage_by_provider: Record<string, { requests: number; cost: number }>;
+  totalRequests: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCostUsd: number;
+  platformKeyCost: number;
+  byokCost: number;
+  usageByModel: Record<string, { requests: number; tokens: number; cost: number }>;
+  usageByProvider: Record<string, { requests: number; cost: number }>;
 }
 
 export interface BudgetStatus {
-  has_budget: boolean;
-  daily_limit: number;
-  daily_spent: number;
-  daily_remaining: number;
-  message_limit: number;
+  hasBudget: boolean;
+  dailyLimit: number;
+  dailySpent: number;
+  dailyRemaining: number;
+  messageLimit: number;
 }
 
 interface AISettingsSectionProps {
@@ -92,7 +92,7 @@ interface AISettingsSectionProps {
   onUpdatePreferences: (prefs: Partial<AIPreferences>) => Promise<void>;
   onAddProviderKey: (provider: string, apiKey: string) => Promise<void>;
   onRemoveProviderKey: (provider: string) => Promise<void>;
-  onValidateProviderKey: (provider: string) => Promise<{ is_valid: boolean; error: string | null }>;
+  onValidateProviderKey: (provider: string) => Promise<{ isValid: boolean; error: string | null }>;
 }
 
 // Provider metadata
@@ -331,7 +331,7 @@ export function AISettingsSection({
     setIsValidating(provider);
     try {
       const result = await onValidateProviderKey(provider);
-      if (result.is_valid) {
+      if (result.isValid) {
         toast.success({
           title: 'Key Valid',
           description: `Your ${PROVIDERS[provider as keyof typeof PROVIDERS]?.name || provider} API key is working.`,
@@ -418,8 +418,8 @@ export function AISettingsSection({
             <div className="space-y-2">
               <label className="text-sm font-medium">Default Model</label>
               <select
-                value={preferences?.default_model || 'claude-sonnet-4-5'}
-                onChange={(e) => handleUpdatePrefs('default_model', e.target.value)}
+                value={preferences?.defaultModel || 'claude-sonnet-4-5'}
+                onChange={(e) => handleUpdatePrefs('defaultModel', e.target.value)}
                 className="w-full p-2 rounded-md border bg-background"
               >
                 {Object.entries(modelsByProvider).map(([provider, providerModels]) => (
@@ -429,12 +429,12 @@ export function AISettingsSection({
                   >
                     {providerModels.map((model) => (
                       <option
-                        key={model.model_id}
-                        value={model.model_id}
-                        disabled={!model.is_available}
+                        key={model.modelId}
+                        value={model.modelId}
+                        disabled={!model.isAvailable}
                       >
-                        {model.display_name} - ${model.input_price}/${model.output_price} per 1M
-                        {!model.is_available && ' (No API key)'}
+                        {model.displayName} - ${model.inputPrice}/${model.outputPrice} per 1M
+                        {!model.isAvailable && ' (No API key)'}
                       </option>
                     ))}
                   </optgroup>
@@ -448,20 +448,20 @@ export function AISettingsSection({
               <ToggleRow
                 label="Show model in chat"
                 description="Display the current model name in the chat interface"
-                checked={preferences?.show_model_in_chat ?? true}
-                onChange={(checked) => handleUpdatePrefs('show_model_in_chat', checked)}
+                checked={preferences?.showModelInChat ?? true}
+                onChange={(checked) => handleUpdatePrefs('showModelInChat', checked)}
               />
               <ToggleRow
                 label="Show token costs"
                 description="Display token count and cost for each message"
-                checked={preferences?.show_token_costs ?? true}
-                onChange={(checked) => handleUpdatePrefs('show_token_costs', checked)}
+                checked={preferences?.showTokenCosts ?? true}
+                onChange={(checked) => handleUpdatePrefs('showTokenCosts', checked)}
               />
               <ToggleRow
                 label="Use platform fallback"
                 description="Fall back to Argus's API keys if your key is not configured"
-                checked={preferences?.use_platform_key_fallback ?? true}
-                onChange={(checked) => handleUpdatePrefs('use_platform_key_fallback', checked)}
+                checked={preferences?.usePlatformKeyFallback ?? true}
+                onChange={(checked) => handleUpdatePrefs('usePlatformKeyFallback', checked)}
               />
             </div>
           </CardContent>
@@ -519,15 +519,15 @@ export function AISettingsSection({
                           <span
                             className={cn(
                               'px-2 py-0.5 rounded-full text-xs',
-                              existingKey.is_valid
+                              existingKey.isValid
                                 ? 'bg-green-500/10 text-green-500'
                                 : 'bg-red-500/10 text-red-500'
                             )}
                           >
-                            {existingKey.is_valid ? 'Active' : 'Invalid'}
+                            {existingKey.isValid ? 'Active' : 'Invalid'}
                           </span>
                           <code className="px-2 py-1 bg-muted rounded text-xs">
-                            {existingKey.key_display}
+                            {existingKey.keyDisplay}
                           </code>
                           <Button
                             size="sm"
@@ -627,10 +627,10 @@ export function AISettingsSection({
                   )}
 
                   {/* Validation Error */}
-                  {existingKey?.validation_error && (
+                  {existingKey?.validationError && (
                     <div className="mt-2 flex items-center gap-2 text-sm text-red-500">
                       <AlertCircle className="h-4 w-4" />
-                      {existingKey.validation_error}
+                      {existingKey.validationError}
                     </div>
                   )}
                 </div>
@@ -659,26 +659,26 @@ export function AISettingsSection({
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Today&apos;s Spending</span>
                   <span className="text-lg font-bold">
-                    ${budgetStatus.daily_spent.toFixed(2)} / ${budgetStatus.daily_limit.toFixed(2)}
+                    ${budgetStatus.dailySpent.toFixed(2)} / ${budgetStatus.dailyLimit.toFixed(2)}
                   </span>
                 </div>
                 <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className={cn(
                       'h-full transition-all',
-                      budgetStatus.daily_spent / budgetStatus.daily_limit > 0.8
+                      budgetStatus.dailySpent / budgetStatus.dailyLimit > 0.8
                         ? 'bg-red-500'
-                        : budgetStatus.daily_spent / budgetStatus.daily_limit > 0.5
+                        : budgetStatus.dailySpent / budgetStatus.dailyLimit > 0.5
                         ? 'bg-yellow-500'
                         : 'bg-green-500'
                     )}
                     style={{
-                      width: `${Math.min(100, (budgetStatus.daily_spent / budgetStatus.daily_limit) * 100)}%`,
+                      width: `${Math.min(100, (budgetStatus.dailySpent / budgetStatus.dailyLimit) * 100)}%`,
                     }}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  ${budgetStatus.daily_remaining.toFixed(2)} remaining today
+                  ${budgetStatus.dailyRemaining.toFixed(2)} remaining today
                 </p>
               </div>
             )}
@@ -694,8 +694,8 @@ export function AISettingsSection({
                     min={0}
                     max={1000}
                     step={0.5}
-                    value={preferences?.cost_limit_per_day ?? 10}
-                    onChange={(e) => handleUpdatePrefs('cost_limit_per_day', parseFloat(e.target.value))}
+                    value={preferences?.costLimitPerDay ?? 10}
+                    onChange={(e) => handleUpdatePrefs('costLimitPerDay', parseFloat(e.target.value))}
                     className="w-32"
                   />
                   <span className="text-sm text-muted-foreground">per day</span>
@@ -711,8 +711,8 @@ export function AISettingsSection({
                     min={0}
                     max={100}
                     step={0.1}
-                    value={preferences?.cost_limit_per_message ?? 1}
-                    onChange={(e) => handleUpdatePrefs('cost_limit_per_message', parseFloat(e.target.value))}
+                    value={preferences?.costLimitPerMessage ?? 1}
+                    onChange={(e) => handleUpdatePrefs('costLimitPerMessage', parseFloat(e.target.value))}
                     className="w-32"
                   />
                   <span className="text-sm text-muted-foreground">per message</span>
@@ -745,36 +745,36 @@ export function AISettingsSection({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="p-4 rounded-lg bg-muted/50">
                     <div className="text-2xl font-bold">
-                      {usageSummary.total_requests.toLocaleString()}
+                      {usageSummary.totalRequests.toLocaleString()}
                     </div>
                     <div className="text-sm text-muted-foreground">Total Requests</div>
                   </div>
                   <div className="p-4 rounded-lg bg-muted/50">
                     <div className="text-2xl font-bold">
-                      {((usageSummary.total_input_tokens + usageSummary.total_output_tokens) / 1000).toFixed(1)}K
+                      {((usageSummary.totalInputTokens + usageSummary.totalOutputTokens) / 1000).toFixed(1)}K
                     </div>
                     <div className="text-sm text-muted-foreground">Total Tokens</div>
                   </div>
                   <div className="p-4 rounded-lg bg-muted/50">
                     <div className="text-2xl font-bold text-green-500">
-                      ${usageSummary.total_cost_usd.toFixed(2)}
+                      ${usageSummary.totalCostUsd.toFixed(2)}
                     </div>
                     <div className="text-sm text-muted-foreground">Total Cost</div>
                   </div>
                   <div className="p-4 rounded-lg bg-muted/50">
                     <div className="text-2xl font-bold text-blue-500">
-                      ${usageSummary.byok_cost.toFixed(2)}
+                      ${usageSummary.byokCost.toFixed(2)}
                     </div>
                     <div className="text-sm text-muted-foreground">Your Keys Cost</div>
                   </div>
                 </div>
 
                 {/* Usage by Model */}
-                {Object.keys(usageSummary.usage_by_model).length > 0 && (
+                {Object.keys(usageSummary.usageByModel).length > 0 && (
                   <div className="space-y-3">
                     <h4 className="text-sm font-medium">Usage by Model</h4>
                     <div className="space-y-2">
-                      {Object.entries(usageSummary.usage_by_model)
+                      {Object.entries(usageSummary.usageByModel)
                         .sort((a, b) => b[1].cost - a[1].cost)
                         .map(([model, stats]) => (
                           <div
@@ -798,11 +798,11 @@ export function AISettingsSection({
                 )}
 
                 {/* Usage by Provider */}
-                {Object.keys(usageSummary.usage_by_provider).length > 0 && (
+                {Object.keys(usageSummary.usageByProvider).length > 0 && (
                   <div className="space-y-3">
                     <h4 className="text-sm font-medium">Usage by Provider</h4>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {Object.entries(usageSummary.usage_by_provider)
+                      {Object.entries(usageSummary.usageByProvider)
                         .sort((a, b) => b[1].cost - a[1].cost)
                         .map(([provider, stats]) => (
                           <div key={provider} className="p-3 rounded-lg border">

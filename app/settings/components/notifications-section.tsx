@@ -9,13 +9,13 @@ import { LoadingSpinner, ErrorMessage, ToggleRow } from './settings-ui';
 import { useFormState } from '@/lib/hooks/use-form-state';
 
 interface NotificationSettings {
-  email_notifications: boolean;
-  slack_notifications: boolean;
-  in_app_notifications: boolean;
-  test_failure_alerts: boolean;
-  daily_digest: boolean;
-  weekly_report: boolean;
-  alert_threshold: number;
+  emailNotifications: boolean;
+  slackNotifications: boolean;
+  inAppNotifications: boolean;
+  testFailureAlerts: boolean;
+  dailyDigest: boolean;
+  weeklyReport: boolean;
+  alertThreshold: number;
 }
 
 interface NotificationsSectionProps {
@@ -40,13 +40,13 @@ export function NotificationsSection({
     save,
   } = useFormState({
     initialValue: {
-      email_notifications: settings?.email_notifications ?? true,
-      slack_notifications: settings?.slack_notifications ?? false,
-      in_app_notifications: settings?.in_app_notifications ?? true,
-      test_failure_alerts: settings?.test_failure_alerts ?? true,
-      daily_digest: settings?.daily_digest ?? true,
-      weekly_report: settings?.weekly_report ?? false,
-      alert_threshold: settings?.alert_threshold ?? 80,
+      emailNotifications: settings?.emailNotifications ?? true,
+      slackNotifications: settings?.slackNotifications ?? false,
+      inAppNotifications: settings?.inAppNotifications ?? true,
+      testFailureAlerts: settings?.testFailureAlerts ?? true,
+      dailyDigest: settings?.dailyDigest ?? true,
+      weeklyReport: settings?.weeklyReport ?? false,
+      alertThreshold: settings?.alertThreshold ?? 80,
     },
     onSave,
   });
@@ -60,7 +60,7 @@ export function NotificationsSection({
 
   const handleThresholdChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      updateField('alert_threshold', parseInt(e.target.value) || 80);
+      updateField('alertThreshold', parseInt(e.target.value) || 80);
     },
     [updateField]
   );
@@ -97,22 +97,22 @@ export function NotificationsSection({
           <ToggleRow
             label="Email Notifications"
             description="Receive notifications via email"
-            checked={localSettings.email_notifications}
-            onChange={handleToggle('email_notifications')}
+            checked={localSettings.emailNotifications}
+            onChange={handleToggle('emailNotifications')}
           />
 
           <ToggleRow
             label="Slack Notifications"
             description="Receive notifications in Slack"
-            checked={localSettings.slack_notifications}
-            onChange={handleToggle('slack_notifications')}
+            checked={localSettings.slackNotifications}
+            onChange={handleToggle('slackNotifications')}
           />
 
           <ToggleRow
             label="In-App Notifications"
             description="Show notifications in the dashboard"
-            checked={localSettings.in_app_notifications}
-            onChange={handleToggle('in_app_notifications')}
+            checked={localSettings.inAppNotifications}
+            onChange={handleToggle('inAppNotifications')}
           />
         </div>
 
@@ -123,37 +123,37 @@ export function NotificationsSection({
           <ToggleRow
             label="Test Failure Alerts"
             description="Notify immediately when tests fail"
-            checked={localSettings.test_failure_alerts}
-            onChange={handleToggle('test_failure_alerts')}
+            checked={localSettings.testFailureAlerts}
+            onChange={handleToggle('testFailureAlerts')}
           />
 
           <ToggleRow
             label="Daily Digest"
             description="Receive daily test summary"
-            checked={localSettings.daily_digest}
-            onChange={handleToggle('daily_digest')}
+            checked={localSettings.dailyDigest}
+            onChange={handleToggle('dailyDigest')}
           />
 
           <ToggleRow
             label="Weekly Report"
             description="Receive weekly analytics report"
-            checked={localSettings.weekly_report}
-            onChange={handleToggle('weekly_report')}
+            checked={localSettings.weeklyReport}
+            onChange={handleToggle('weeklyReport')}
           />
         </div>
 
         {/* Alert Threshold */}
         <div className="pt-4 border-t">
-          <label htmlFor="alert_threshold" className="text-sm font-medium">
+          <label htmlFor="alertThreshold" className="text-sm font-medium">
             Alert Threshold (%)
           </label>
           <p className="text-sm text-muted-foreground mb-2">
             Notify when pass rate drops below this percentage
           </p>
           <Input
-            id="alert_threshold"
+            id="alertThreshold"
             type="number"
-            value={localSettings.alert_threshold}
+            value={localSettings.alertThreshold}
             onChange={handleThresholdChange}
             min="0"
             max="100"

@@ -130,9 +130,9 @@ function ChatAreaHeader() {
   const { data: budget } = useAIBudget();
 
   // Safely extract budget values with defaults
-  const dailySpent = budget?.daily_spent ?? 0;
-  const dailyLimit = budget?.daily_limit ?? 0;
-  const hasBudget = budget?.has_budget ?? false;
+  const dailySpent = budget?.dailySpent ?? 0;
+  const dailyLimit = budget?.dailyLimit ?? 0;
+  const hasBudget = budget?.hasBudget ?? false;
 
   const budgetPercent = dailyLimit > 0
     ? Math.min((dailySpent / dailyLimit) * 100, 100)
@@ -157,12 +157,12 @@ function ChatAreaHeader() {
       {/* Status Indicators */}
       <div className="flex items-center gap-3">
         {/* Current Model Badge */}
-        {preferences?.default_model && (
+        {preferences?.defaultModel && (
           <Badge variant="outline" className="gap-1.5 font-normal text-xs">
             <Sparkles className="w-3 h-3 text-primary" />
             <span className="hidden xl:inline">Model:</span>
             <span className="truncate max-w-[100px]">
-              {preferences.default_model.replace('claude-', '').replace('gpt-', '')}
+              {preferences.defaultModel.replace('claude-', '').replace('gpt-', '')}
             </span>
           </Badge>
         )}

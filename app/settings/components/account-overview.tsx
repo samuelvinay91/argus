@@ -20,10 +20,10 @@ import { useAccountActivity, type OrganizationSummary } from '@/lib/hooks/use-us
 interface AccountOverviewProps {
   /** Override the activity data (useful for testing) */
   activity?: {
-    member_since: string;
-    organizations_count: number;
-    api_keys_count: number;
-    api_requests_30d: number;
+    memberSince: string;
+    organizationsCount: number;
+    apiKeysCount: number;
+    apiRequests30d: number;
     organizations: OrganizationSummary[];
   } | null;
   /** Override loading state */
@@ -174,10 +174,10 @@ export function AccountOverview({
     if (!activity) return null;
 
     return {
-      memberSince: formatDate(activity.member_since),
-      organizationsCount: activity.organizations_count,
-      apiKeysCount: activity.api_keys_count,
-      apiRequests30d: activity.api_requests_30d,
+      memberSince: formatDate(activity.memberSince),
+      organizationsCount: activity.organizationsCount,
+      apiKeysCount: activity.apiKeysCount,
+      apiRequests30d: activity.apiRequests30d,
     };
   }, [activity]);
 
@@ -289,19 +289,19 @@ export function AccountOverview({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{org.name}</span>
-                        {org.is_default && (
+                        {org.isDefault && (
                           <Badge variant="secondary" className="text-xs">
                             Default
                           </Badge>
                         )}
-                        {org.is_personal && (
+                        {org.isPersonal && (
                           <Badge variant="outline" className="text-xs">
                             Personal
                           </Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {org.member_count} {org.member_count === 1 ? 'member' : 'members'}
+                        {org.memberCount} {org.memberCount === 1 ? 'member' : 'members'}
                       </p>
                     </div>
                   </div>

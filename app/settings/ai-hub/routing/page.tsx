@@ -81,10 +81,10 @@ import { useAIHubMode } from '@/components/ai-hub';
 // ============================================================================
 
 interface RuleFormData {
-  task_type: TaskType;
-  model_id: string;
+  taskType: TaskType;
+  modelId: string;
   provider: string;
-  max_cost_per_request: number;
+  maxCostPerRequest: number;
   enabled: boolean;
 }
 
@@ -257,7 +257,7 @@ function ManualRulesTable({
   onToggle,
 }: {
   rules: RoutingRule[];
-  models: { model_id: string; display_name: string; provider: string }[];
+  models: { modelId: string; displayName: string; provider: string }[];
   onAdd: () => void;
   onEdit: (rule: RoutingRule) => void;
   onDelete: (ruleId: string) => void;
@@ -274,7 +274,7 @@ function ManualRulesTable({
 
   // Get model display name
   const getModelName = (modelId: string) => {
-    return modelsArray.find((m) => m.model_id === modelId)?.display_name || modelId;
+    return modelsArray.find((m) => m.modelId === modelId)?.displayName || modelId;
   };
 
   return (
@@ -333,18 +333,18 @@ function ManualRulesTable({
                   <tr key={rule.id} className="border-b last:border-0">
                     <td className="px-4 py-3">
                       <div className="font-medium text-sm">
-                        {getTaskTypeName(rule.task_type)}
+                        {getTaskTypeName(rule.taskType)}
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm">{getModelName(rule.model_id)}</div>
+                      <div className="text-sm">{getModelName(rule.modelId)}</div>
                       <div className="text-xs text-muted-foreground capitalize">
                         {rule.provider}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm">
-                        ${rule.max_cost_per_request.toFixed(2)}
+                        ${rule.maxCostPerRequest.toFixed(2)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -411,15 +411,15 @@ function RuleDialog({
 }: {
   open: boolean;
   rule: RoutingRule | null;
-  models: { model_id: string; display_name: string; provider: string }[];
+  models: { modelId: string; displayName: string; provider: string }[];
   onClose: () => void;
   onSave: (rule: RoutingRule) => void;
 }) {
   const [formData, setFormData] = useState<RuleFormData>({
-    task_type: 'chat',
-    model_id: '',
+    taskType: 'chat',
+    modelId: '',
     provider: '',
-    max_cost_per_request: 0.5,
+    maxCostPerRequest: 0.5,
     enabled: true,
   });
 
@@ -427,18 +427,18 @@ function RuleDialog({
   useEffect(() => {
     if (rule) {
       setFormData({
-        task_type: rule.task_type,
-        model_id: rule.model_id,
+        taskType: rule.taskType,
+        modelId: rule.modelId,
         provider: rule.provider,
-        max_cost_per_request: rule.max_cost_per_request,
+        maxCostPerRequest: rule.maxCostPerRequest,
         enabled: rule.enabled,
       });
     } else {
       setFormData({
-        task_type: 'chat',
-        model_id: models[0]?.model_id || '',
+        taskType: 'chat',
+        modelId: models[0]?.modelId || '',
         provider: models[0]?.provider || '',
-        max_cost_per_request: 0.5,
+        maxCostPerRequest: 0.5,
         enabled: true,
       });
     }
@@ -446,17 +446,17 @@ function RuleDialog({
 
   // Handle model selection
   const handleModelChange = (modelId: string) => {
-    const model = models.find((m) => m.model_id === modelId);
+    const model = models.find((m) => m.modelId === modelId);
     setFormData({
       ...formData,
-      model_id: modelId,
+      modelId: modelId,
       provider: model?.provider || '',
     });
   };
 
   // Handle save
   const handleSave = () => {
-    if (!formData.model_id) {
+    if (!formData.modelId) {
       toast.error({ title: 'Error', description: 'Please select a model' });
       return;
     }
@@ -491,9 +491,9 @@ function RuleDialog({
           <div className="space-y-2">
             <label className="text-sm font-medium">Task Type</label>
             <Select
-              value={formData.task_type}
+              value={formData.taskType}
               onValueChange={(value) =>
-                setFormData({ ...formData, task_type: value as TaskType })
+                setFormData({ ...formData, taskType: value as TaskType })
               }
             >
               <SelectTrigger>
@@ -517,7 +517,7 @@ function RuleDialog({
           {/* Model */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Model</label>
-            <Select value={formData.model_id} onValueChange={handleModelChange}>
+            <Select value={formData.modelId} onValueChange={handleModelChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select model" />
               </SelectTrigger>
@@ -528,8 +528,8 @@ function RuleDialog({
                       {provider}
                     </div>
                     {providerModels.map((model) => (
-                      <SelectItem key={model.model_id} value={model.model_id}>
-                        {model.display_name}
+                      <SelectItem key={model.modelId} value={model.modelId}>
+                        {model.displayName}
                       </SelectItem>
                     ))}
                   </div>
@@ -548,11 +548,11 @@ function RuleDialog({
                 min={0}
                 max={100}
                 step={0.01}
-                value={formData.max_cost_per_request}
+                value={formData.maxCostPerRequest}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    max_cost_per_request: parseFloat(e.target.value) || 0,
+                    maxCostPerRequest: parseFloat(e.target.value) || 0,
                   })
                 }
                 className="w-32"
@@ -661,7 +661,7 @@ function FallbackChain({
 
               {/* Provider Name */}
               <div className="flex-1">
-                <div className="font-medium text-sm">{provider.display_name}</div>
+                <div className="font-medium text-sm">{provider.displayName}</div>
                 <div className="text-xs text-muted-foreground">{provider.provider}</div>
               </div>
 
@@ -669,7 +669,7 @@ function FallbackChain({
               <Toggle
                 checked={provider.enabled}
                 onChange={() => toggleEnabled(index)}
-                aria-label={`Enable ${provider.display_name}`}
+                aria-label={`Enable ${provider.displayName}`}
               />
 
               {/* Move Buttons */}
@@ -762,9 +762,9 @@ export default function RoutingPage() {
   };
 
   // Handle auto settings changes
-  const handleAutoSettingsChange = (updates: Partial<RoutingConfig['auto_settings']>) => {
+  const handleAutoSettingsChange = (updates: Partial<RoutingConfig['autoSettings']>) => {
     updateLocalConfig({
-      auto_settings: { ...config.auto_settings, ...updates },
+      autoSettings: { ...config.autoSettings, ...updates },
     });
   };
 
@@ -781,42 +781,42 @@ export default function RoutingPage() {
 
   const handleDeleteRule = (ruleId: string) => {
     updateLocalConfig({
-      manual_rules: config.manual_rules.filter((r) => r.id !== ruleId),
+      manualRules: config.manualRules.filter((r) => r.id !== ruleId),
     });
     toast.success({ title: 'Rule deleted' });
   };
 
   const handleToggleRule = (ruleId: string, enabled: boolean) => {
     updateLocalConfig({
-      manual_rules: config.manual_rules.map((r) =>
+      manualRules: config.manualRules.map((r) =>
         r.id === ruleId ? { ...r, enabled } : r
       ),
     });
   };
 
   const handleSaveRule = (rule: RoutingRule) => {
-    const existingIndex = config.manual_rules.findIndex((r) => r.id === rule.id);
+    const existingIndex = config.manualRules.findIndex((r) => r.id === rule.id);
     if (existingIndex >= 0) {
       // Update existing
-      const newRules = [...config.manual_rules];
+      const newRules = [...config.manualRules];
       newRules[existingIndex] = rule;
-      updateLocalConfig({ manual_rules: newRules });
+      updateLocalConfig({ manualRules: newRules });
       toast.success({ title: 'Rule updated' });
     } else {
       // Add new
-      updateLocalConfig({ manual_rules: [...config.manual_rules, rule] });
+      updateLocalConfig({ manualRules: [...config.manualRules, rule] });
       toast.success({ title: 'Rule added' });
     }
   };
 
   // Handle fallback chain changes
   const handleFallbackChainChange = (chain: FallbackProvider[]) => {
-    updateLocalConfig({ fallback_chain: chain });
+    updateLocalConfig({ fallbackChain: chain });
   };
 
   // Handle platform keys toggle
   const handlePlatformKeysToggle = (value: boolean) => {
-    updateLocalConfig({ use_platform_keys_fallback: value });
+    updateLocalConfig({ usePlatformKeysFallback: value });
   };
 
   // Save all changes
@@ -900,15 +900,15 @@ export default function RoutingPage() {
           </CardHeader>
           <CardContent>
             <QualityCostSlider
-              value={config.auto_settings.quality_cost_balance}
-              preset={config.auto_settings.preset}
-              letAiDecide={config.auto_settings.let_ai_decide}
+              value={config.autoSettings.qualityCostBalance}
+              preset={config.autoSettings.preset}
+              letAiDecide={config.autoSettings.letAiDecide}
               onValueChange={(value) =>
-                handleAutoSettingsChange({ quality_cost_balance: value })
+                handleAutoSettingsChange({ qualityCostBalance: value })
               }
               onPresetChange={(preset) => handleAutoSettingsChange({ preset })}
               onLetAiDecideChange={(value) =>
-                handleAutoSettingsChange({ let_ai_decide: value })
+                handleAutoSettingsChange({ letAiDecide: value })
               }
             />
           </CardContent>
@@ -1005,15 +1005,15 @@ export default function RoutingPage() {
           </CardHeader>
           <CardContent>
             <QualityCostSlider
-              value={config.auto_settings.quality_cost_balance}
-              preset={config.auto_settings.preset}
-              letAiDecide={config.auto_settings.let_ai_decide}
+              value={config.autoSettings.qualityCostBalance}
+              preset={config.autoSettings.preset}
+              letAiDecide={config.autoSettings.letAiDecide}
               onValueChange={(value) =>
-                handleAutoSettingsChange({ quality_cost_balance: value })
+                handleAutoSettingsChange({ qualityCostBalance: value })
               }
               onPresetChange={(preset) => handleAutoSettingsChange({ preset })}
               onLetAiDecideChange={(value) =>
-                handleAutoSettingsChange({ let_ai_decide: value })
+                handleAutoSettingsChange({ letAiDecide: value })
               }
             />
           </CardContent>
@@ -1034,7 +1034,7 @@ export default function RoutingPage() {
           </CardHeader>
           <CardContent>
             <ManualRulesTable
-              rules={config.manual_rules}
+              rules={config.manualRules}
               models={models}
               onAdd={handleAddRule}
               onEdit={handleEditRule}
@@ -1058,8 +1058,8 @@ export default function RoutingPage() {
         </CardHeader>
         <CardContent>
           <FallbackChain
-            chain={config.fallback_chain}
-            usePlatformKeysFallback={config.use_platform_keys_fallback}
+            chain={config.fallbackChain}
+            usePlatformKeysFallback={config.usePlatformKeysFallback}
             onChange={handleFallbackChainChange}
             onTogglePlatformKeys={handlePlatformKeysToggle}
           />

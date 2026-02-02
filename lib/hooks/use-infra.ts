@@ -58,34 +58,35 @@ interface ApplyRecommendationResponse {
 }
 
 // AI Usage API response types (from /api/v1/users/me/ai-usage)
+// Note: These use camelCase to match runtime data after convertKeysToCamelCase transformation
 interface UsageRecord {
   id: string;
   provider: string;
   model: string;
-  input_tokens: number;
-  output_tokens: number;
-  cost_usd: number;
-  key_source: string;
-  thread_id: string | null;
-  created_at: string;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+  keySource: string;
+  threadId: string | null;
+  createdAt: string;
 }
 
 interface UsageSummary {
-  total_requests: number;
-  total_input_tokens: number;
-  total_output_tokens: number;
-  total_cost_usd: number;
-  platform_key_cost: number;
-  byok_cost: number;
-  usage_by_model: Record<string, { requests: number; tokens: number; cost: number }>;
-  usage_by_provider: Record<string, { requests: number; cost: number }>;
+  totalRequests: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCostUsd: number;
+  platformKeyCost: number;
+  byokCost: number;
+  usageByModel: Record<string, { requests: number; tokens: number; cost: number }>;
+  usageByProvider: Record<string, { requests: number; cost: number }>;
 }
 
 interface DailyUsage {
   date: string;
-  total_requests: number;
-  total_tokens: number;
-  total_cost_usd: number;
+  totalRequests: number;
+  totalTokens: number;
+  totalCostUsd: number;
 }
 
 interface UsageApiResponse {
@@ -101,8 +102,8 @@ function transformUsageResponse(response: UsageApiResponse, period: string): LLM
   // Group records by model to build model usage data
   const modelMap = new Map<string, {
     provider: string;
-    input_tokens: number;
-    output_tokens: number;
+    inputTokens: number;
+    outputTokens: number;
     cost: number;
     requests: number;
   }>();
@@ -110,14 +111,14 @@ function transformUsageResponse(response: UsageApiResponse, period: string): LLM
   for (const record of records) {
     const existing = modelMap.get(record.model) || {
       provider: record.provider,
-      input_tokens: 0,
-      output_tokens: 0,
+      inputTokens: 0,
+      outputTokens: 0,
       cost: 0,
       requests: 0,
     };
-    existing.input_tokens += record.input_tokens;
-    existing.output_tokens += record.output_tokens;
-    existing.cost += record.cost_usd;
+    existing.inputTokens += record.inputTokens;
+    existing.outputTokens += record.outputTokens;
+    existing.cost += record.costUsd;
     existing.requests += 1;
     modelMap.set(record.model, existing);
   }
@@ -125,15 +126,15 @@ function transformUsageResponse(response: UsageApiResponse, period: string): LLM
   const models = Array.from(modelMap.entries()).map(([name, data]) => ({
     name,
     provider: data.provider,
-    input_tokens: data.input_tokens,
-    output_tokens: data.output_tokens,
+    inputTokens: data.inputTokens,
+    outputTokens: data.outputTokens,
     cost: data.cost,
     requests: data.requests,
   }));
 
   // Build feature breakdown from usage_by_model (simplified)
-  const totalCost = summary.total_cost_usd || 0.01; // Avoid division by zero
-  const features = Object.entries(summary.usage_by_model || {}).map(([model, stats]) => ({
+  const totalCost = summary.totalCostUsd || 0.01; // Avoid division by zero
+  const features = Object.entries(summary.usageByModel || {}).map(([model, stats]) => ({
     name: model.split('/').pop() || model, // Use model name as feature name
     cost: stats.cost,
     percentage: Math.round((stats.cost / totalCost) * 100),
@@ -143,12 +144,12 @@ function transformUsageResponse(response: UsageApiResponse, period: string): LLM
   return {
     models,
     features: features.length > 0 ? features : [
-      { name: 'AI Usage', cost: totalCost, percentage: 100, requests: summary.total_requests },
+      { name: 'AI Usage', cost: totalCost, percentage: 100, requests: summary.totalRequests },
     ],
-    total_cost: summary.total_cost_usd,
-    total_requests: summary.total_requests,
-    total_input_tokens: summary.total_input_tokens,
-    total_output_tokens: summary.total_output_tokens,
+    totalCost: summary.totalCostUsd,
+    totalRequests: summary.totalRequests,
+    totalInputTokens: summary.totalInputTokens,
+    totalOutputTokens: summary.totalOutputTokens,
     period,
   };
 }
@@ -355,10 +356,10 @@ export function useLLMCostTracking(period: string = '30d') {
         return {
           models: [],
           features: [],
-          total_cost: 0,
-          total_requests: 0,
-          total_input_tokens: 0,
-          total_output_tokens: 0,
+          totalCost: 0,
+          totalRequests: 0,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
           period,
         };
       }

@@ -547,18 +547,18 @@ function ActivityLogTable({
                 paginatedRecords.map((record) => (
                   <tr key={record.id} className="border-b last:border-0 hover:bg-muted/50">
                     <td className="px-4 py-3 text-sm">
-                      {safeFormat(record.created_at, 'MMM d, HH:mm')}
+                      {safeFormat(record.createdAt, 'MMM d, HH:mm')}
                     </td>
                     <td className="px-4 py-3 text-sm capitalize">{record.provider}</td>
                     <td className="px-4 py-3 text-sm font-medium">{record.model}</td>
                     <td className="px-4 py-3 text-sm text-right">
-                      {formatNumber(record.input_tokens)}
+                      {formatNumber(record.inputTokens)}
                     </td>
                     <td className="px-4 py-3 text-sm text-right">
-                      {formatNumber(record.output_tokens)}
+                      {formatNumber(record.outputTokens)}
                     </td>
                     <td className="px-4 py-3 text-sm text-right font-medium">
-                      {formatCurrency(record.cost_usd)}
+                      {formatCurrency(record.costUsd)}
                     </td>
                   </tr>
                 ))
@@ -632,17 +632,17 @@ export default function AIUsageAnalyticsPage() {
     if (!usageData?.daily) return [];
     return usageData.daily.map((d) => ({
       date: d.date,
-      cost: d.total_cost_usd,
-      requests: d.total_requests,
+      cost: d.totalCostUsd,
+      requests: d.totalRequests,
     }));
   }, [usageData?.daily]);
 
   const usageByTaskTypeData = useMemo(() => {
-    if (!usageData?.summary?.usage_by_model) return [];
+    if (!usageData?.summary?.usageByModel) return [];
     // Group by a pseudo "task type" based on model patterns
     const taskTypes: Record<string, { requests: number; cost: number }> = {};
 
-    Object.entries(usageData.summary.usage_by_model).forEach(([model, stats]) => {
+    Object.entries(usageData.summary.usageByModel).forEach(([model, stats]) => {
       let taskType = 'Other';
       if (model.includes('chat') || model.includes('gpt')) taskType = 'Chat';
       else if (model.includes('code') || model.includes('codex')) taskType = 'Code';
@@ -660,29 +660,29 @@ export default function AIUsageAnalyticsPage() {
     return Object.entries(taskTypes)
       .map(([name, stats]) => ({ name, ...stats }))
       .sort((a, b) => b.requests - a.requests);
-  }, [usageData?.summary?.usage_by_model]);
+  }, [usageData?.summary?.usageByModel]);
 
   const usageByProviderData = useMemo(() => {
-    if (!usageData?.summary?.usage_by_provider) return [];
-    return Object.entries(usageData.summary.usage_by_provider)
+    if (!usageData?.summary?.usageByProvider) return [];
+    return Object.entries(usageData.summary.usageByProvider)
       .map(([name, stats]) => ({
         name: name.charAt(0).toUpperCase() + name.slice(1),
         value: stats.requests,
         cost: stats.cost,
       }))
       .sort((a, b) => b.value - a.value);
-  }, [usageData?.summary?.usage_by_provider]);
+  }, [usageData?.summary?.usageByProvider]);
 
   const topModelsData = useMemo(() => {
-    if (!usageData?.summary?.usage_by_model) return [];
-    return Object.entries(usageData.summary.usage_by_model)
+    if (!usageData?.summary?.usageByModel) return [];
+    return Object.entries(usageData.summary.usageByModel)
       .map(([model, stats]) => ({
         model,
         requests: stats.requests,
         cost: stats.cost,
       }))
       .sort((a, b) => b.cost - a.cost);
-  }, [usageData?.summary?.usage_by_model]);
+  }, [usageData?.summary?.usageByModel]);
 
   // Export to CSV
   const handleExport = () => {
@@ -690,12 +690,12 @@ export default function AIUsageAnalyticsPage() {
 
     const headers = ['Time', 'Provider', 'Model', 'Input Tokens', 'Output Tokens', 'Cost (USD)'];
     const rows = usageData.records.map((r) => [
-      new Date(r.created_at).toISOString(),
+      new Date(r.createdAt).toISOString(),
       r.provider,
       r.model,
-      r.input_tokens,
-      r.output_tokens,
-      r.cost_usd.toFixed(6),
+      r.inputTokens,
+      r.outputTokens,
+      r.costUsd.toFixed(6),
     ]);
 
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -744,7 +744,7 @@ export default function AIUsageAnalyticsPage() {
                       <div>
                         <p className="text-sm text-muted-foreground">Total Cost</p>
                         <p className="text-2xl font-bold">
-                          {formatCurrency(usageData.summary.total_cost_usd)}
+                          {formatCurrency(usageData.summary.totalCostUsd)}
                         </p>
                       </div>
                     </div>
@@ -759,7 +759,7 @@ export default function AIUsageAnalyticsPage() {
                       <div>
                         <p className="text-sm text-muted-foreground">Total Requests</p>
                         <p className="text-2xl font-bold">
-                          {formatNumber(usageData.summary.total_requests)}
+                          {formatNumber(usageData.summary.totalRequests)}
                         </p>
                       </div>
                     </div>
@@ -774,7 +774,7 @@ export default function AIUsageAnalyticsPage() {
                       <div>
                         <p className="text-sm text-muted-foreground">Input Tokens</p>
                         <p className="text-2xl font-bold">
-                          {formatNumber(usageData.summary.total_input_tokens)}
+                          {formatNumber(usageData.summary.totalInputTokens)}
                         </p>
                       </div>
                     </div>
@@ -789,7 +789,7 @@ export default function AIUsageAnalyticsPage() {
                       <div>
                         <p className="text-sm text-muted-foreground">Output Tokens</p>
                         <p className="text-2xl font-bold">
-                          {formatNumber(usageData.summary.total_output_tokens)}
+                          {formatNumber(usageData.summary.totalOutputTokens)}
                         </p>
                       </div>
                     </div>

@@ -204,10 +204,10 @@ function generateRecommendations(
 
   const recommendations: OptimizationRecommendation[] = [];
   // Defensive: ensure usage_by_model is an object
-  const usage_by_model = usageSummary.usage_by_model && typeof usageSummary.usage_by_model === 'object'
-    ? usageSummary.usage_by_model
+  const usage_by_model = usageSummary.usageByModel && typeof usageSummary.usageByModel === 'object'
+    ? usageSummary.usageByModel
     : {};
-  const total_cost_usd = usageSummary.total_cost_usd || 0;
+  const total_cost_usd = usageSummary.totalCostUsd || 0;
   // Defensive: ensure dailyUsage is an array
   const dailyData = Array.isArray(dailyUsage) ? dailyUsage : [];
 
@@ -262,9 +262,9 @@ function generateRecommendations(
   }
 
   // Recommendation 3: Set daily budget limit if not set
-  if (!preferences.cost_limit_per_day || preferences.cost_limit_per_day > 50) {
+  if (!preferences.costLimitPerDay || preferences.costLimitPerDay > 50) {
     const avgDailyCost = dailyData.length > 0
-      ? dailyData.reduce((sum, d) => sum + d.total_cost_usd, 0) / dailyData.length
+      ? dailyData.reduce((sum, d) => sum + d.totalCostUsd, 0) / dailyData.length
       : total_cost_usd / 30;
 
     const suggestedLimit = Math.ceil(avgDailyCost * 1.2);
@@ -280,14 +280,14 @@ function generateRecommendations(
       category: 'config',
       actionLabel: 'Set daily limit',
       actionDetails: {
-        setting: 'cost_limit_per_day',
+        setting: 'costLimitPerDay',
         settingValue: suggestedLimit,
       },
     });
   }
 
   // Recommendation 4: Enable auto-downgrade when approaching limits
-  if (total_cost_usd > 10 && !preferences.use_platform_key_fallback) {
+  if (total_cost_usd > 10 && !preferences.usePlatformKeyFallback) {
     recommendations.push({
       id: 'enable-auto-downgrade',
       title: 'Enable automatic tier downgrade',
@@ -308,8 +308,8 @@ function generateRecommendations(
 
   // Recommendation 5: Consolidate to a single provider for volume discounts
   // Defensive: ensure usage_by_provider is an object
-  const usage_by_provider = usageSummary.usage_by_provider && typeof usageSummary.usage_by_provider === 'object'
-    ? usageSummary.usage_by_provider
+  const usage_by_provider = usageSummary.usageByProvider && typeof usageSummary.usageByProvider === 'object'
+    ? usageSummary.usageByProvider
     : {};
   const providerCount = Object.keys(usage_by_provider).length;
   if (providerCount > 2 && total_cost_usd > 50) {
@@ -607,7 +607,7 @@ export default function CostOptimizerPage() {
 
   // Calculate tier breakdown - defensive check for object
   const tierBreakdown = useMemo(() => {
-    const usageByModel = usageSummary?.usage_by_model;
+    const usageByModel = usageSummary?.usageByModel;
     if (!usageByModel || typeof usageByModel !== 'object') return [];
     return calculateTierBreakdown(usageByModel);
   }, [usageSummary]);
@@ -624,7 +624,7 @@ export default function CostOptimizerPage() {
   }, [usageSummary, preferences, usageData, dismissedRecommendations]);
 
   // Calculate total and potential savings
-  const totalSpending = usageSummary?.total_cost_usd || 0;
+  const totalSpending = usageSummary?.totalCostUsd || 0;
   const potentialSavings = recommendations.reduce((sum, rec) => sum + rec.savingsAmount, 0);
 
   // Calculate spending trend - defensive array check
@@ -633,9 +633,9 @@ export default function CostOptimizerPage() {
     if (dailyData.length < 7) return null;
     const recent = dailyData.slice(-7);
     const previous = dailyData.slice(-14, -7);
-    const recentAvg = recent.reduce((sum, d) => sum + d.total_cost_usd, 0) / recent.length;
+    const recentAvg = recent.reduce((sum, d) => sum + d.totalCostUsd, 0) / recent.length;
     const previousAvg = previous.length > 0
-      ? previous.reduce((sum, d) => sum + d.total_cost_usd, 0) / previous.length
+      ? previous.reduce((sum, d) => sum + d.totalCostUsd, 0) / previous.length
       : recentAvg;
     const change = previousAvg > 0 ? ((recentAvg - previousAvg) / previousAvg) * 100 : 0;
     return { direction: change >= 0 ? 'up' : 'down', percentage: Math.abs(change) };
@@ -646,8 +646,8 @@ export default function CostOptimizerPage() {
     if (preferences) {
       setBudgetControls((prev) => ({
         ...prev,
-        dailyLimit: preferences.cost_limit_per_day || 10,
-        perMessageLimit: preferences.cost_limit_per_message || 1,
+        dailyLimit: preferences.costLimitPerDay || 10,
+        perMessageLimit: preferences.costLimitPerMessage || 1,
       }));
     }
   }, [preferences]);
@@ -662,7 +662,7 @@ export default function CostOptimizerPage() {
         });
       } else if (recommendation.actionDetails?.toModel) {
         await updatePreferences({
-          default_model: recommendation.actionDetails.toModel,
+          defaultModel: recommendation.actionDetails.toModel,
         });
       }
       toast.success({
@@ -689,9 +689,9 @@ export default function CostOptimizerPage() {
 
     // Persist to backend
     if (key === 'dailyLimit') {
-      await updatePreferences({ cost_limit_per_day: value });
+      await updatePreferences({ costLimitPerDay: value });
     } else if (key === 'perMessageLimit') {
-      await updatePreferences({ cost_limit_per_message: value });
+      await updatePreferences({ costLimitPerMessage: value });
     }
   };
 
@@ -781,7 +781,7 @@ export default function CostOptimizerPage() {
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground">Total Requests</div>
             <div className="text-2xl font-bold mt-1">
-              {(usageSummary?.total_requests || 0).toLocaleString()}
+              {(usageSummary?.totalRequests || 0).toLocaleString()}
             </div>
           </CardContent>
         </Card>
@@ -791,8 +791,8 @@ export default function CostOptimizerPage() {
             <div className="text-sm text-muted-foreground">Avg Cost/Request</div>
             <div className="text-2xl font-bold mt-1">
               {formatCurrency(
-                usageSummary?.total_requests
-                  ? totalSpending / usageSummary.total_requests
+                usageSummary?.totalRequests
+                  ? totalSpending / usageSummary.totalRequests
                   : 0
               )}
             </div>
@@ -872,9 +872,9 @@ export default function CostOptimizerPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {usageSummary?.usage_by_provider && typeof usageSummary.usage_by_provider === 'object' && Object.keys(usageSummary.usage_by_provider).length > 0 ? (
+              {usageSummary?.usageByProvider && typeof usageSummary.usageByProvider === 'object' && Object.keys(usageSummary.usageByProvider).length > 0 ? (
                 <div className="space-y-4">
-                  {Object.entries(usageSummary.usage_by_provider)
+                  {Object.entries(usageSummary.usageByProvider)
                     .sort((a, b) => b[1].cost - a[1].cost)
                     .map(([provider, stats]) => (
                       <div key={provider}>
@@ -955,8 +955,8 @@ export default function CostOptimizerPage() {
               </CardHeader>
               <CardContent>
                 <BudgetProgressBar
-                  spent={budgetStatus.daily_spent}
-                  limit={budgetStatus.daily_limit}
+                  spent={budgetStatus.dailySpent}
+                  limit={budgetStatus.dailyLimit}
                   label="Daily Spending"
                 />
               </CardContent>
@@ -1003,7 +1003,7 @@ export default function CostOptimizerPage() {
                 </div>
               </div>
               <BudgetProgressBar
-                spent={budgetStatus?.daily_spent || 0}
+                spent={budgetStatus?.dailySpent || 0}
                 limit={budgetControls.dailyLimit}
                 label="Current Usage"
               />

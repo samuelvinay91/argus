@@ -78,20 +78,22 @@ export interface AvatarUploadResponse {
 
 /**
  * Account Activity Response
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface AccountActivity {
-  member_since: string;
-  last_login_at: string | null;
-  last_active_at: string | null;
-  login_count: number;
-  organizations_count: number;
-  api_keys_count: number;
-  api_requests_30d: number;
+  memberSince: string;
+  lastLoginAt: string | null;
+  lastActiveAt: string | null;
+  loginCount: number;
+  organizationsCount: number;
+  apiKeysCount: number;
+  apiRequests30d: number;
   organizations: OrganizationSummary[];
 }
 
 /**
  * Organization Summary
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface OrganizationSummary {
   id: string;
@@ -99,28 +101,30 @@ export interface OrganizationSummary {
   slug: string;
   role: string;
   plan: string;
-  member_count: number;
-  is_default: boolean;
-  is_personal: boolean;
+  memberCount: number;
+  isDefault: boolean;
+  isPersonal: boolean;
 }
 
 /**
  * Connected Account
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface ConnectedAccount {
   provider: string;
-  provider_name: string;
+  providerName: string;
   email: string | null;
-  connected_at: string | null;
+  connectedAt: string | null;
 }
 
 /**
  * Connected Accounts Response
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface ConnectedAccountsResponse {
   accounts: ConnectedAccount[];
-  api_keys_active: number;
-  api_keys_total: number;
+  apiKeysActive: number;
+  apiKeysTotal: number;
 }
 
 /**

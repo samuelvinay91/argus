@@ -11,8 +11,8 @@ export interface LLMUsageData {
   models: {
     name: string;
     provider: string;
-    input_tokens: number;
-    output_tokens: number;
+    inputTokens: number;
+    outputTokens: number;
     cost: number;
     requests: number;
   }[];
@@ -26,10 +26,10 @@ export interface LLMUsageData {
   }[];
 
   // Totals
-  total_cost: number;
-  total_requests: number;
-  total_input_tokens: number;
-  total_output_tokens: number;
+  totalCost: number;
+  totalRequests: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
 
   // Period
   period: string;
@@ -104,7 +104,7 @@ export function LLMCostTracker({ data, isLoading = false }: LLMCostTrackerProps)
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Total AI Cost</p>
             <p className="text-2xl font-bold text-info">
-              {formatCurrency(data.total_cost)}
+              {formatCurrency(data.totalCost)}
             </p>
           </div>
         </div>
@@ -114,20 +114,20 @@ export function LLMCostTracker({ data, isLoading = false }: LLMCostTrackerProps)
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="p-3 rounded-lg bg-muted/50">
             <p className="text-xs text-muted-foreground">Total Requests</p>
-            <p className="text-xl font-bold">{data.total_requests.toLocaleString()}</p>
+            <p className="text-xl font-bold">{data.totalRequests.toLocaleString()}</p>
           </div>
           <div className="p-3 rounded-lg bg-muted/50">
             <p className="text-xs text-muted-foreground">Input Tokens</p>
-            <p className="text-xl font-bold">{formatTokens(data.total_input_tokens)}</p>
+            <p className="text-xl font-bold">{formatTokens(data.totalInputTokens)}</p>
           </div>
           <div className="p-3 rounded-lg bg-muted/50">
             <p className="text-xs text-muted-foreground">Output Tokens</p>
-            <p className="text-xl font-bold">{formatTokens(data.total_output_tokens)}</p>
+            <p className="text-xl font-bold">{formatTokens(data.totalOutputTokens)}</p>
           </div>
           <div className="p-3 rounded-lg bg-muted/50">
             <p className="text-xs text-muted-foreground">Avg Cost/Request</p>
             <p className="text-xl font-bold">
-              {formatCurrency(data.total_cost / Math.max(data.total_requests, 1))}
+              {formatCurrency(data.totalCost / Math.max(data.totalRequests, 1))}
             </p>
           </div>
         </div>
@@ -161,7 +161,7 @@ export function LLMCostTracker({ data, isLoading = false }: LLMCostTrackerProps)
                 <div className="text-right">
                   <p className="font-semibold">{formatCurrency(model.cost)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatTokens(model.input_tokens)} in / {formatTokens(model.output_tokens)} out
+                    {formatTokens(model.inputTokens)} in / {formatTokens(model.outputTokens)} out
                   </p>
                 </div>
               </div>

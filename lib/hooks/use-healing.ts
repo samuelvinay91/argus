@@ -11,90 +11,91 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
 // Types
+// Note: Properties use camelCase because API responses are converted from snake_case
 export interface HealingConfig {
   id?: string;
-  organization_id?: string;
+  organizationId?: string;
   enabled: boolean;
-  auto_apply: boolean;
-  min_confidence_auto: number;
-  min_confidence_suggest: number;
-  heal_selectors: boolean;
-  max_selector_variations: number;
-  preferred_selector_strategies: string[];
-  heal_timeouts: boolean;
-  max_wait_time_ms: number;
-  heal_text_content: boolean;
-  text_similarity_threshold: number;
-  learn_from_success: boolean;
-  learn_from_manual_fixes: boolean;
-  share_patterns_across_projects: boolean;
-  notify_on_heal: boolean;
-  notify_on_suggestion: boolean;
-  require_approval: boolean;
-  auto_approve_after_hours: number | null;
-  max_heals_per_hour: number;
-  max_heals_per_test: number;
+  autoApply: boolean;
+  minConfidenceAuto: number;
+  minConfidenceSuggest: number;
+  healSelectors: boolean;
+  maxSelectorVariations: number;
+  preferredSelectorStrategies: string[];
+  healTimeouts: boolean;
+  maxWaitTimeMs: number;
+  healTextContent: boolean;
+  textSimilarityThreshold: number;
+  learnFromSuccess: boolean;
+  learnFromManualFixes: boolean;
+  sharePatternsAcrossProjects: boolean;
+  notifyOnHeal: boolean;
+  notifyOnSuggestion: boolean;
+  requireApproval: boolean;
+  autoApproveAfterHours: number | null;
+  maxHealsPerHour: number;
+  maxHealsPerTest: number;
 }
 
 export interface RecentHeal {
   id: string;
   original: string;
   healed: string;
-  error_type: string;
+  errorType: string;
   confidence: number;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface HealingStats {
-  total_patterns: number;
-  total_heals_applied: number;
-  total_heals_suggested: number;
-  success_rate: number;
-  heals_last_24h: number;
-  heals_last_7d: number;
-  heals_last_30d: number;
-  avg_confidence: number;
-  top_error_types: Record<string, number>;
-  patterns_by_project: Record<string, number>;
-  recent_heals: RecentHeal[];
+  totalPatterns: number;
+  totalHealsApplied: number;
+  totalHealsSuggested: number;
+  successRate: number;
+  healsLast24h: number;
+  healsLast7d: number;
+  healsLast30d: number;
+  avgConfidence: number;
+  topErrorTypes: Record<string, number>;
+  patternsByProject: Record<string, number>;
+  recentHeals: RecentHeal[];
 }
 
 // Default values
 export const DEFAULT_HEALING_CONFIG: HealingConfig = {
   enabled: true,
-  auto_apply: false,
-  min_confidence_auto: 0.95,
-  min_confidence_suggest: 0.70,
-  heal_selectors: true,
-  max_selector_variations: 9,
-  preferred_selector_strategies: ['id', 'data-testid', 'role', 'text', 'css'],
-  heal_timeouts: true,
-  max_wait_time_ms: 30000,
-  heal_text_content: true,
-  text_similarity_threshold: 0.85,
-  learn_from_success: true,
-  learn_from_manual_fixes: true,
-  share_patterns_across_projects: false,
-  notify_on_heal: true,
-  notify_on_suggestion: true,
-  require_approval: true,
-  auto_approve_after_hours: null,
-  max_heals_per_hour: 50,
-  max_heals_per_test: 5,
+  autoApply: false,
+  minConfidenceAuto: 0.95,
+  minConfidenceSuggest: 0.70,
+  healSelectors: true,
+  maxSelectorVariations: 9,
+  preferredSelectorStrategies: ['id', 'data-testid', 'role', 'text', 'css'],
+  healTimeouts: true,
+  maxWaitTimeMs: 30000,
+  healTextContent: true,
+  textSimilarityThreshold: 0.85,
+  learnFromSuccess: true,
+  learnFromManualFixes: true,
+  sharePatternsAcrossProjects: false,
+  notifyOnHeal: true,
+  notifyOnSuggestion: true,
+  requireApproval: true,
+  autoApproveAfterHours: null,
+  maxHealsPerHour: 50,
+  maxHealsPerTest: 5,
 };
 
 export const DEFAULT_HEALING_STATS: HealingStats = {
-  total_patterns: 0,
-  total_heals_applied: 0,
-  total_heals_suggested: 0,
-  success_rate: 0,
-  heals_last_24h: 0,
-  heals_last_7d: 0,
-  heals_last_30d: 0,
-  avg_confidence: 0,
-  top_error_types: {},
-  patterns_by_project: {},
-  recent_heals: [],
+  totalPatterns: 0,
+  totalHealsApplied: 0,
+  totalHealsSuggested: 0,
+  successRate: 0,
+  healsLast24h: 0,
+  healsLast7d: 0,
+  healsLast30d: 0,
+  avgConfidence: 0,
+  topErrorTypes: {},
+  patternsByProject: {},
+  recentHeals: [],
 };
 
 // Query keys factory

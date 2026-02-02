@@ -75,12 +75,12 @@ export default function AuditPage() {
   const { data: stats, isLoading: statsLoading } = useAuditStats(DEFAULT_ORG_ID);
 
   const logs = logsData?.logs || [];
-  const totalPages = logsData?.total_pages || 1;
+  const totalPages = logsData?.totalPages || 1;
   const safeStats = stats ?? {
-    total_events: 0,
-    events_last_24h: 0,
-    success_count: 0,
-    failure_count: 0,
+    totalEvents: 0,
+    eventsLast24h: 0,
+    successCount: 0,
+    failureCount: 0,
   };
   const loading = logsLoading || statsLoading;
 
@@ -220,7 +220,7 @@ export default function AuditPage() {
                     <Activity className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{safeStats.total_events}</p>
+                    <p className="text-2xl font-bold">{safeStats.totalEvents}</p>
                     <p className="text-sm text-muted-foreground">Total Events</p>
                   </div>
                 </div>
@@ -234,7 +234,7 @@ export default function AuditPage() {
                     <Calendar className="h-6 w-6 text-blue-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{safeStats.events_last_24h}</p>
+                    <p className="text-2xl font-bold">{safeStats.eventsLast24h}</p>
                     <p className="text-sm text-muted-foreground">Last 24 Hours</p>
                   </div>
                 </div>
@@ -248,7 +248,7 @@ export default function AuditPage() {
                     <CheckCircle className="h-6 w-6 text-green-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{safeStats.success_count}</p>
+                    <p className="text-2xl font-bold">{safeStats.successCount}</p>
                     <p className="text-sm text-muted-foreground">Successful</p>
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function AuditPage() {
                     <XCircle className="h-6 w-6 text-red-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{safeStats.failure_count}</p>
+                    <p className="text-2xl font-bold">{safeStats.failureCount}</p>
                     <p className="text-sm text-muted-foreground">Failed</p>
                   </div>
                 </div>
@@ -362,15 +362,15 @@ export default function AuditPage() {
                           <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <User className="h-3.5 w-3.5" />
-                              {log.user_email}
+                              {log.userEmail}
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock className="h-3.5 w-3.5" />
-                              {formatTimeAgo(log.created_at)}
+                              {formatTimeAgo(log.createdAt)}
                             </span>
-                            {log.ip_address && log.ip_address !== '0.0.0.0' && (
+                            {log.ipAddress && log.ipAddress !== '0.0.0.0' && (
                               <span className="font-mono text-xs">
-                                {log.ip_address}
+                                {log.ipAddress}
                               </span>
                             )}
                           </div>
@@ -390,7 +390,7 @@ export default function AuditPage() {
                         </div>
 
                         <div className="text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(log.created_at).toLocaleString()}
+                          {new Date(log.createdAt).toLocaleString()}
                         </div>
                       </div>
                     </div>

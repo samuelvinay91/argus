@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
@@ -84,12 +83,9 @@ export function TestHealthChart({
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div>
-          <CardTitle className="text-base font-medium">Test Health Trend</CardTitle>
-          <CardDescription>Pass/fail distribution over time</CardDescription>
-        </div>
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-muted-foreground">Pass/fail distribution over time</p>
         <div className="flex rounded-lg border p-1">
           {periods.map((period) => (
             <button
@@ -106,8 +102,8 @@ export function TestHealthChart({
             </button>
           ))}
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div>
         {isLoading ? (
           <div className="h-[280px] flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -193,24 +189,19 @@ export function TestHealthChart({
             </ResponsiveContainer>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 export function TestHealthChartSkeleton() {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div>
-          <div className="h-5 w-36 bg-muted animate-pulse rounded mb-2" />
-          <div className="h-4 w-48 bg-muted animate-pulse rounded" />
-        </div>
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="h-4 w-48 bg-muted animate-pulse rounded" />
         <div className="h-9 w-28 bg-muted animate-pulse rounded-lg" />
-      </CardHeader>
-      <CardContent>
-        <div className="h-[280px] bg-muted/30 animate-pulse rounded-lg" />
-      </CardContent>
-    </Card>
+      </div>
+      <div className="h-[280px] bg-muted/30 animate-pulse rounded-lg" />
+    </div>
   );
 }

@@ -97,13 +97,13 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
   const { data: modelsData, isLoading: modelsLoading } = useAvailableModels();
   const { mutateAsync: updatePreferences, isPending: isUpdating } = useUpdateAIPreferences();
 
-  const currentModel = preferences?.default_model || 'claude-sonnet-4-5';
-  const currentProvider = preferences?.default_provider || 'anthropic';
+  const currentModel = preferences?.defaultModel || 'claude-sonnet-4-5';
+  const currentProvider = preferences?.defaultProvider || 'anthropic';
 
   // Get current model info
   const currentModelInfo = useMemo(() => {
     if (!modelsData?.models) return null;
-    return modelsData.models.find((m) => m.model_id === currentModel);
+    return modelsData.models.find((m) => m.modelId === currentModel);
   }, [modelsData?.models, currentModel]);
 
   // Group available models by provider
@@ -111,7 +111,7 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
     if (!modelsData?.models) return {};
 
     const grouped = modelsData.models.reduce((acc, model) => {
-      if (model.is_available) {
+      if (model.isAvailable) {
         if (!acc[model.provider]) acc[model.provider] = [];
         acc[model.provider].push(model);
       }
@@ -125,7 +125,7 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
         if (a.tier === 'premium' && b.tier !== 'premium') return -1;
         if (b.tier === 'premium' && a.tier !== 'premium') return 1;
         // Then by output price descending (better models usually cost more)
-        return b.output_price - a.output_price;
+        return b.outputPrice - a.outputPrice;
       });
     });
 
@@ -136,8 +136,8 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
   const handleSelectModel = useCallback(
     async (model: ModelInfo) => {
       await updatePreferences({
-        default_model: model.model_id,
-        default_provider: model.provider,
+        defaultModel: model.modelId,
+        defaultProvider: model.provider,
       });
       setOpen(false);
     },
@@ -156,7 +156,7 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const displayName = MODEL_SHORT_NAMES[currentModel] || currentModelInfo?.display_name || currentModel;
+  const displayName = MODEL_SHORT_NAMES[currentModel] || currentModelInfo?.displayName || currentModel;
   const providerLogoId = PROVIDER_LOGO_MAP[currentProvider] || currentProvider;
   const isLoading = prefsLoading || modelsLoading;
 
@@ -193,7 +193,7 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
               <span className="max-w-[120px] truncate text-xs">{displayName}</span>
               {currentModelInfo && (
                 <span className="text-[10px] text-muted-foreground">
-                  ${currentModelInfo.input_price}/${currentModelInfo.output_price}
+                  ${currentModelInfo.inputPrice}/${currentModelInfo.outputPrice}
                 </span>
               )}
             </>
@@ -231,13 +231,13 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
               }
             >
               {models.map((model) => {
-                const isSelected = model.model_id === currentModel;
-                const modelName = MODEL_SHORT_NAMES[model.model_id] || model.display_name;
+                const isSelected = model.modelId === currentModel;
+                const modelName = MODEL_SHORT_NAMES[model.modelId] || model.displayName;
 
                 return (
                   <ModelSelectorItem
-                    key={model.model_id}
-                    value={`${model.provider}-${model.model_id}-${model.display_name}`}
+                    key={model.modelId}
+                    value={`${model.provider}-${model.modelId}-${model.displayName}`}
                     onSelect={() => handleSelectModel(model)}
                     className={cn(
                       'flex items-center justify-between py-2',
@@ -262,17 +262,17 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
                           </span>
                         )}
                         {(model.capabilities?.includes('extended_context') ||
-                          (model.context_window && model.context_window >= 100000)) && (
+                          (model.contextWindow && model.contextWindow >= 100000)) && (
                           <span title="Extended context">
                             <Sparkles className="h-3 w-3 text-purple-500" />
                           </span>
                         )}
-                        {model.supports_vision && (
+                        {model.supportsVision && (
                           <span title="Vision capable">
                             <Eye className="h-3 w-3 text-blue-500" />
                           </span>
                         )}
-                        {model.supports_function_calling && (
+                        {model.supportsFunctionCalling && (
                           <span title="Tool use">
                             <Wrench className="h-3 w-3 text-green-500" />
                           </span>
@@ -282,13 +282,13 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
 
                     {/* Pricing */}
                     <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-                      {model.context_window && (
+                      {model.contextWindow && (
                         <span className="text-[10px]">
-                          {Math.round(model.context_window / 1000)}K
+                          {Math.round(model.contextWindow / 1000)}K
                         </span>
                       )}
                       <span>
-                        ${model.input_price}/{model.output_price}
+                        ${model.inputPrice}/{model.outputPrice}
                       </span>
                     </div>
                   </ModelSelectorItem>

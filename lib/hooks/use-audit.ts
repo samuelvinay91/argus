@@ -11,32 +11,33 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient, authenticatedFetch } from '@/lib/api-client';
 
 // Types
+// Note: Properties use camelCase because API responses are converted from snake_case
 export interface AuditLogEntry {
   id: string;
-  user_id: string;
-  user_email: string;
-  user_role: string;
+  userId: string;
+  userEmail: string;
+  userRole: string;
   action: string;
-  resource_type: string;
-  resource_id: string;
+  resourceType: string;
+  resourceId: string;
   description: string;
   metadata: Record<string, unknown>;
-  ip_address: string;
+  ipAddress: string;
   status: 'success' | 'failure' | 'pending';
-  created_at: string;
+  createdAt: string;
 }
 
 export interface AuditStats {
-  total_events: number;
-  events_last_24h: number;
-  success_count: number;
-  failure_count: number;
+  totalEvents: number;
+  eventsLast24h: number;
+  successCount: number;
+  failureCount: number;
 }
 
 export interface AuditLogsResponse {
   logs: AuditLogEntry[];
-  total_pages: number;
-  total_count?: number;
+  totalPages: number;
+  totalCount?: number;
 }
 
 export interface AuditLogsParams {
@@ -83,7 +84,7 @@ export function useAuditLogs(orgId: string, params: AuditLogsParams = {}) {
       );
     },
     enabled: !!orgId,
-    placeholderData: { logs: [], total_pages: 1 },
+    placeholderData: { logs: [], totalPages: 1 },
   });
 }
 
@@ -98,10 +99,10 @@ export function useAuditStats(orgId: string) {
     },
     enabled: !!orgId,
     placeholderData: {
-      total_events: 0,
-      events_last_24h: 0,
-      success_count: 0,
-      failure_count: 0,
+      totalEvents: 0,
+      eventsLast24h: 0,
+      successCount: 0,
+      failureCount: 0,
     },
   });
 }
@@ -141,12 +142,12 @@ export function exportLogsToCSV(logs: AuditLogEntry[]): { url: string; filename:
   const csv = [
     ['Time', 'User', 'Action', 'Description', 'Status', 'IP Address'].join(','),
     ...logs.map(log => [
-      new Date(log.created_at).toISOString(),
-      log.user_email,
+      new Date(log.createdAt).toISOString(),
+      log.userEmail,
       log.action,
       `"${log.description}"`,
       log.status,
-      log.ip_address,
+      log.ipAddress,
     ].join(','))
   ].join('\n');
 

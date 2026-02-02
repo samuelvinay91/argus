@@ -49,35 +49,37 @@ export type InsightStatus = 'active' | 'acknowledged' | 'resolved' | 'dismissed'
 
 /**
  * A single SDLC event from the unified timeline
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface SDLCEvent {
   id: string;
-  event_type: SDLCEventType;
-  source_platform: SDLCSourcePlatform;
-  external_id: string;
-  external_url?: string | null;
+  eventType: SDLCEventType;
+  sourcePlatform: SDLCSourcePlatform;
+  externalId: string;
+  externalUrl?: string | null;
   title?: string | null;
-  occurred_at: string;
-  commit_sha?: string | null;
-  pr_number?: number | null;
-  jira_key?: string | null;
-  deploy_id?: string | null;
+  occurredAt: string;
+  commitSha?: string | null;
+  prNumber?: number | null;
+  jiraKey?: string | null;
+  deployId?: string | null;
   data: Record<string, unknown>;
 }
 
 /**
  * An AI-generated insight from correlation analysis
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface CorrelationInsight {
   id: string;
-  insight_type: string;
+  insightType: string;
   severity: InsightSeverity;
   title: string;
   description: string;
   recommendations: Array<{ action: string; priority: string }>;
-  event_ids: string[];
+  eventIds: string[];
   status: InsightStatus;
-  created_at: string;
+  createdAt: string;
 }
 
 /**
@@ -85,17 +87,18 @@ export interface CorrelationInsight {
  */
 export interface TimelineResponse {
   events: SDLCEvent[];
-  total_count: number;
+  totalCount: number;
 }
 
 /**
  * Impact analysis response
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface ImpactAnalysisResponse {
-  commit_sha: string;
-  related_events: SDLCEvent[];
-  risk_score: number;
-  potential_impacts: string[];
+  commitSha: string;
+  relatedEvents: SDLCEvent[];
+  riskScore: number;
+  potentialImpacts: string[];
 }
 
 /**
@@ -103,69 +106,73 @@ export interface ImpactAnalysisResponse {
  */
 export interface RootCauseChain {
   event: SDLCEvent;
-  correlation_type?: string | null;
+  correlationType?: string | null;
   confidence: number;
 }
 
 /**
  * Root cause analysis response
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface RootCauseResponse {
-  target_event: SDLCEvent;
-  root_cause_chain: RootCauseChain[];
-  likely_root_cause?: SDLCEvent | null;
+  targetEvent: SDLCEvent;
+  rootCauseChain: RootCauseChain[];
+  likelyRootCause?: SDLCEvent | null;
   confidence: number;
-  analysis_summary: string;
+  analysisSummary: string;
 }
 
 /**
  * Natural language query response
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface NLQueryResponse {
   query: string;
-  interpreted_as: string;
+  interpretedAs: string;
   events: SDLCEvent[];
   insights: string[];
-  suggested_actions: string[];
+  suggestedActions: string[];
 }
 
 /**
  * Correlation statistics
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface CorrelationStats {
-  time_range_days: number;
-  project_id?: string | null;
+  timeRangeDays: number;
+  projectId?: string | null;
   events: {
     total: number;
-    by_type: Record<string, number>;
+    byType: Record<string, number>;
   };
   insights: {
     total: number;
-    status_active?: number;
-    status_acknowledged?: number;
-    status_resolved?: number;
-    status_dismissed?: number;
-    severity_critical?: number;
-    severity_warning?: number;
-    severity_info?: number;
+    statusActive?: number;
+    statusAcknowledged?: number;
+    statusResolved?: number;
+    statusDismissed?: number;
+    severityCritical?: number;
+    severityWarning?: number;
+    severityInfo?: number;
   };
   correlations: {
     total: number;
     [key: string]: number;
   };
-  generated_at: string;
+  generatedAt: string;
 }
 
 /**
  * Event with correlations response
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface EventWithCorrelations {
   event: SDLCEvent;
   correlations: Array<{
     id: string;
-    source_event_id: string;
-    target_event_id: string;
-    correlation_type: string;
+    sourceEventId: string;
+    targetEventId: string;
+    correlationType: string;
     confidence: number;
   }>;
 }

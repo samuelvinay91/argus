@@ -18,42 +18,44 @@ import { useAuthApi } from './use-auth-api';
 
 /**
  * Notification preferences matching backend NotificationPreferences model
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface NotificationPreferences {
   // Email notifications
-  email_notifications: boolean;
-  email_test_failures: boolean;
-  email_test_completions: boolean;
-  email_weekly_digest: boolean;
+  emailNotifications: boolean;
+  emailTestFailures: boolean;
+  emailTestCompletions: boolean;
+  emailWeeklyDigest: boolean;
 
   // Slack notifications
-  slack_notifications: boolean;
-  slack_test_failures: boolean;
-  slack_test_completions: boolean;
+  slackNotifications: boolean;
+  slackTestFailures: boolean;
+  slackTestCompletions: boolean;
 
   // In-app notifications
-  in_app_notifications: boolean;
-  in_app_test_failures: boolean;
-  in_app_test_completions: boolean;
+  inAppNotifications: boolean;
+  inAppTestFailures: boolean;
+  inAppTestCompletions: boolean;
 
   // Alert settings
-  test_failure_alerts: boolean;
-  daily_digest: boolean;
-  weekly_report: boolean;
-  alert_threshold: number; // Percentage threshold for alerting (e.g., 80 means alert if pass rate < 80%)
+  testFailureAlerts: boolean;
+  dailyDigest: boolean;
+  weeklyReport: boolean;
+  alertThreshold: number; // Percentage threshold for alerting (e.g., 80 means alert if pass rate < 80%)
 }
 
 /**
  * Test execution defaults
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface TestDefaults {
-  default_browser: 'chromium' | 'firefox' | 'webkit';
-  default_timeout: number; // Timeout in milliseconds
-  parallel_execution: boolean;
-  retry_failed_tests: boolean;
-  max_retries: number;
-  screenshot_on_failure: boolean;
-  video_recording: boolean;
+  defaultBrowser: 'chromium' | 'firefox' | 'webkit';
+  defaultTimeout: number; // Timeout in milliseconds
+  parallelExecution: boolean;
+  retryFailedTests: boolean;
+  maxRetries: number;
+  screenshotOnFailure: boolean;
+  videoRecording: boolean;
 }
 
 /**
@@ -61,65 +63,68 @@ export interface TestDefaults {
  */
 export interface UserSettings {
   notifications: NotificationPreferences;
-  test_defaults: TestDefaults;
+  testDefaults: TestDefaults;
 }
 
 /**
  * User profile response from the backend API
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface UserProfile {
   id: string;
-  user_id: string;
+  userId: string;
   email: string | null;
-  display_name: string | null;
-  avatar_url: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
   bio: string | null;
   timezone: string | null;
   language: string | null;
   theme: 'light' | 'dark' | 'system' | null;
-  notification_preferences: NotificationPreferences;
-  default_organization_id: string | null;
-  default_project_id: string | null;
-  onboarding_completed: boolean;
-  onboarding_step: number | null;
-  last_login_at: string | null;
-  last_active_at: string | null;
-  login_count: number;
-  created_at: string;
-  updated_at: string;
+  notificationPreferences: NotificationPreferences;
+  defaultOrganizationId: string | null;
+  defaultProjectId: string | null;
+  onboardingCompleted: boolean;
+  onboardingStep: number | null;
+  lastLoginAt: string | null;
+  lastActiveAt: string | null;
+  loginCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
  * Update notification preferences request
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface UpdateNotificationPreferencesRequest {
-  email_notifications?: boolean;
-  email_test_failures?: boolean;
-  email_test_completions?: boolean;
-  email_weekly_digest?: boolean;
-  slack_notifications?: boolean;
-  slack_test_failures?: boolean;
-  slack_test_completions?: boolean;
-  in_app_notifications?: boolean;
-  in_app_test_failures?: boolean;
-  in_app_test_completions?: boolean;
-  test_failure_alerts?: boolean;
-  daily_digest?: boolean;
-  weekly_report?: boolean;
-  alert_threshold?: number;
+  emailNotifications?: boolean;
+  emailTestFailures?: boolean;
+  emailTestCompletions?: boolean;
+  emailWeeklyDigest?: boolean;
+  slackNotifications?: boolean;
+  slackTestFailures?: boolean;
+  slackTestCompletions?: boolean;
+  inAppNotifications?: boolean;
+  inAppTestFailures?: boolean;
+  inAppTestCompletions?: boolean;
+  testFailureAlerts?: boolean;
+  dailyDigest?: boolean;
+  weeklyReport?: boolean;
+  alertThreshold?: number;
 }
 
 /**
  * Update test defaults request
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface UpdateTestDefaultsRequest {
-  default_browser?: 'chromium' | 'firefox' | 'webkit';
-  default_timeout?: number;
-  parallel_execution?: boolean;
-  retry_failed_tests?: boolean;
-  max_retries?: number;
-  screenshot_on_failure?: boolean;
-  video_recording?: boolean;
+  defaultBrowser?: 'chromium' | 'firefox' | 'webkit';
+  defaultTimeout?: number;
+  parallelExecution?: boolean;
+  retryFailedTests?: boolean;
+  maxRetries?: number;
+  screenshotOnFailure?: boolean;
+  videoRecording?: boolean;
 }
 
 /**
@@ -127,7 +132,7 @@ export interface UpdateTestDefaultsRequest {
  */
 export interface UpdatePreferencesRequest {
   notifications?: UpdateNotificationPreferencesRequest;
-  test_defaults?: UpdateTestDefaultsRequest;
+  testDefaults?: UpdateTestDefaultsRequest;
 }
 
 // ============================================================================
@@ -135,30 +140,30 @@ export interface UpdatePreferencesRequest {
 // ============================================================================
 
 const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
-  email_notifications: true,
-  email_test_failures: true,
-  email_test_completions: false,
-  email_weekly_digest: true,
-  slack_notifications: false,
-  slack_test_failures: false,
-  slack_test_completions: false,
-  in_app_notifications: true,
-  in_app_test_failures: true,
-  in_app_test_completions: true,
-  test_failure_alerts: true,
-  daily_digest: false,
-  weekly_report: true,
-  alert_threshold: 80,
+  emailNotifications: true,
+  emailTestFailures: true,
+  emailTestCompletions: false,
+  emailWeeklyDigest: true,
+  slackNotifications: false,
+  slackTestFailures: false,
+  slackTestCompletions: false,
+  inAppNotifications: true,
+  inAppTestFailures: true,
+  inAppTestCompletions: true,
+  testFailureAlerts: true,
+  dailyDigest: false,
+  weeklyReport: true,
+  alertThreshold: 80,
 };
 
 const DEFAULT_TEST_DEFAULTS: TestDefaults = {
-  default_browser: 'chromium',
-  default_timeout: 30000,
-  parallel_execution: true,
-  retry_failed_tests: true,
-  max_retries: 2,
-  screenshot_on_failure: true,
-  video_recording: false,
+  defaultBrowser: 'chromium',
+  defaultTimeout: 30000,
+  parallelExecution: true,
+  retryFailedTests: true,
+  maxRetries: 2,
+  screenshotOnFailure: true,
+  videoRecording: false,
 };
 
 // ============================================================================
@@ -225,7 +230,7 @@ export function useUserSettings() {
   // Merge backend notification preferences with defaults
   const notificationPreferences: NotificationPreferences = {
     ...DEFAULT_NOTIFICATION_PREFERENCES,
-    ...(profile?.notification_preferences || {}),
+    ...(profile?.notificationPreferences || {}),
   };
 
   // For now, test defaults would come from user profile metadata or a separate endpoint
@@ -235,7 +240,7 @@ export function useUserSettings() {
   // Combined settings object
   const settings: UserSettings = {
     notifications: notificationPreferences,
-    test_defaults: testDefaults,
+    testDefaults: testDefaults,
   };
 
   // Mutation for updating notification preferences
@@ -292,8 +297,8 @@ export function useUserSettings() {
         promises.push(updateNotificationsMutation.mutateAsync(updates.notifications));
       }
 
-      if (updates.test_defaults) {
-        promises.push(updateTestDefaultsMutation.mutateAsync(updates.test_defaults));
+      if (updates.testDefaults) {
+        promises.push(updateTestDefaultsMutation.mutateAsync(updates.testDefaults));
       }
 
       const results = await Promise.all(promises);
@@ -376,7 +381,7 @@ export function useTestDefaults() {
     useUserSettings();
 
   return {
-    defaults: settings.test_defaults,
+    defaults: settings.testDefaults,
     isLoading,
     error,
     updateDefaults: updateTestDefaults,
@@ -432,8 +437,8 @@ export function useToggleNotification(
       if (previousSettings) {
         queryClient.setQueryData<UserProfile>(['user-settings'], {
           ...previousSettings,
-          notification_preferences: {
-            ...previousSettings.notification_preferences,
+          notificationPreferences: {
+            ...previousSettings.notificationPreferences,
             [notificationType]: enabled,
           },
         });

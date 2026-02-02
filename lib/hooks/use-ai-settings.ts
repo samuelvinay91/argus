@@ -11,48 +11,52 @@ import { useAuthApi } from './use-auth-api';
  * User AI preferences for model selection and display.
  */
 export interface AIPreferences {
-  default_provider: string;
-  default_model: string;
-  cost_limit_per_day: number;
-  cost_limit_per_message: number;
-  use_platform_key_fallback: boolean;
-  show_token_costs: boolean;
-  show_model_in_chat: boolean;
-  preferred_models_by_task?: Record<string, string>;
+  defaultProvider: string;
+  defaultModel: string;
+  costLimitPerDay: number;
+  costLimitPerMessage: number;
+  usePlatformKeyFallback: boolean;
+  showTokenCosts: boolean;
+  showModelInChat: boolean;
+  preferredModelsByTask?: Record<string, string>;
 }
 
 /**
  * Provider API key information (masked for display).
  */
+/**
+ * NOTE: Properties use camelCase because API responses are converted from snake_case.
+ */
 export interface ProviderKey {
   id: string;
   provider: string;
-  key_display: string;
-  is_valid: boolean;
-  last_validated_at: string | null;
-  validation_error: string | null;
-  created_at: string;
+  keyDisplay: string;
+  isValid: boolean;
+  lastValidatedAt: string | null;
+  validationError: string | null;
+  createdAt: string;
 }
 
 /**
  * Model information with pricing and capabilities.
+ * NOTE: Properties use camelCase because API responses are converted from snake_case.
  */
 export interface ModelInfo {
-  model_id: string;
-  display_name: string;
+  modelId: string;
+  displayName: string;
   provider: string;
-  input_price: number;
-  output_price: number;
+  inputPrice: number;
+  outputPrice: number;
   capabilities: string[];
-  is_available: boolean;
+  isAvailable: boolean;
   tier?: ModelTier;
-  context_window?: number;
-  max_output_tokens?: number;
-  supports_vision?: boolean;
-  supports_function_calling?: boolean;
-  supports_streaming?: boolean;
+  contextWindow?: number;
+  maxOutputTokens?: number;
+  supportsVision?: boolean;
+  supportsFunctionCalling?: boolean;
+  supportsStreaming?: boolean;
   deprecated?: boolean;
-  deprecation_date?: string | null;
+  deprecationDate?: string | null;
 }
 
 /**
@@ -134,14 +138,14 @@ export interface ProviderIncident {
  * AI usage summary for billing dashboard.
  */
 export interface UsageSummary {
-  total_requests: number;
-  total_input_tokens: number;
-  total_output_tokens: number;
-  total_cost_usd: number;
-  platform_key_cost: number;
-  byok_cost: number;
-  usage_by_model: Record<string, { requests: number; tokens: number; cost: number }>;
-  usage_by_provider: Record<string, { requests: number; cost: number }>;
+  totalRequests: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCostUsd: number;
+  platformKeyCost: number;
+  byokCost: number;
+  usageByModel: Record<string, { requests: number; tokens: number; cost: number }>;
+  usageByProvider: Record<string, { requests: number; cost: number }>;
 }
 
 /**
@@ -149,9 +153,9 @@ export interface UsageSummary {
  */
 export interface DailyUsage {
   date: string;
-  total_requests: number;
-  total_tokens: number;
-  total_cost_usd: number;
+  totalRequests: number;
+  totalTokens: number;
+  totalCostUsd: number;
 }
 
 /**
@@ -161,12 +165,12 @@ export interface UsageRecord {
   id: string;
   provider: string;
   model: string;
-  input_tokens: number;
-  output_tokens: number;
-  cost_usd: number;
-  key_source: string;
-  thread_id: string | null;
-  created_at: string;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+  keySource: string;
+  threadId: string | null;
+  createdAt: string;
 }
 
 /**
@@ -182,26 +186,27 @@ export interface UsageResponse {
  * User's current AI budget status.
  */
 export interface BudgetStatus {
-  has_budget: boolean;
-  daily_limit: number;
-  daily_spent: number;
-  daily_remaining: number;
-  message_limit: number;
+  hasBudget: boolean;
+  dailyLimit: number;
+  dailySpent: number;
+  dailyRemaining: number;
+  messageLimit: number;
 }
 
 /**
  * Available models response.
+ * NOTE: Properties use camelCase because API responses are converted from snake_case.
  */
 export interface AvailableModelsResponse {
   models: ModelInfo[];
-  user_providers: string[];
+  userProviders: string[];
 }
 
 /**
  * Key validation response.
  */
 export interface ValidateKeyResponse {
-  is_valid: boolean;
+  isValid: boolean;
   error: string | null;
   provider: string;
 }
@@ -458,13 +463,13 @@ export function useAvailableModels() {
 
         if (response.error) {
           console.warn('Failed to fetch available models:', response.error);
-          return { models: [], user_providers: [] };
+          return { models: [], userProviders: [] };
         }
 
-        return response.data || { models: [], user_providers: [] };
+        return response.data || { models: [], userProviders: [] };
       } catch (error) {
         console.warn('Available models API unavailable:', error);
-        return { models: [], user_providers: [] };
+        return { models: [], userProviders: [] };
       }
     },
     enabled: isLoaded && isSignedIn,
@@ -989,7 +994,7 @@ export function useAISettings() {
     preferences: preferencesQuery.data || null,
     providerKeys: providerKeysQuery.data || [],
     models: modelsQuery.data?.models || [],
-    userProviders: modelsQuery.data?.user_providers || [],
+    userProviders: modelsQuery.data?.userProviders || [],
     usageSummary: usageQuery.data || null,
     budgetStatus: budgetQuery.data || null,
 

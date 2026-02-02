@@ -37,10 +37,10 @@ export type TaskType =
  */
 export interface RoutingRule {
   id: string;
-  task_type: TaskType;
-  model_id: string;
+  taskType: TaskType;
+  modelId: string;
   provider: string;
-  max_cost_per_request: number;
+  maxCostPerRequest: number;
   priority: number;
   enabled: boolean;
 }
@@ -51,25 +51,26 @@ export interface RoutingRule {
 export interface FallbackProvider {
   id: string;
   provider: string;
-  display_name: string;
+  displayName: string;
   enabled: boolean;
   order: number;
 }
 
 /**
  * Complete routing configuration
+ * Note: Properties use camelCase because API responses are converted from snake_case
  */
 export interface RoutingConfig {
   mode: RoutingMode;
-  auto_settings: {
+  autoSettings: {
     preset: AutoModePreset;
-    quality_cost_balance: number; // 0-100 slider value (0=cost, 100=quality)
-    let_ai_decide: boolean;
+    qualityCostBalance: number; // 0-100 slider value (0=cost, 100=quality)
+    letAiDecide: boolean;
   };
-  manual_rules: RoutingRule[];
-  fallback_chain: FallbackProvider[];
-  use_platform_keys_fallback: boolean;
-  updated_at: string;
+  manualRules: RoutingRule[];
+  fallbackChain: FallbackProvider[];
+  usePlatformKeysFallback: boolean;
+  updatedAt: string;
 }
 
 /**
@@ -79,7 +80,7 @@ export interface TaskTypeInfo {
   id: TaskType;
   name: string;
   description: string;
-  recommended_models: string[];
+  recommendedModels: string[];
 }
 
 // ============================================================================
@@ -91,61 +92,61 @@ export const TASK_TYPES: TaskTypeInfo[] = [
     id: 'classification',
     name: 'Classification',
     description: 'Categorize inputs, sentiment analysis, intent detection',
-    recommended_models: ['claude-haiku-4', 'gpt-4o-mini', 'gemini-flash'],
+    recommendedModels: ['claude-haiku-4', 'gpt-4o-mini', 'gemini-flash'],
   },
   {
     id: 'code_analysis',
     name: 'Code Analysis',
     description: 'Parse code, identify patterns, analyze complexity',
-    recommended_models: ['claude-sonnet-4-5', 'gpt-4o', 'deepseek-chat'],
+    recommendedModels: ['claude-sonnet-4-5', 'gpt-4o', 'deepseek-chat'],
   },
   {
     id: 'test_generation',
     name: 'Test Generation',
     description: 'Generate test cases, assertions, and test plans',
-    recommended_models: ['claude-sonnet-4-5', 'gpt-4o', 'claude-opus-4'],
+    recommendedModels: ['claude-sonnet-4-5', 'gpt-4o', 'claude-opus-4'],
   },
   {
     id: 'self_healing',
     name: 'Self-Healing',
     description: 'Analyze failures, fix selectors, update assertions',
-    recommended_models: ['claude-opus-4', 'claude-sonnet-4-5', 'gpt-4o'],
+    recommendedModels: ['claude-opus-4', 'claude-sonnet-4-5', 'gpt-4o'],
   },
   {
     id: 'computer_use',
     name: 'Computer Use',
     description: 'Browser automation, UI interactions, visual testing',
-    recommended_models: ['claude-sonnet-4-5', 'claude-opus-4'],
+    recommendedModels: ['claude-sonnet-4-5', 'claude-opus-4'],
   },
   {
     id: 'summarization',
     name: 'Summarization',
     description: 'Generate summaries, reports, and digests',
-    recommended_models: ['claude-haiku-4', 'gpt-4o-mini', 'gemini-flash'],
+    recommendedModels: ['claude-haiku-4', 'gpt-4o-mini', 'gemini-flash'],
   },
   {
     id: 'extraction',
     name: 'Data Extraction',
     description: 'Extract structured data from unstructured text',
-    recommended_models: ['claude-sonnet-4-5', 'gpt-4o', 'gemini-pro'],
+    recommendedModels: ['claude-sonnet-4-5', 'gpt-4o', 'gemini-pro'],
   },
   {
     id: 'chat',
     name: 'Chat / Conversation',
     description: 'Interactive chat, Q&A, conversational tasks',
-    recommended_models: ['claude-sonnet-4-5', 'gpt-4o', 'claude-haiku-4'],
+    recommendedModels: ['claude-sonnet-4-5', 'gpt-4o', 'claude-haiku-4'],
   },
   {
     id: 'embedding',
     name: 'Embeddings',
     description: 'Generate vector embeddings for semantic search',
-    recommended_models: ['text-embedding-3-large', 'voyage-3', 'bge-large'],
+    recommendedModels: ['text-embedding-3-large', 'voyage-3', 'bge-large'],
   },
   {
     id: 'validation',
     name: 'Validation',
     description: 'Validate outputs, check correctness, verify results',
-    recommended_models: ['claude-haiku-4', 'gpt-4o-mini', 'gemini-flash'],
+    recommendedModels: ['claude-haiku-4', 'gpt-4o-mini', 'gemini-flash'],
   },
 ];
 
@@ -168,12 +169,12 @@ export const AUTO_MODE_PRESETS: Record<AutoModePreset, { name: string; descripti
 };
 
 export const DEFAULT_FALLBACK_PROVIDERS: FallbackProvider[] = [
-  { id: '1', provider: 'anthropic', display_name: 'Anthropic', enabled: true, order: 1 },
-  { id: '2', provider: 'openai', display_name: 'OpenAI', enabled: true, order: 2 },
-  { id: '3', provider: 'google', display_name: 'Google AI', enabled: true, order: 3 },
-  { id: '4', provider: 'openrouter', display_name: 'OpenRouter', enabled: false, order: 4 },
-  { id: '5', provider: 'groq', display_name: 'Groq', enabled: false, order: 5 },
-  { id: '6', provider: 'together', display_name: 'Together AI', enabled: false, order: 6 },
+  { id: '1', provider: 'anthropic', displayName: 'Anthropic', enabled: true, order: 1 },
+  { id: '2', provider: 'openai', displayName: 'OpenAI', enabled: true, order: 2 },
+  { id: '3', provider: 'google', displayName: 'Google AI', enabled: true, order: 3 },
+  { id: '4', provider: 'openrouter', displayName: 'OpenRouter', enabled: false, order: 4 },
+  { id: '5', provider: 'groq', displayName: 'Groq', enabled: false, order: 5 },
+  { id: '6', provider: 'together', displayName: 'Together AI', enabled: false, order: 6 },
 ];
 
 // ============================================================================
@@ -375,15 +376,15 @@ export function useUpdateFallbackChain() {
 export function getDefaultRoutingConfig(): RoutingConfig {
   return {
     mode: 'auto',
-    auto_settings: {
+    autoSettings: {
       preset: 'balanced',
-      quality_cost_balance: 50,
-      let_ai_decide: true,
+      qualityCostBalance: 50,
+      letAiDecide: true,
     },
-    manual_rules: [],
-    fallback_chain: DEFAULT_FALLBACK_PROVIDERS,
-    use_platform_keys_fallback: true,
-    updated_at: new Date().toISOString(),
+    manualRules: [],
+    fallbackChain: DEFAULT_FALLBACK_PROVIDERS,
+    usePlatformKeysFallback: true,
+    updatedAt: new Date().toISOString(),
   };
 }
 

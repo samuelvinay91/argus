@@ -1689,8 +1689,8 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     // Pass AI config and user ID for model selection and BYOK support
     body: {
       aiConfig: aiPreferences ? {
-        model: aiPreferences.default_model,
-        provider: aiPreferences.default_provider,
+        model: aiPreferences.defaultModel,
+        provider: aiPreferences.defaultProvider,
         useBYOK: true,
       } : undefined,
       userId: user?.id,

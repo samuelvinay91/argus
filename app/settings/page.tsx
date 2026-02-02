@@ -193,7 +193,7 @@ export default function SettingsPage() {
       case 'defaults':
         return (
           <TestDefaultsSection
-            settings={settings?.test_defaults || null}
+            settings={settings?.testDefaults || null}
             loading={settingsLoading}
             error={settingsError}
             onSave={updateTestDefaults}

@@ -24,8 +24,8 @@ interface ConnectedAccountsSectionProps {
   /** Override connected accounts data */
   connectedAccounts?: {
     accounts: ConnectedAccount[];
-    api_keys_active: number;
-    api_keys_total: number;
+    apiKeysActive: number;
+    apiKeysTotal: number;
   } | null;
   /** Override loading state */
   loading?: boolean;
@@ -85,7 +85,7 @@ function ConnectedAccountRow({ account }: { account: ConnectedAccount }) {
         {/* Provider Info */}
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-medium">{account.provider_name}</span>
+            <span className="font-medium">{account.providerName}</span>
             <Badge variant="outline" className="gap-1 text-green-600">
               <CheckCircle className="h-3 w-3" />
               Connected
@@ -104,7 +104,7 @@ function ConnectedAccountRow({ account }: { account: ConnectedAccount }) {
         onClick={() => window.open('https://accounts.heyargus.ai/user/security', '_blank')}
       >
         <ExternalLink className="h-4 w-4" />
-        <span className="sr-only">Manage {account.provider_name}</span>
+        <span className="sr-only">Manage {account.providerName}</span>
       </Button>
     </div>
   );
@@ -176,8 +176,8 @@ export function ConnectedAccountsSection({
   const apiKeyStats = useMemo(() => {
     if (!connectedAccounts) return { active: 0, total: 0 };
     return {
-      active: connectedAccounts.api_keys_active,
-      total: connectedAccounts.api_keys_total,
+      active: connectedAccounts.apiKeysActive,
+      total: connectedAccounts.apiKeysTotal,
     };
   }, [connectedAccounts]);
 

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { safeFormatDistanceToNow } from '@/lib/utils';
 import { Play, ExternalLink, Loader2 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { TestRun } from '@/lib/supabase/types';
@@ -42,30 +41,23 @@ export function ActiveExecutionsWidget({
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-medium flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-              </span>
-              Active Executions
-            </CardTitle>
-            <CardDescription>
-              {activeExecutions.length} {activeExecutions.length === 1 ? 'test' : 'tests'} running
-            </CardDescription>
-          </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/tests" onClick={(e) => handleNavigation(e, '/tests')}>
-              View All
-              <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-            </Link>
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <div className="p-4">
+      <div className="flex items-center justify-between pb-3">
+        <p className="text-sm text-muted-foreground flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+          </span>
+          {activeExecutions.length} {activeExecutions.length === 1 ? 'test' : 'tests'} running
+        </p>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/tests" onClick={(e) => handleNavigation(e, '/tests')}>
+            View All
+            <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+          </Link>
+        </Button>
+      </div>
+      <div>
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2].map((i) => (
@@ -158,34 +150,27 @@ export function ActiveExecutionsWidget({
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 export function ActiveExecutionsWidgetSkeleton() {
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="h-5 w-36 bg-muted animate-pulse rounded mb-2" />
-            <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+    <div className="p-4">
+      <div className="flex items-center justify-between pb-3">
+        <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+        <div className="h-9 w-20 bg-muted animate-pulse rounded-md" />
+      </div>
+      <div className="space-y-3">
+        {[1, 2].map((i) => (
+          <div key={i} className="p-3 rounded-lg border">
+            <div className="h-4 w-32 bg-muted animate-pulse rounded mb-2" />
+            <div className="h-2 w-full bg-muted animate-pulse rounded mb-2" />
+            <div className="h-3 w-20 bg-muted animate-pulse rounded" />
           </div>
-          <div className="h-9 w-20 bg-muted animate-pulse rounded-md" />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {[1, 2].map((i) => (
-            <div key={i} className="p-3 rounded-lg border">
-              <div className="h-4 w-32 bg-muted animate-pulse rounded mb-2" />
-              <div className="h-2 w-full bg-muted animate-pulse rounded mb-2" />
-              <div className="h-3 w-20 bg-muted animate-pulse rounded" />
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+        ))}
+      </div>
+    </div>
   );
 }

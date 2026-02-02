@@ -109,8 +109,8 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
     maxSteps: 3,
     body: {
       aiConfig: aiPreferences ? {
-        model: aiPreferences.default_model,
-        provider: aiPreferences.default_provider,
+        model: aiPreferences.defaultModel,
+        provider: aiPreferences.defaultProvider,
         useBYOK: true,
       } : undefined,
       userId: user?.id,

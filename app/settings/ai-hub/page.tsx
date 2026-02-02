@@ -209,12 +209,12 @@ export default function AIHubDashboard() {
     const providerKeysArray = Array.isArray(providerKeys) ? providerKeys : [];
     const providersArray = Array.isArray(providers) ? providers : [];
 
-    const availableModels = modelsArray.filter((m) => m.is_available).length;
+    const availableModels = modelsArray.filter((m) => m.isAvailable).length;
     const totalModels = modelsArray.length;
-    const connectedProviders = providerKeysArray.filter((k) => k.is_valid).length;
+    const connectedProviders = providerKeysArray.filter((k) => k.isValid).length;
     const totalProviders = providersArray.length;
-    const todaySpend = dailyUsage?.total_cost_usd ?? 0;
-    const dailyBudget = budgetStatus?.daily_limit ?? 10;
+    const todaySpend = dailyUsage?.totalCostUsd ?? 0;
+    const dailyBudget = budgetStatus?.dailyLimit ?? 10;
     const budgetUsedPercent = dailyBudget > 0 ? (todaySpend / dailyBudget) * 100 : 0;
 
     // System availability (based on provider status)
@@ -266,7 +266,7 @@ export default function AIHubDashboard() {
     }
 
     // Invalid provider keys
-    const invalidKeys = providerKeysArray.filter((k) => !k.is_valid);
+    const invalidKeys = providerKeysArray.filter((k) => !k.isValid);
     if (invalidKeys.length > 0) {
       recs.push({
         title: 'Fix invalid API keys',
@@ -279,7 +279,7 @@ export default function AIHubDashboard() {
     }
 
     // Suggest optimizing model selection
-    if (modelsArray.length > 0 && !preferences?.default_model) {
+    if (modelsArray.length > 0 && !preferences?.defaultModel) {
       recs.push({
         title: 'Set a default model',
         description: 'Choose your preferred AI model for faster interactions.',
@@ -307,9 +307,9 @@ export default function AIHubDashboard() {
 
   // Get current active model info
   const activeModel = useMemo(() => {
-    const defaultModelId = preferences?.default_model;
+    const defaultModelId = preferences?.defaultModel;
     if (!defaultModelId) return null;
-    return models.find((m) => m.model_id === defaultModelId);
+    return models.find((m) => m.modelId === defaultModelId);
   }, [preferences, models]);
 
   // Mock usage data for chart (last 7 days)
@@ -418,15 +418,15 @@ export default function AIHubDashboard() {
               ) : activeModel ? (
                 <div className="space-y-3">
                   <div>
-                    <p className="font-medium">{activeModel.display_name}</p>
+                    <p className="font-medium">{activeModel.displayName}</p>
                     <p className="text-sm text-muted-foreground capitalize">{activeModel.provider}</p>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="px-2 py-0.5 rounded-full bg-muted">
-                      ${activeModel.input_price}/1M input
+                      ${activeModel.inputPrice}/1M input
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-muted">
-                      ${activeModel.output_price}/1M output
+                      ${activeModel.outputPrice}/1M output
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1">

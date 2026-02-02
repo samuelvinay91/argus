@@ -313,9 +313,9 @@ function ModelListRow({
   };
 
   const capabilities: Capability[] = [];
-  if (model.supports_vision) capabilities.push('vision');
-  if (model.supports_function_calling) capabilities.push('tools');
-  if (model.supports_streaming) capabilities.push('streaming');
+  if (model.supportsVision) capabilities.push('vision');
+  if (model.supportsFunctionCalling) capabilities.push('tools');
+  if (model.supportsStreaming) capabilities.push('streaming');
   if (model.capabilities?.includes('computer_use')) capabilities.push('computer_use');
 
   return (
@@ -323,7 +323,7 @@ function ModelListRow({
       className={cn(
         'flex items-center gap-4 p-4 border-b last:border-b-0 hover:bg-muted/50 transition-colors',
         isDefault && 'bg-primary/5',
-        !model.is_available && 'opacity-60'
+        !model.isAvailable && 'opacity-60'
       )}
     >
       {/* Checkbox for compare mode */}
@@ -338,7 +338,7 @@ function ModelListRow({
       {/* Model info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="font-semibold text-sm truncate">{model.display_name}</h3>
+          <h3 className="font-semibold text-sm truncate">{model.displayName}</h3>
           {isDefault && (
             <Badge variant="default" className="text-xs px-1.5 py-0">
               <Star className="h-3 w-3 mr-1" />
@@ -361,13 +361,13 @@ function ModelListRow({
       {/* Pricing */}
       <div className="hidden md:flex flex-col items-end text-sm">
         <span className="text-muted-foreground text-xs">Input/Output</span>
-        <span className="font-medium">{formatPrice(model.input_price)} / {formatPrice(model.output_price)}</span>
+        <span className="font-medium">{formatPrice(model.inputPrice)} / {formatPrice(model.outputPrice)}</span>
       </div>
 
       {/* Context */}
       <div className="hidden lg:flex flex-col items-end text-sm min-w-[80px]">
         <span className="text-muted-foreground text-xs">Context</span>
-        <span className="font-medium">{formatContextWindow(model.context_window)}</span>
+        <span className="font-medium">{formatContextWindow(model.contextWindow)}</span>
       </div>
 
       {/* Speed */}
@@ -390,8 +390,8 @@ function ModelListRow({
           <Button
             variant={isDefault ? 'outline' : 'default'}
             size="sm"
-            disabled={isDefault || !model.is_available || isSettingDefault}
-            onClick={() => onSetDefault(model.model_id)}
+            disabled={isDefault || !model.isAvailable || isSettingDefault}
+            onClick={() => onSetDefault(model.modelId)}
           >
             {isSettingDefault ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -441,15 +441,15 @@ function ComparisonTable({
   };
 
   // Find best values for highlighting
-  const lowestInputPrice = Math.min(...models.map((m) => m.input_price));
-  const lowestOutputPrice = Math.min(...models.map((m) => m.output_price));
-  const largestContext = Math.max(...models.map((m) => m.context_window || 0));
+  const lowestInputPrice = Math.min(...models.map((m) => m.inputPrice));
+  const lowestOutputPrice = Math.min(...models.map((m) => m.outputPrice));
+  const largestContext = Math.max(...models.map((m) => m.contextWindow || 0));
 
   const getCapabilities = (model: ModelInfo): Capability[] => {
     const caps: Capability[] = [];
-    if (model.supports_vision) caps.push('vision');
-    if (model.supports_function_calling) caps.push('tools');
-    if (model.supports_streaming) caps.push('streaming');
+    if (model.supportsVision) caps.push('vision');
+    if (model.supportsFunctionCalling) caps.push('tools');
+    if (model.supportsStreaming) caps.push('streaming');
     if (model.capabilities?.includes('computer_use')) caps.push('computer_use');
     return caps;
   };
@@ -474,19 +474,19 @@ function ComparisonTable({
             <tr className="border-b bg-muted/50">
               <th className="text-left p-4 font-medium text-muted-foreground min-w-[120px]">Attribute</th>
               {models.map((model) => (
-                <th key={model.model_id} className="text-left p-4 min-w-[180px]">
+                <th key={model.modelId} className="text-left p-4 min-w-[180px]">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold truncate">{model.display_name}</span>
+                    <span className="font-semibold truncate">{model.displayName}</span>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 -mr-2"
-                      onClick={() => onRemoveFromCompare(model.model_id)}
+                      onClick={() => onRemoveFromCompare(model.modelId)}
                     >
                       <X className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                  {defaultModelId === model.model_id && (
+                  {defaultModelId === model.modelId && (
                     <Badge variant="default" className="mt-1 text-xs">Default</Badge>
                   )}
                 </th>
@@ -500,7 +500,7 @@ function ComparisonTable({
               {models.map((model) => {
                 const config = PROVIDER_CONFIG[model.provider.toLowerCase()];
                 return (
-                  <td key={model.model_id} className="p-4">
+                  <td key={model.modelId} className="p-4">
                     <Badge variant="outline" className={cn('text-xs', config?.color)}>
                       {config?.label || model.provider}
                     </Badge>
@@ -513,13 +513,13 @@ function ComparisonTable({
             <tr className="border-b">
               <td className="p-4 font-medium text-muted-foreground">Input Price</td>
               {models.map((model) => (
-                <td key={model.model_id} className="p-4">
+                <td key={model.modelId} className="p-4">
                   <span className={cn(
                     'font-medium',
-                    model.input_price === lowestInputPrice && models.length > 1 && 'text-green-600'
+                    model.inputPrice === lowestInputPrice && models.length > 1 && 'text-green-600'
                   )}>
-                    {formatPrice(model.input_price)}
-                    {model.input_price === lowestInputPrice && models.length > 1 && (
+                    {formatPrice(model.inputPrice)}
+                    {model.inputPrice === lowestInputPrice && models.length > 1 && (
                       <Trophy className="h-3.5 w-3.5 inline ml-1 text-green-600" />
                     )}
                   </span>
@@ -531,13 +531,13 @@ function ComparisonTable({
             <tr className="border-b">
               <td className="p-4 font-medium text-muted-foreground">Output Price</td>
               {models.map((model) => (
-                <td key={model.model_id} className="p-4">
+                <td key={model.modelId} className="p-4">
                   <span className={cn(
                     'font-medium',
-                    model.output_price === lowestOutputPrice && models.length > 1 && 'text-green-600'
+                    model.outputPrice === lowestOutputPrice && models.length > 1 && 'text-green-600'
                   )}>
-                    {formatPrice(model.output_price)}
-                    {model.output_price === lowestOutputPrice && models.length > 1 && (
+                    {formatPrice(model.outputPrice)}
+                    {model.outputPrice === lowestOutputPrice && models.length > 1 && (
                       <Trophy className="h-3.5 w-3.5 inline ml-1 text-green-600" />
                     )}
                   </span>
@@ -549,13 +549,13 @@ function ComparisonTable({
             <tr className="border-b">
               <td className="p-4 font-medium text-muted-foreground">Context Window</td>
               {models.map((model) => (
-                <td key={model.model_id} className="p-4">
+                <td key={model.modelId} className="p-4">
                   <span className={cn(
                     'font-medium',
-                    model.context_window === largestContext && models.length > 1 && 'text-green-600'
+                    model.contextWindow === largestContext && models.length > 1 && 'text-green-600'
                   )}>
-                    {formatContextWindow(model.context_window)} tokens
-                    {model.context_window === largestContext && models.length > 1 && (
+                    {formatContextWindow(model.contextWindow)} tokens
+                    {model.contextWindow === largestContext && models.length > 1 && (
                       <Trophy className="h-3.5 w-3.5 inline ml-1 text-green-600" />
                     )}
                   </span>
@@ -573,7 +573,7 @@ function ComparisonTable({
                 {models.map((model) => {
                   const hasCap = getCapabilities(model).includes(cap);
                   return (
-                    <td key={model.model_id} className="p-4">
+                    <td key={model.modelId} className="p-4">
                       {hasCap ? (
                         <Check className="h-5 w-5 text-green-600" />
                       ) : (
@@ -589,7 +589,7 @@ function ComparisonTable({
             <tr className="border-b">
               <td className="p-4 font-medium text-muted-foreground">Speed Rating</td>
               {models.map((model) => (
-                <td key={model.model_id} className="p-4">
+                <td key={model.modelId} className="p-4">
                   <SpeedRating model={model} />
                 </td>
               ))}
@@ -599,7 +599,7 @@ function ComparisonTable({
             <tr>
               <td className="p-4 font-medium text-muted-foreground">Actions</td>
               {models.map((model) => (
-                <td key={model.model_id} className="p-4">
+                <td key={model.modelId} className="p-4">
                   <div className="flex flex-col gap-2">
                     <Button
                       variant="outline"
@@ -611,15 +611,15 @@ function ComparisonTable({
                       Details
                     </Button>
                     <Button
-                      variant={defaultModelId === model.model_id ? 'outline' : 'default'}
+                      variant={defaultModelId === model.modelId ? 'outline' : 'default'}
                       size="sm"
                       className="w-full"
-                      disabled={defaultModelId === model.model_id || !model.is_available || isSettingDefault}
-                      onClick={() => onSetDefault(model.model_id)}
+                      disabled={defaultModelId === model.modelId || !model.isAvailable || isSettingDefault}
+                      onClick={() => onSetDefault(model.modelId)}
                     >
-                      {settingDefaultId === model.model_id ? (
+                      {settingDefaultId === model.modelId ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : defaultModelId === model.model_id ? (
+                      ) : defaultModelId === model.modelId ? (
                         'Current Default'
                       ) : (
                         'Set as Default'
@@ -679,9 +679,9 @@ function ModelDetailsSheet({
   };
 
   const capabilities: Capability[] = [];
-  if (model.supports_vision) capabilities.push('vision');
-  if (model.supports_function_calling) capabilities.push('tools');
-  if (model.supports_streaming) capabilities.push('streaming');
+  if (model.supportsVision) capabilities.push('vision');
+  if (model.supportsFunctionCalling) capabilities.push('tools');
+  if (model.supportsStreaming) capabilities.push('streaming');
   if (model.capabilities?.includes('computer_use')) capabilities.push('computer_use');
 
   return (
@@ -689,7 +689,7 @@ function ModelDetailsSheet({
       <SheetContent className="sm:max-w-lg overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            {model.display_name}
+            {model.displayName}
             {isDefault && (
               <Badge variant="default" className="text-xs">
                 <Star className="h-3 w-3 mr-1" />
@@ -698,7 +698,7 @@ function ModelDetailsSheet({
             )}
           </SheetTitle>
           <SheetDescription className="text-left">
-            <span className="font-mono text-xs">{model.model_id}</span>
+            <span className="font-mono text-xs">{model.modelId}</span>
           </SheetDescription>
         </SheetHeader>
 
@@ -718,7 +718,7 @@ function ModelDetailsSheet({
                 Deprecated
               </Badge>
             )}
-            {!model.is_available && (
+            {!model.isAvailable && (
               <Badge variant="secondary" className="text-sm">
                 Unavailable
               </Badge>
@@ -733,11 +733,11 @@ function ModelDetailsSheet({
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Input</span>
-                <span className="font-semibold">{formatPrice(model.input_price)}</span>
+                <span className="font-semibold">{formatPrice(model.inputPrice)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Output</span>
-                <span className="font-semibold">{formatPrice(model.output_price)}</span>
+                <span className="font-semibold">{formatPrice(model.outputPrice)}</span>
               </div>
             </CardContent>
           </Card>
@@ -750,12 +750,12 @@ function ModelDetailsSheet({
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Context Window</span>
-                <span className="font-semibold">{formatContextWindow(model.context_window)}</span>
+                <span className="font-semibold">{formatContextWindow(model.contextWindow)}</span>
               </div>
-              {model.max_output_tokens && (
+              {model.maxOutputTokens && (
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Max Output</span>
-                  <span className="font-semibold">{formatContextWindow(model.max_output_tokens)}</span>
+                  <span className="font-semibold">{formatContextWindow(model.maxOutputTokens)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center">
@@ -824,11 +824,11 @@ function ModelDetailsSheet({
           )}
 
           {/* Deprecation warning */}
-          {model.deprecated && model.deprecation_date && (
+          {model.deprecated && model.deprecationDate && (
             <Card className="border-amber-500/50 bg-amber-500/5">
               <CardContent className="pt-4">
                 <p className="text-sm text-amber-600">
-                  This model is deprecated and will be removed on {new Date(model.deprecation_date).toLocaleDateString()}.
+                  This model is deprecated and will be removed on {new Date(model.deprecationDate).toLocaleDateString()}.
                   Please migrate to a newer model.
                 </p>
               </CardContent>
@@ -840,8 +840,8 @@ function ModelDetailsSheet({
           <Button
             variant={isDefault ? 'outline' : 'default'}
             className="w-full"
-            disabled={isDefault || !model.is_available || isSettingDefault}
-            onClick={() => onSetDefault(model.model_id)}
+            disabled={isDefault || !model.isAvailable || isSettingDefault}
+            onClick={() => onSetDefault(model.modelId)}
           >
             {isSettingDefault ? (
               <>
@@ -913,9 +913,9 @@ function ModelCard({
 
   // Determine capabilities from model info
   const capabilities: Capability[] = [];
-  if (model.supports_vision) capabilities.push('vision');
-  if (model.supports_function_calling) capabilities.push('tools');
-  if (model.supports_streaming) capabilities.push('streaming');
+  if (model.supportsVision) capabilities.push('vision');
+  if (model.supportsFunctionCalling) capabilities.push('tools');
+  if (model.supportsStreaming) capabilities.push('streaming');
   if (model.capabilities?.includes('computer_use')) capabilities.push('computer_use');
 
   return (
@@ -923,7 +923,7 @@ function ModelCard({
       'group relative overflow-hidden transition-all hover:shadow-md',
       isDefault && 'ring-2 ring-primary',
       isSelected && 'ring-2 ring-blue-500',
-      !model.is_available && 'opacity-60'
+      !model.isAvailable && 'opacity-60'
     )}>
       {/* Default indicator */}
       {isDefault && (
@@ -949,8 +949,8 @@ function ModelCard({
           <div className="flex-1 min-w-0">
             {/* Model name and provider */}
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-sm truncate" title={model.display_name}>
-                {model.display_name}
+              <h3 className="font-semibold text-sm truncate" title={model.displayName}>
+                {model.displayName}
               </h3>
               {isDefault && (
                 <Badge variant="default" className="text-xs px-1.5 py-0">
@@ -991,7 +991,7 @@ function ModelCard({
                 <Info className="h-4 w-4" />
               </Button>
             )}
-            {!model.is_available && (
+            {!model.isAvailable && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <X className="h-3.5 w-3.5 text-destructive" />
               </div>
@@ -1003,18 +1003,18 @@ function ModelCard({
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="p-2 rounded-md bg-muted/50">
             <p className="text-xs text-muted-foreground">Input</p>
-            <p className="font-semibold text-sm">{formatPrice(model.input_price)}</p>
+            <p className="font-semibold text-sm">{formatPrice(model.inputPrice)}</p>
           </div>
           <div className="p-2 rounded-md bg-muted/50">
             <p className="text-xs text-muted-foreground">Output</p>
-            <p className="font-semibold text-sm">{formatPrice(model.output_price)}</p>
+            <p className="font-semibold text-sm">{formatPrice(model.outputPrice)}</p>
           </div>
         </div>
 
         {/* Context window */}
         <div className="mt-2 flex items-center justify-between text-xs">
           <span className="text-muted-foreground">Context Window</span>
-          <span className="font-medium">{formatContextWindow(model.context_window)} tokens</span>
+          <span className="font-medium">{formatContextWindow(model.contextWindow)} tokens</span>
         </div>
 
         {/* Capabilities */}
@@ -1032,8 +1032,8 @@ function ModelCard({
           variant={isDefault ? 'outline' : 'default'}
           size="sm"
           className="w-full"
-          disabled={isDefault || !model.is_available || isSettingDefault}
-          onClick={() => onSetDefault(model.model_id)}
+          disabled={isDefault || !model.isAvailable || isSettingDefault}
+          onClick={() => onSetDefault(model.modelId)}
         >
           {isSettingDefault ? (
             <>
@@ -1159,8 +1159,8 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (m) =>
-          m.display_name.toLowerCase().includes(query) ||
-          m.model_id.toLowerCase().includes(query) ||
+          m.displayName.toLowerCase().includes(query) ||
+          m.modelId.toLowerCase().includes(query) ||
           m.provider.toLowerCase().includes(query)
       );
     }
@@ -1176,9 +1176,9 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
     if (selectedCapabilities.length > 0) {
       filtered = filtered.filter((m) => {
         const modelCaps: Capability[] = [];
-        if (m.supports_vision) modelCaps.push('vision');
-        if (m.supports_function_calling) modelCaps.push('tools');
-        if (m.supports_streaming) modelCaps.push('streaming');
+        if (m.supportsVision) modelCaps.push('vision');
+        if (m.supportsFunctionCalling) modelCaps.push('tools');
+        if (m.supportsStreaming) modelCaps.push('streaming');
         if (m.capabilities?.includes('computer_use')) modelCaps.push('computer_use');
         return selectedCapabilities.every((cap) => modelCaps.includes(cap));
       });
@@ -1194,17 +1194,17 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
     // Sort
     switch (sortOption) {
       case 'price-low':
-        filtered.sort((a, b) => (a.input_price + a.output_price) - (b.input_price + b.output_price));
+        filtered.sort((a, b) => (a.inputPrice + a.outputPrice) - (b.inputPrice + b.outputPrice));
         break;
       case 'price-high':
-        filtered.sort((a, b) => (b.input_price + b.output_price) - (a.input_price + a.output_price));
+        filtered.sort((a, b) => (b.inputPrice + b.outputPrice) - (a.inputPrice + a.outputPrice));
         break;
       case 'context':
-        filtered.sort((a, b) => (b.context_window || 0) - (a.context_window || 0));
+        filtered.sort((a, b) => (b.contextWindow || 0) - (a.contextWindow || 0));
         break;
       case 'name':
       default:
-        filtered.sort((a, b) => a.display_name.localeCompare(b.display_name));
+        filtered.sort((a, b) => a.displayName.localeCompare(b.displayName));
         break;
     }
 
@@ -1285,14 +1285,14 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
   // Get models selected for comparison
   const modelsForCompare = useMemo(() => {
     return selectedForCompare
-      .map((id) => modelsData?.models.find((m) => m.model_id === id))
+      .map((id) => modelsData?.models.find((m) => m.modelId === id))
       .filter((m): m is ModelInfo => m !== undefined);
   }, [selectedForCompare, modelsData?.models]);
 
   // Get usage data for a specific model
   const getModelUsageData = useCallback(
     (modelId: string) => {
-      return usageSummary?.usage_by_model?.[modelId] || null;
+      return usageSummary?.usageByModel?.[modelId] || null;
     },
     [usageSummary]
   );
@@ -1303,14 +1303,14 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
   const handleSetDefault = useCallback(async (modelId: string) => {
     setSettingDefaultId(modelId);
     try {
-      const model = modelsData?.models.find((m) => m.model_id === modelId);
+      const model = modelsData?.models.find((m) => m.modelId === modelId);
       await updatePreferences.mutateAsync({
-        default_model: modelId,
-        default_provider: model?.provider || preferences?.default_provider || 'anthropic',
+        defaultModel: modelId,
+        defaultProvider: model?.provider || preferences?.defaultProvider || 'anthropic',
       });
       toast({
         title: 'Default model updated',
-        description: `${model?.display_name || modelId} is now your default model.`,
+        description: `${model?.displayName || modelId} is now your default model.`,
       });
     } catch (err) {
       toast({
@@ -1321,7 +1321,7 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
     } finally {
       setSettingDefaultId(null);
     }
-  }, [modelsData?.models, preferences?.default_provider, updatePreferences, toast]);
+  }, [modelsData?.models, preferences?.defaultProvider, updatePreferences, toast]);
 
   // Count models by filter
   const getProviderCount = useCallback(
@@ -1515,9 +1515,9 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
           Showing {paginatedModels.length} of {filteredModels.length} models
           {hasActiveFilters && ' (filtered)'}
         </span>
-        {preferences?.default_model && (
+        {preferences?.defaultModel && (
           <span>
-            Current default: <span className="font-medium text-foreground">{preferences.default_model}</span>
+            Current default: <span className="font-medium text-foreground">{preferences.defaultModel}</span>
           </span>
         )}
       </div>
@@ -1526,7 +1526,7 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
       {viewMode === 'compare' && modelsForCompare.length > 0 && (
         <ComparisonTable
           models={modelsForCompare}
-          defaultModelId={preferences?.default_model}
+          defaultModelId={preferences?.defaultModel}
           onSetDefault={handleSetDefault}
           onRemoveFromCompare={removeFromCompare}
           onViewDetails={handleViewDetails}
@@ -1546,20 +1546,20 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
         <Card className="overflow-hidden">
           {paginatedModels.map((model) => (
             <ModelListRow
-              key={model.model_id}
+              key={model.modelId}
               model={model}
-              isDefault={preferences?.default_model === model.model_id}
-              isSelected={selectedForCompare.includes(model.model_id)}
+              isDefault={preferences?.defaultModel === model.modelId}
+              isSelected={selectedForCompare.includes(model.modelId)}
               onSelect={(selected) => {
                 if (selected) {
-                  toggleCompareSelection(model.model_id);
+                  toggleCompareSelection(model.modelId);
                 } else {
-                  removeFromCompare(model.model_id);
+                  removeFromCompare(model.modelId);
                 }
               }}
               onSetDefault={handleSetDefault}
               onViewDetails={handleViewDetails}
-              isSettingDefault={settingDefaultId === model.model_id}
+              isSettingDefault={settingDefaultId === model.modelId}
               viewMode={viewMode}
               selectionDisabled={selectedForCompare.length >= MAX_COMPARE_MODELS}
             />
@@ -1570,18 +1570,18 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {paginatedModels.map((model) => (
             <ModelCard
-              key={model.model_id}
+              key={model.modelId}
               model={model}
-              isDefault={preferences?.default_model === model.model_id}
+              isDefault={preferences?.defaultModel === model.modelId}
               onSetDefault={handleSetDefault}
-              isSettingDefault={settingDefaultId === model.model_id}
+              isSettingDefault={settingDefaultId === model.modelId}
               viewMode={viewMode}
-              isSelected={selectedForCompare.includes(model.model_id)}
+              isSelected={selectedForCompare.includes(model.modelId)}
               onSelect={(selected) => {
                 if (selected) {
-                  toggleCompareSelection(model.model_id);
+                  toggleCompareSelection(model.modelId);
                 } else {
-                  removeFromCompare(model.model_id);
+                  removeFromCompare(model.modelId);
                 }
               }}
               onViewDetails={handleViewDetails}
@@ -1596,10 +1596,10 @@ export function ModelExplorer({ className }: ModelExplorerProps) {
         model={detailsModel}
         open={detailsSheetOpen}
         onOpenChange={setDetailsSheetOpen}
-        isDefault={preferences?.default_model === detailsModel?.model_id}
+        isDefault={preferences?.defaultModel === detailsModel?.modelId}
         onSetDefault={handleSetDefault}
-        isSettingDefault={settingDefaultId === detailsModel?.model_id}
-        usageData={detailsModel ? getModelUsageData(detailsModel.model_id) : null}
+        isSettingDefault={settingDefaultId === detailsModel?.modelId}
+        usageData={detailsModel ? getModelUsageData(detailsModel.modelId) : null}
       />
 
       {/* Pagination */}

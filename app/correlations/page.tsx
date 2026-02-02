@@ -101,7 +101,7 @@ function EventCard({
   event: SDLCEvent;
   onClick: () => void;
 }) {
-  const config = eventTypeConfig[event.event_type] || eventTypeConfig.commit;
+  const config = eventTypeConfig[event.eventType] || eventTypeConfig.commit;
   const Icon = config.icon;
 
   return (
@@ -118,22 +118,22 @@ function EventCard({
             {config.label}
           </Badge>
           <span className="text-xs text-muted-foreground">
-            {event.source_platform}
+            {event.sourcePlatform}
           </span>
           <span className="text-xs text-muted-foreground">
-            {safeFormatDistanceToNow(event.occurred_at, { addSuffix: true })}
+            {safeFormatDistanceToNow(event.occurredAt, { addSuffix: true })}
           </span>
         </div>
         <h4 className="font-medium text-sm truncate group-hover:text-primary transition-colors">
-          {event.title || event.external_id}
+          {event.title || event.externalId}
         </h4>
         <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-          {event.commit_sha && (
-            <span className="font-mono">{event.commit_sha.slice(0, 7)}</span>
+          {event.commitSha && (
+            <span className="font-mono">{event.commitSha.slice(0, 7)}</span>
           )}
-          {event.pr_number && <span>PR #{event.pr_number}</span>}
-          {event.jira_key && <span>{event.jira_key}</span>}
-          {event.deploy_id && <span>Deploy {event.deploy_id.slice(0, 8)}</span>}
+          {event.prNumber && <span>PR #{event.prNumber}</span>}
+          {event.jiraKey && <span>{event.jiraKey}</span>}
+          {event.deployId && <span>Deploy {event.deployId.slice(0, 8)}</span>}
         </div>
       </div>
       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -185,7 +185,7 @@ function Timeline({
 
   // Group events by date
   const groupedEvents = events.reduce((acc, event) => {
-    const date = safeFormat(event.occurred_at, 'yyyy-MM-dd');
+    const date = safeFormat(event.occurredAt, 'yyyy-MM-dd');
     if (!acc[date]) acc[date] = [];
     acc[date].push(event);
     return acc;
@@ -254,11 +254,11 @@ function InsightCard({
               {insight.severity}
             </Badge>
             <Badge variant="outline" className="text-xs">
-              {insight.insight_type}
+              {insight.insightType}
             </Badge>
           </div>
           <span className="text-xs text-muted-foreground">
-            {safeFormatDistanceToNow(insight.created_at, { addSuffix: true })}
+            {safeFormatDistanceToNow(insight.createdAt, { addSuffix: true })}
           </span>
         </div>
         <CardTitle className="text-base">{insight.title}</CardTitle>
@@ -312,15 +312,15 @@ function EventDetailModal({
     open && event ? event.id : null
   );
   const { data: rootCause, isLoading: rootCauseLoading } = useRootCauseAnalysis(
-    open && event && ['error', 'incident'].includes(event.event_type) ? event.id : null
+    open && event && ['error', 'incident'].includes(event.eventType) ? event.id : null
   );
   const { data: impact, isLoading: impactLoading } = useCommitImpact(
-    open && event?.commit_sha ? event.commit_sha : null
+    open && event?.commitSha ? event.commitSha : null
   );
 
   if (!event) return null;
 
-  const config = eventTypeConfig[event.event_type] || eventTypeConfig.commit;
+  const config = eventTypeConfig[event.eventType] || eventTypeConfig.commit;
   const Icon = config.icon;
 
   return (
@@ -332,12 +332,12 @@ function EventDetailModal({
               <Icon className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle>{event.title || event.external_id}</DialogTitle>
+              <DialogTitle>{event.title || event.externalId}</DialogTitle>
               <DialogDescription className="flex items-center gap-2 mt-1">
                 <Badge variant="outline">{config.label}</Badge>
-                <span>{event.source_platform}</span>
+                <span>{event.sourcePlatform}</span>
                 <span>-</span>
-                <span>{safeFormat(event.occurred_at, 'PPpp')}</span>
+                <span>{safeFormat(event.occurredAt, 'PPpp')}</span>
               </DialogDescription>
             </div>
           </div>
@@ -351,28 +351,28 @@ function EventDetailModal({
               Correlation Keys
             </h4>
             <div className="grid grid-cols-2 gap-2">
-              {event.commit_sha && (
+              {event.commitSha && (
                 <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
                   <GitCommit className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-mono">{event.commit_sha.slice(0, 10)}</span>
+                  <span className="text-sm font-mono">{event.commitSha.slice(0, 10)}</span>
                 </div>
               )}
-              {event.pr_number && (
+              {event.prNumber && (
                 <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
                   <GitPullRequest className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">PR #{event.pr_number}</span>
+                  <span className="text-sm">PR #{event.prNumber}</span>
                 </div>
               )}
-              {event.jira_key && (
+              {event.jiraKey && (
                 <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{event.jira_key}</span>
+                  <span className="text-sm">{event.jiraKey}</span>
                 </div>
               )}
-              {event.deploy_id && (
+              {event.deployId && (
                 <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
                   <Rocket className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-mono">{event.deploy_id.slice(0, 12)}</span>
+                  <span className="text-sm font-mono">{event.deployId.slice(0, 12)}</span>
                 </div>
               )}
             </div>
@@ -390,7 +390,7 @@ function EventDetailModal({
               <div className="space-y-2">
                 {eventDetails.correlations.slice(0, 5).map((corr) => (
                   <div key={corr.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                    <span className="text-sm">{corr.correlation_type}</span>
+                    <span className="text-sm">{corr.correlationType}</span>
                     <Badge variant="outline">{Math.round(corr.confidence * 100)}% confidence</Badge>
                   </div>
                 ))}
@@ -399,7 +399,7 @@ function EventDetailModal({
           ) : null}
 
           {/* Root Cause (for errors/incidents) */}
-          {['error', 'incident'].includes(event.event_type) && (
+          {['error', 'incident'].includes(event.eventType) && (
             <div>
               <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
@@ -409,12 +409,12 @@ function EventDetailModal({
                 <Skeleton className="h-20 w-full" />
               ) : rootCause ? (
                 <div className="p-3 rounded-lg border bg-muted/30">
-                  <p className="text-sm">{rootCause.analysis_summary}</p>
-                  {rootCause.likely_root_cause && (
+                  <p className="text-sm">{rootCause.analysisSummary}</p>
+                  {rootCause.likelyRootCause && (
                     <div className="mt-2 flex items-center gap-2">
-                      {getEventIcon(rootCause.likely_root_cause.event_type)}
+                      {getEventIcon(rootCause.likelyRootCause.eventType)}
                       <span className="text-sm font-medium">
-                        {rootCause.likely_root_cause.title || rootCause.likely_root_cause.external_id}
+                        {rootCause.likelyRootCause.title || rootCause.likelyRootCause.externalId}
                       </span>
                       <Badge variant="outline">
                         {Math.round(rootCause.confidence * 100)}% confidence
@@ -429,7 +429,7 @@ function EventDetailModal({
           )}
 
           {/* Impact Analysis (for commits) */}
-          {event.commit_sha && (
+          {event.commitSha && (
             <div>
               <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
@@ -444,16 +444,16 @@ function EventDetailModal({
                     <Badge
                       variant="outline"
                       className={cn(
-                        impact.risk_score > 0.7 ? 'border-red-500 text-red-500' :
-                        impact.risk_score > 0.4 ? 'border-yellow-500 text-yellow-500' :
+                        impact.riskScore > 0.7 ? 'border-red-500 text-red-500' :
+                        impact.riskScore > 0.4 ? 'border-yellow-500 text-yellow-500' :
                         'border-green-500 text-green-500'
                       )}
                     >
-                      {Math.round(impact.risk_score * 100)}%
+                      {Math.round(impact.riskScore * 100)}%
                     </Badge>
                   </div>
                   <ul className="space-y-1">
-                    {impact.potential_impacts.map((impact, i) => (
+                    {impact.potentialImpacts.map((impact, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
                         <ChevronRight className="h-4 w-4 mt-0.5 text-muted-foreground" />
                         {impact}
@@ -468,11 +468,11 @@ function EventDetailModal({
           )}
 
           {/* External Link */}
-          {event.external_url && (
+          {event.externalUrl && (
             <Button variant="outline" className="w-full" asChild>
-              <a href={event.external_url} target="_blank" rel="noopener noreferrer">
+              <a href={event.externalUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4 mr-2" />
-                View in {event.source_platform}
+                View in {event.sourcePlatform}
               </a>
             </Button>
           )}
@@ -634,7 +634,7 @@ export default function CorrelationsPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Active Insights</p>
                     <p className="text-2xl font-bold">
-                      {statsLoading ? '-' : stats?.insights.status_active || 0}
+                      {statsLoading ? '-' : stats?.insights.statusActive || 0}
                     </p>
                   </div>
                   <Lightbulb className="h-8 w-8 text-yellow-500/20" />
@@ -647,7 +647,7 @@ export default function CorrelationsPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Critical Issues</p>
                     <p className="text-2xl font-bold text-red-500">
-                      {statsLoading ? '-' : stats?.insights.severity_critical || 0}
+                      {statsLoading ? '-' : stats?.insights.severityCritical || 0}
                     </p>
                   </div>
                   <AlertTriangle className="h-8 w-8 text-red-500/20" />
@@ -682,7 +682,7 @@ export default function CorrelationsPage() {
               {nlQuery.data && (
                 <div className="mt-4 p-4 rounded-lg bg-muted/50">
                   <p className="text-sm font-medium mb-2">
-                    Interpreted as: <span className="text-muted-foreground">{nlQuery.data.interpreted_as}</span>
+                    Interpreted as: <span className="text-muted-foreground">{nlQuery.data.interpretedAs}</span>
                   </p>
                   {nlQuery.data.insights.length > 0 && (
                     <div className="space-y-1 mb-2">
@@ -774,11 +774,11 @@ export default function CorrelationsPage() {
                     </div>
 
                     {/* Event Type Breakdown */}
-                    {stats?.events.by_type && (
+                    {stats?.events.byType && (
                       <div className="pt-4 border-t">
                         <p className="text-sm font-medium mb-2">Event Distribution</p>
                         <div className="space-y-2">
-                          {Object.entries(stats.events.by_type).map(([type, count]) => {
+                          {Object.entries(stats.events.byType).map(([type, count]) => {
                             const config = eventTypeConfig[type as SDLCEventType];
                             if (!config) return null;
                             const Icon = config.icon;
@@ -806,7 +806,7 @@ export default function CorrelationsPage() {
                     <div>
                       <CardTitle>Event Timeline</CardTitle>
                       <CardDescription>
-                        {timeline?.total_count || 0} events in the last {days} days
+                        {timeline?.totalCount || 0} events in the last {days} days
                       </CardDescription>
                     </div>
                   </CardHeader>

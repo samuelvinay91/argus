@@ -44,8 +44,8 @@ export interface LLMUsageData {
   models: {
     name: string;
     provider: string;
-    input_tokens: number;
-    output_tokens: number;
+    inputTokens: number;
+    outputTokens: number;
     cost: number;
     requests: number;
   }[];
@@ -55,10 +55,10 @@ export interface LLMUsageData {
     percentage: number;
     requests: number;
   }[];
-  total_cost: number;
-  total_requests: number;
-  total_input_tokens: number;
-  total_output_tokens: number;
+  totalCost: number;
+  totalRequests: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
   period: string;
 }
 
@@ -201,8 +201,8 @@ export function AILLMDashboard({ usageData, isLoading = false }: AILLMDashboardP
   const costStats = useMemo(() => {
     if (!usageData) return null;
 
-    const avgCostPerRequest = usageData.total_cost / Math.max(usageData.total_requests, 1);
-    const tokensPerDollar = (usageData.total_input_tokens + usageData.total_output_tokens) / Math.max(usageData.total_cost, 0.01);
+    const avgCostPerRequest = usageData.totalCost / Math.max(usageData.totalRequests, 1);
+    const tokensPerDollar = (usageData.totalInputTokens + usageData.totalOutputTokens) / Math.max(usageData.totalCost, 0.01);
 
     // Find most expensive and cheapest models
     const sortedModels = [...usageData.models].sort((a, b) => b.cost - a.cost);
@@ -245,7 +245,7 @@ export function AILLMDashboard({ usageData, isLoading = false }: AILLMDashboardP
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Total AI Cost</p>
-                <p className="text-2xl font-bold">{formatCurrency(usageData?.total_cost || 0)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(usageData?.totalCost || 0)}</p>
                 <p className="text-xs text-muted-foreground">{usageData?.period || 'This period'}</p>
               </div>
               <DollarSign className="h-8 w-8 text-muted-foreground/50" />
@@ -271,7 +271,7 @@ export function AILLMDashboard({ usageData, isLoading = false }: AILLMDashboardP
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Total Requests</p>
-                <p className="text-2xl font-bold">{(usageData?.total_requests || 0).toLocaleString()}</p>
+                <p className="text-2xl font-bold">{(usageData?.totalRequests || 0).toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">
                   {formatCurrency(costStats?.avgCostPerRequest || 0)}/request
                 </p>
@@ -287,10 +287,10 @@ export function AILLMDashboard({ usageData, isLoading = false }: AILLMDashboardP
               <div>
                 <p className="text-xs text-muted-foreground">Tokens Used</p>
                 <p className="text-2xl font-bold">
-                  {formatTokens((usageData?.total_input_tokens || 0) + (usageData?.total_output_tokens || 0))}
+                  {formatTokens((usageData?.totalInputTokens || 0) + (usageData?.totalOutputTokens || 0))}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatTokens(usageData?.total_input_tokens || 0)} in / {formatTokens(usageData?.total_output_tokens || 0)} out
+                  {formatTokens(usageData?.totalInputTokens || 0)} in / {formatTokens(usageData?.totalOutputTokens || 0)} out
                 </p>
               </div>
               <Brain className="h-8 w-8 text-muted-foreground/50" />
@@ -380,7 +380,7 @@ export function AILLMDashboard({ usageData, isLoading = false }: AILLMDashboardP
                     <div className="text-right">
                       <p className="font-semibold">{formatCurrency(model.cost)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatTokens(model.input_tokens + model.output_tokens)} tokens
+                        {formatTokens(model.inputTokens + model.outputTokens)} tokens
                       </p>
                     </div>
                   </div>

@@ -42,20 +42,20 @@ export function ModelBadge({ className, showCost = true, compact = false }: Mode
   const { data: modelsData, isLoading: modelsLoading } = useAvailableModels();
   const { mutateAsync: updatePreferences, isPending: isUpdating } = useUpdateAIPreferences();
 
-  const currentModel = preferences?.default_model || 'claude-sonnet-4-5';
-  const currentProvider = preferences?.default_provider || 'anthropic';
+  const currentModel = preferences?.defaultModel || 'claude-sonnet-4-5';
+  const currentProvider = preferences?.defaultProvider || 'anthropic';
 
   // Get current model details
   const currentModelInfo = useMemo(() => {
     if (!modelsData?.models) return null;
-    return modelsData.models.find((m) => m.model_id === currentModel);
+    return modelsData.models.find((m) => m.modelId === currentModel);
   }, [modelsData?.models, currentModel]);
 
   // Group available models by provider
   const modelsByProvider = useMemo(() => {
     if (!modelsData?.models) return {};
     return modelsData.models.reduce((acc, model) => {
-      if (model.is_available) {
+      if (model.isAvailable) {
         if (!acc[model.provider]) acc[model.provider] = [];
         acc[model.provider].push(model);
       }
@@ -65,12 +65,12 @@ export function ModelBadge({ className, showCost = true, compact = false }: Mode
 
   const handleSelectModel = useCallback(
     async (modelId: string) => {
-      const model = modelsData?.models.find((m) => m.model_id === modelId);
+      const model = modelsData?.models.find((m) => m.modelId === modelId);
       if (!model) return;
 
       await updatePreferences({
-        default_model: modelId,
-        default_provider: model.provider,
+        defaultModel: modelId,
+        defaultProvider: model.provider,
       });
       setIsOpen(false);
     },
@@ -109,7 +109,7 @@ export function ModelBadge({ className, showCost = true, compact = false }: Mode
         {!compact && <span>{shortName}</span>}
         {showCost && currentModelInfo && !compact && (
           <span className="text-muted-foreground">
-            ${currentModelInfo.input_price}/{currentModelInfo.output_price}
+            ${currentModelInfo.inputPrice}/{currentModelInfo.outputPrice}
           </span>
         )}
         <ChevronDown className={cn('h-3 w-3 transition-transform', isOpen && 'rotate-180')} />
@@ -137,13 +137,13 @@ export function ModelBadge({ className, showCost = true, compact = false }: Mode
                       {provider}
                     </div>
                     {models.map((model) => {
-                      const isSelected = model.model_id === currentModel;
-                      const modelShortName = MODEL_SHORT_NAMES[model.model_id] || model.display_name;
+                      const isSelected = model.modelId === currentModel;
+                      const modelShortName = MODEL_SHORT_NAMES[model.modelId] || model.displayName;
 
                       return (
                         <button
-                          key={model.model_id}
-                          onClick={() => handleSelectModel(model.model_id)}
+                          key={model.modelId}
+                          onClick={() => handleSelectModel(model.modelId)}
                           className={cn(
                             'w-full flex items-center justify-between px-2 py-1.5 rounded text-xs',
                             'transition-colors hover:bg-accent',
@@ -158,7 +158,7 @@ export function ModelBadge({ className, showCost = true, compact = false }: Mode
                             )}
                           </div>
                           <span className="text-muted-foreground">
-                            ${model.input_price}/${model.output_price}
+                            ${model.inputPrice}/${model.outputPrice}
                           </span>
                         </button>
                       );

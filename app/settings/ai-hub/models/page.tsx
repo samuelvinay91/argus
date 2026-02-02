@@ -129,11 +129,11 @@ function hasCapability(model: ModelInfo, capability: string): boolean {
   // Check individual flags
   switch (capability) {
     case 'vision':
-      return model.supports_vision === true;
+      return model.supportsVision === true;
     case 'tools':
-      return model.supports_function_calling === true;
+      return model.supportsFunctionCalling === true;
     case 'streaming':
-      return model.supports_streaming === true;
+      return model.supportsStreaming === true;
     default:
       return false;
   }
@@ -175,8 +175,8 @@ function ModelCard({ model, isDefault, onSetDefault }: ModelCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const tier = getTierFromPrice(
-    model.input_price || 0,
-    model.output_price || 0
+    model.inputPrice || 0,
+    model.outputPrice || 0
   );
 
   const tierConfig = TIER_FILTERS.find((t) => t.value === tier) || TIER_FILTERS[0];
@@ -195,8 +195,8 @@ function ModelCard({ model, isDefault, onSetDefault }: ModelCardProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-medium truncate" title={model.display_name || model.model_id}>
-                {model.display_name || model.model_id}
+              <h3 className="font-medium truncate" title={model.displayName || model.modelId}>
+                {model.displayName || model.modelId}
               </h3>
               {isDefault && (
                 <Badge className="bg-primary text-primary-foreground text-xs">
@@ -230,11 +230,11 @@ function ModelCard({ model, isDefault, onSetDefault }: ModelCardProps) {
         <div className="mt-3 flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1 text-muted-foreground">
             <DollarSign className="h-3.5 w-3.5" />
-            <span>{formatPrice(model.input_price)}/1M in</span>
+            <span>{formatPrice(model.inputPrice)}/1M in</span>
           </div>
           <div className="flex items-center gap-1 text-muted-foreground">
             <MessageSquare className="h-3.5 w-3.5" />
-            <span>{formatContextWindow(model.context_window)} ctx</span>
+            <span>{formatContextWindow(model.contextWindow)} ctx</span>
           </div>
         </div>
 
@@ -271,21 +271,21 @@ function ModelCard({ model, isDefault, onSetDefault }: ModelCardProps) {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <span className="text-muted-foreground">Model ID:</span>
-                <p className="font-mono text-xs truncate" title={model.model_id}>
-                  {model.model_id}
+                <p className="font-mono text-xs truncate" title={model.modelId}>
+                  {model.modelId}
                 </p>
               </div>
               <div>
                 <span className="text-muted-foreground">Max Output:</span>
-                <p>{formatContextWindow(model.max_output_tokens)} tokens</p>
+                <p>{formatContextWindow(model.maxOutputTokens)} tokens</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Input Price:</span>
-                <p>{formatPrice(model.input_price)}/1M tokens</p>
+                <p>{formatPrice(model.inputPrice)}/1M tokens</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Output Price:</span>
-                <p>{formatPrice(model.output_price)}/1M tokens</p>
+                <p>{formatPrice(model.outputPrice)}/1M tokens</p>
               </div>
             </div>
           </div>
@@ -364,8 +364,8 @@ export default function ModelsPage() {
       const searchLower = search.toLowerCase();
       result = result.filter(
         (m) =>
-          m.model_id.toLowerCase().includes(searchLower) ||
-          (m.display_name?.toLowerCase().includes(searchLower)) ||
+          m.modelId.toLowerCase().includes(searchLower) ||
+          (m.displayName?.toLowerCase().includes(searchLower)) ||
           m.provider.toLowerCase().includes(searchLower)
       );
     }
@@ -384,8 +384,8 @@ export default function ModelsPage() {
     if (tierFilter !== 'all') {
       result = result.filter((m) => {
         const tier = getTierFromPrice(
-          m.input_price || 0,
-          m.output_price || 0
+          m.inputPrice || 0,
+          m.outputPrice || 0
         );
         return tier === tierFilter;
       });
@@ -395,13 +395,13 @@ export default function ModelsPage() {
     result.sort((a, b) => {
       switch (sortBy) {
         case 'name':
-          return (a.display_name || a.model_id).localeCompare(b.display_name || b.model_id);
+          return (a.displayName || a.modelId).localeCompare(b.displayName || b.modelId);
         case 'price_asc':
-          return (a.input_price || 0) - (b.input_price || 0);
+          return (a.inputPrice || 0) - (b.inputPrice || 0);
         case 'price_desc':
-          return (b.input_price || 0) - (a.input_price || 0);
+          return (b.inputPrice || 0) - (a.inputPrice || 0);
         case 'context_window':
-          return (b.context_window || 0) - (a.context_window || 0);
+          return (b.contextWindow || 0) - (a.contextWindow || 0);
         default:
           return 0;
       }
@@ -413,10 +413,10 @@ export default function ModelsPage() {
   // Handle set default
   const handleSetDefault = (modelId: string) => {
     setDefaultModelId(modelId);
-    const model = models.find((m) => m.model_id === modelId);
+    const model = models.find((m) => m.modelId === modelId);
     toast.success({
       title: 'Default Model Updated',
-      description: `${model?.display_name || modelId} is now your default model.`,
+      description: `${model?.displayName || modelId} is now your default model.`,
     });
   };
 
@@ -559,10 +559,10 @@ export default function ModelsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredModels.map((model) => (
             <ModelCard
-              key={model.model_id}
+              key={model.modelId}
               model={model}
-              isDefault={model.model_id === defaultModelId}
-              onSetDefault={() => handleSetDefault(model.model_id)}
+              isDefault={model.modelId === defaultModelId}
+              onSetDefault={() => handleSetDefault(model.modelId)}
             />
           ))}
         </div>

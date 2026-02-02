@@ -11,13 +11,13 @@ import { useFormState } from '@/lib/hooks/use-form-state';
 type BrowserType = 'chromium' | 'firefox' | 'webkit';
 
 interface TestDefaults {
-  default_browser: BrowserType;
-  default_timeout: number;
-  parallel_execution: boolean;
-  retry_failed_tests: boolean;
-  max_retries: number;
-  screenshot_on_failure: boolean;
-  video_recording: boolean;
+  defaultBrowser: BrowserType;
+  defaultTimeout: number;
+  parallelExecution: boolean;
+  retryFailedTests: boolean;
+  maxRetries: number;
+  screenshotOnFailure: boolean;
+  videoRecording: boolean;
 }
 
 interface TestDefaultsSectionProps {
@@ -42,13 +42,13 @@ export function TestDefaultsSection({
     save,
   } = useFormState({
     initialValue: {
-      default_browser: settings?.default_browser || 'chromium',
-      default_timeout: settings?.default_timeout || 30000,
-      parallel_execution: settings?.parallel_execution ?? true,
-      retry_failed_tests: settings?.retry_failed_tests ?? true,
-      max_retries: settings?.max_retries || 3,
-      screenshot_on_failure: settings?.screenshot_on_failure ?? true,
-      video_recording: settings?.video_recording ?? false,
+      defaultBrowser: settings?.defaultBrowser || 'chromium',
+      defaultTimeout: settings?.defaultTimeout || 30000,
+      parallelExecution: settings?.parallelExecution ?? true,
+      retryFailedTests: settings?.retryFailedTests ?? true,
+      maxRetries: settings?.maxRetries || 3,
+      screenshotOnFailure: settings?.screenshotOnFailure ?? true,
+      videoRecording: settings?.videoRecording ?? false,
     },
     onSave,
   });
@@ -61,9 +61,9 @@ export function TestDefaultsSection({
   );
 
   const handleInputChange = useCallback(
-    (field: 'default_timeout' | 'max_retries') =>
+    (field: 'defaultTimeout' | 'maxRetries') =>
       (e: React.ChangeEvent<HTMLInputElement>) => {
-        const defaultValues = { default_timeout: 30000, max_retries: 3 };
+        const defaultValues = { defaultTimeout: 30000, maxRetries: 3 };
         updateField(field, parseInt(e.target.value) || defaultValues[field]);
       },
     [updateField]
@@ -71,7 +71,7 @@ export function TestDefaultsSection({
 
   const handleBrowserChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
-      updateField('default_browser', e.target.value as BrowserType);
+      updateField('defaultBrowser', e.target.value as BrowserType);
     },
     [updateField]
   );
@@ -104,27 +104,27 @@ export function TestDefaultsSection({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label
-              htmlFor="default_timeout"
+              htmlFor="defaultTimeout"
               className="text-sm font-medium flex items-center gap-2"
             >
               <Clock className="h-4 w-4" />
               Default Timeout (ms)
             </label>
             <Input
-              id="default_timeout"
+              id="defaultTimeout"
               type="number"
-              value={localSettings.default_timeout}
-              onChange={handleInputChange('default_timeout')}
+              value={localSettings.defaultTimeout}
+              onChange={handleInputChange('defaultTimeout')}
               className="mt-1"
             />
           </div>
           <div>
-            <label htmlFor="default_browser" className="text-sm font-medium">
+            <label htmlFor="defaultBrowser" className="text-sm font-medium">
               Default Browser
             </label>
             <select
-              id="default_browser"
-              value={localSettings.default_browser}
+              id="defaultBrowser"
+              value={localSettings.defaultBrowser}
               onChange={handleBrowserChange}
               className="mt-1 w-full px-3 py-2 rounded-md border bg-background"
             >
@@ -141,27 +141,27 @@ export function TestDefaultsSection({
           <ToggleRow
             label="Parallel Execution"
             description="Run tests in parallel for faster results"
-            checked={localSettings.parallel_execution}
-            onChange={handleToggle('parallel_execution')}
+            checked={localSettings.parallelExecution}
+            onChange={handleToggle('parallelExecution')}
           />
 
           <ToggleRow
             label="Retry Failed Tests"
             description="Automatically retry flaky tests"
-            checked={localSettings.retry_failed_tests}
-            onChange={handleToggle('retry_failed_tests')}
+            checked={localSettings.retryFailedTests}
+            onChange={handleToggle('retryFailedTests')}
           />
 
-          {localSettings.retry_failed_tests && (
+          {localSettings.retryFailedTests && (
             <div>
-              <label htmlFor="max_retries" className="text-sm font-medium">
+              <label htmlFor="maxRetries" className="text-sm font-medium">
                 Max Retries
               </label>
               <Input
-                id="max_retries"
+                id="maxRetries"
                 type="number"
-                value={localSettings.max_retries}
-                onChange={handleInputChange('max_retries')}
+                value={localSettings.maxRetries}
+                onChange={handleInputChange('maxRetries')}
                 min="1"
                 max="5"
                 className="mt-1 w-24"
@@ -172,15 +172,15 @@ export function TestDefaultsSection({
           <ToggleRow
             label="Screenshot on Failure"
             description="Capture screenshots when tests fail"
-            checked={localSettings.screenshot_on_failure}
-            onChange={handleToggle('screenshot_on_failure')}
+            checked={localSettings.screenshotOnFailure}
+            onChange={handleToggle('screenshotOnFailure')}
           />
 
           <ToggleRow
             label="Video Recording"
             description="Record video of test execution"
-            checked={localSettings.video_recording}
-            onChange={handleToggle('video_recording')}
+            checked={localSettings.videoRecording}
+            onChange={handleToggle('videoRecording')}
           />
         </div>
 

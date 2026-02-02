@@ -290,8 +290,8 @@ export default function TeamPage() {
                 <div className="divide-y">
                   {pendingInvitations.map((invitation: PendingInvitation) => {
                     const roleConfig = ROLE_CONFIG[invitation.role];
-                    const isExpired = new Date(invitation.expires_at) < new Date();
-                    const expiresIn = new Date(invitation.expires_at);
+                    const isExpired = new Date(invitation.expiresAt) < new Date();
+                    const expiresIn = new Date(invitation.expiresAt);
                     const isActionLoading = resendInvitation.isPending || revokeInvitation.isPending;
 
                     return (
@@ -318,7 +318,7 @@ export default function TeamPage() {
                               <span>&middot;</span>
                               <Clock className="h-3 w-3" />
                               <span>
-                                Invited {new Date(invitation.invited_at).toLocaleDateString()}
+                                Invited {new Date(invitation.invitedAt).toLocaleDateString()}
                               </span>
                               {!isExpired && (
                                 <>
@@ -444,11 +444,11 @@ export default function TeamPage() {
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <roleConfig.icon className={cn("h-3.5 w-3.5", roleConfig.color)} />
                               <span>{roleConfig.label}</span>
-                              {member.status === 'pending' && member.invited_at && (
+                              {member.status === 'pending' && member.invitedAt && (
                                 <>
                                   <span>&middot;</span>
                                   <Clock className="h-3 w-3" />
-                                  <span>Invited {new Date(member.invited_at).toLocaleDateString()}</span>
+                                  <span>Invited {new Date(member.invitedAt).toLocaleDateString()}</span>
                                 </>
                               )}
                             </div>

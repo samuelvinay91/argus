@@ -58,9 +58,9 @@ const BudgetDisplay = memo(function BudgetDisplay() {
   }
 
   // Safely get values with defaults
-  const dailySpent = budget.daily_spent ?? 0;
-  const dailyLimit = budget.daily_limit ?? 0;
-  const dailyRemaining = budget.daily_remaining ?? 0;
+  const dailySpent = budget.dailySpent ?? 0;
+  const dailyLimit = budget.dailyLimit ?? 0;
+  const dailyRemaining = budget.dailyRemaining ?? 0;
 
   const usagePercent = dailyLimit > 0
     ? Math.min((dailySpent / dailyLimit) * 100, 100)
@@ -283,8 +283,8 @@ export const ChatSettingsPanel = memo(function ChatSettingsPanel({
                   label="Show token costs"
                   description="Display cost per message"
                   icon={<DollarSign className="w-4 h-4" />}
-                  checked={preferences?.show_token_costs ?? true}
-                  onToggle={() => handleToggle('show_token_costs')}
+                  checked={preferences?.showTokenCosts ?? true}
+                  onToggle={() => handleToggle('showTokenCosts')}
                   disabled={isUpdating}
                 />
 
@@ -292,8 +292,8 @@ export const ChatSettingsPanel = memo(function ChatSettingsPanel({
                   label="Show model in chat"
                   description="Display which model replied"
                   icon={<Eye className="w-4 h-4" />}
-                  checked={preferences?.show_model_in_chat ?? true}
-                  onToggle={() => handleToggle('show_model_in_chat')}
+                  checked={preferences?.showModelInChat ?? true}
+                  onToggle={() => handleToggle('showModelInChat')}
                   disabled={isUpdating}
                 />
 
@@ -301,8 +301,8 @@ export const ChatSettingsPanel = memo(function ChatSettingsPanel({
                   label="Platform key fallback"
                   description="Use Argus keys if your key fails"
                   icon={<Sparkles className="w-4 h-4" />}
-                  checked={preferences?.use_platform_key_fallback ?? true}
-                  onToggle={() => handleToggle('use_platform_key_fallback')}
+                  checked={preferences?.usePlatformKeyFallback ?? true}
+                  onToggle={() => handleToggle('usePlatformKeyFallback')}
                   disabled={isUpdating}
                 />
               </>
