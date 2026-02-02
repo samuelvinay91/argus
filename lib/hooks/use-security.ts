@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BACKEND_URL } from '@/lib/config/api-endpoints';
+import { convertKeysToCamelCase } from '@/lib/api-client';
 import type { SecurityScanResult, Vulnerability, VulnerabilitySeverity } from '@/lib/supabase/types';
 
 // OWASP Top 10 2021 compliance checklist
@@ -40,7 +41,8 @@ export function useSecurityScan(projectId: string | null) {
           throw new Error(`Failed to fetch security scan: ${response.status}`);
         }
 
-        return response.json();
+        const data = await response.json();
+        return convertKeysToCamelCase(data) as SecurityScanResult;
       } catch (error) {
         // If backend doesn't have security endpoints yet, return mock data for UI development
         console.warn('Security scan API not available, using mock data');
@@ -71,7 +73,8 @@ export function useSecurityScans(projectId: string | null, limit = 10) {
           throw new Error(`Failed to fetch security scans: ${response.status}`);
         }
 
-        return response.json();
+        const data = await response.json();
+        return convertKeysToCamelCase(data) as SecurityScanResult[];
       } catch (error) {
         console.warn('Security scans API not available, using mock data');
         const mockScan = getMockSecurityScan(projectId);
@@ -114,7 +117,8 @@ export function useVulnerabilities(
           throw new Error(`Failed to fetch vulnerabilities: ${response.status}`);
         }
 
-        return response.json();
+        const data = await response.json();
+        return convertKeysToCamelCase(data) as Vulnerability[];
       } catch (error) {
         console.warn('Vulnerabilities API not available, using mock data');
         const mockScan = getMockSecurityScan(projectId);
@@ -157,7 +161,8 @@ export function useRunSecurityScan() {
           throw new Error(`Failed to start security scan: ${response.status}`);
         }
 
-        return response.json();
+        const data = await response.json();
+        return convertKeysToCamelCase(data) as SecurityScanResult;
       } catch (error) {
         console.warn('Security scan API not available, using mock data');
         // Simulate a running scan for UI development

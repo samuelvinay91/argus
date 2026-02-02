@@ -25,22 +25,22 @@ import { AvatarUploadWithButton } from './avatar-upload';
 import { useFormState } from '@/lib/hooks/use-form-state';
 
 interface Profile {
-  display_name: string;
+  displayName: string;
   email: string;
   bio: string | null;
   timezone: string;
   language: string;
-  avatar_url?: string | null;
+  avatarUrl?: string | null;
   // Professional info
-  job_title?: string | null;
+  jobTitle?: string | null;
   company?: string | null;
   department?: string | null;
   phone?: string | null;
   // Social links
-  github_username?: string | null;
-  linkedin_url?: string | null;
-  twitter_handle?: string | null;
-  website_url?: string | null;
+  githubUsername?: string | null;
+  linkedinUrl?: string | null;
+  twitterHandle?: string | null;
+  websiteUrl?: string | null;
 }
 
 interface ProfileSectionProps {
@@ -48,7 +48,7 @@ interface ProfileSectionProps {
   loading: boolean;
   error: string | null;
   onSave: (data: Partial<Profile>) => Promise<unknown>;
-  onAvatarUpload?: (file: File) => Promise<{ avatar_url: string }>;
+  onAvatarUpload?: (file: File) => Promise<{ avatarUrl: string }>;
 }
 
 export function ProfileSection({
@@ -68,38 +68,38 @@ export function ProfileSection({
     save,
   } = useFormState({
     initialValue: {
-      display_name: profile?.display_name || '',
+      displayName: profile?.displayName || '',
       email: profile?.email || '',
       bio: profile?.bio || '',
       timezone: profile?.timezone || 'America/New_York',
       language: profile?.language || 'en',
       // Professional info
-      job_title: profile?.job_title || '',
+      jobTitle: profile?.jobTitle || '',
       company: profile?.company || '',
       department: profile?.department || '',
       phone: profile?.phone || '',
       // Social links
-      github_username: profile?.github_username || '',
-      linkedin_url: profile?.linkedin_url || '',
-      twitter_handle: profile?.twitter_handle || '',
-      website_url: profile?.website_url || '',
+      githubUsername: profile?.githubUsername || '',
+      linkedinUrl: profile?.linkedinUrl || '',
+      twitterHandle: profile?.twitterHandle || '',
+      websiteUrl: profile?.websiteUrl || '',
     },
     onSave: async (data) => {
       await onSave({
-        display_name: data.display_name,
+        displayName: data.displayName,
         bio: data.bio || null,
         timezone: data.timezone,
         language: data.language,
         // Professional info
-        job_title: data.job_title || null,
+        jobTitle: data.jobTitle || null,
         company: data.company || null,
         department: data.department || null,
         phone: data.phone || null,
         // Social links
-        github_username: data.github_username || null,
-        linkedin_url: data.linkedin_url || null,
-        twitter_handle: data.twitter_handle || null,
-        website_url: data.website_url || null,
+        githubUsername: data.githubUsername || null,
+        linkedinUrl: data.linkedinUrl || null,
+        twitterHandle: data.twitterHandle || null,
+        websiteUrl: data.websiteUrl || null,
       });
     },
   });
@@ -151,8 +151,8 @@ export function ProfileSection({
           {/* Avatar */}
           {onAvatarUpload ? (
             <AvatarUploadWithButton
-              avatarUrl={profile?.avatar_url}
-              displayName={localProfile.display_name}
+              avatarUrl={profile?.avatarUrl}
+              displayName={localProfile.displayName}
               size={96}
               onUpload={handleAvatarUpload}
               onUploadSuccess={(url) => {
@@ -162,15 +162,15 @@ export function ProfileSection({
           ) : (
             <div className="flex items-center gap-6">
               <div className="relative">
-                {profile?.avatar_url ? (
+                {profile?.avatarUrl ? (
                   <img
-                    src={profile.avatar_url}
+                    src={profile.avatarUrl}
                     alt="Avatar"
                     className="h-24 w-24 rounded-full object-cover"
                   />
                 ) : (
                   <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                    {localProfile.display_name
+                    {localProfile.displayName
                       ?.split(' ')
                       .map((n) => n[0])
                       .join('') || '?'}
@@ -178,7 +178,7 @@ export function ProfileSection({
                 )}
               </div>
               <div>
-                <h3 className="font-medium">{localProfile.display_name || 'Your Name'}</h3>
+                <h3 className="font-medium">{localProfile.displayName || 'Your Name'}</h3>
                 <p className="text-sm text-muted-foreground">{localProfile.email}</p>
               </div>
             </div>
@@ -187,13 +187,13 @@ export function ProfileSection({
           {/* Name and Email */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="display_name" className="text-sm font-medium">
+              <label htmlFor="displayName" className="text-sm font-medium">
                 Display Name
               </label>
               <Input
-                id="display_name"
-                value={localProfile.display_name}
-                onChange={handleFieldChange('display_name')}
+                id="displayName"
+                value={localProfile.displayName}
+                onChange={handleFieldChange('displayName')}
                 className="mt-1"
               />
             </div>
@@ -293,14 +293,14 @@ export function ProfileSection({
           {/* Job Title and Company */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="job_title" className="text-sm font-medium flex items-center gap-2">
+              <label htmlFor="jobTitle" className="text-sm font-medium flex items-center gap-2">
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
                 Job Title
               </label>
               <Input
-                id="job_title"
-                value={localProfile.job_title}
-                onChange={handleFieldChange('job_title')}
+                id="jobTitle"
+                value={localProfile.jobTitle}
+                onChange={handleFieldChange('jobTitle')}
                 placeholder="e.g., Senior QA Engineer"
                 className="mt-1"
               />
@@ -368,7 +368,7 @@ export function ProfileSection({
           {/* GitHub and LinkedIn */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="github_username" className="text-sm font-medium flex items-center gap-2">
+              <label htmlFor="githubUsername" className="text-sm font-medium flex items-center gap-2">
                 <Github className="h-4 w-4 text-muted-foreground" />
                 GitHub Username
               </label>
@@ -377,23 +377,23 @@ export function ProfileSection({
                   github.com/
                 </span>
                 <Input
-                  id="github_username"
-                  value={localProfile.github_username}
-                  onChange={handleFieldChange('github_username')}
+                  id="githubUsername"
+                  value={localProfile.githubUsername}
+                  onChange={handleFieldChange('githubUsername')}
                   placeholder="username"
                   className="rounded-l-none"
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="linkedin_url" className="text-sm font-medium flex items-center gap-2">
+              <label htmlFor="linkedinUrl" className="text-sm font-medium flex items-center gap-2">
                 <Linkedin className="h-4 w-4 text-muted-foreground" />
                 LinkedIn URL
               </label>
               <Input
-                id="linkedin_url"
-                value={localProfile.linkedin_url}
-                onChange={handleFieldChange('linkedin_url')}
+                id="linkedinUrl"
+                value={localProfile.linkedinUrl}
+                onChange={handleFieldChange('linkedinUrl')}
                 placeholder="https://linkedin.com/in/username"
                 className="mt-1"
               />
@@ -403,7 +403,7 @@ export function ProfileSection({
           {/* Twitter and Website */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="twitter_handle" className="text-sm font-medium flex items-center gap-2">
+              <label htmlFor="twitterHandle" className="text-sm font-medium flex items-center gap-2">
                 <Twitter className="h-4 w-4 text-muted-foreground" />
                 Twitter/X Handle
               </label>
@@ -412,23 +412,23 @@ export function ProfileSection({
                   @
                 </span>
                 <Input
-                  id="twitter_handle"
-                  value={localProfile.twitter_handle}
-                  onChange={handleFieldChange('twitter_handle')}
+                  id="twitterHandle"
+                  value={localProfile.twitterHandle}
+                  onChange={handleFieldChange('twitterHandle')}
                   placeholder="username"
                   className="rounded-l-none"
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="website_url" className="text-sm font-medium flex items-center gap-2">
+              <label htmlFor="websiteUrl" className="text-sm font-medium flex items-center gap-2">
                 <LinkIcon className="h-4 w-4 text-muted-foreground" />
                 Personal Website
               </label>
               <Input
-                id="website_url"
-                value={localProfile.website_url}
-                onChange={handleFieldChange('website_url')}
+                id="websiteUrl"
+                value={localProfile.websiteUrl}
+                onChange={handleFieldChange('websiteUrl')}
                 placeholder="https://yourwebsite.com"
                 className="mt-1"
               />

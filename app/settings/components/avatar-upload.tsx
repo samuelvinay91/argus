@@ -17,7 +17,7 @@ interface AvatarUploadProps {
   /** Callback when upload fails */
   onUploadError?: (error: string) => void;
   /** Upload function that handles the file upload */
-  onUpload: (file: File) => Promise<{ avatar_url: string }>;
+  onUpload: (file: File) => Promise<{ avatarUrl: string }>;
   /** Whether upload is disabled */
   disabled?: boolean;
   /** Custom class name */
@@ -132,7 +132,7 @@ export function AvatarUpload({
       const result = await onUpload(file);
 
       setUploadSuccess(true);
-      onUploadSuccess?.(result.avatar_url);
+      onUploadSuccess?.(result.avatarUrl);
 
       // Clean up preview URL after successful upload
       URL.revokeObjectURL(objectUrl);
@@ -301,7 +301,7 @@ export function AvatarUploadWithButton({
       const result = await onUpload(file);
 
       setUploadSuccess(true);
-      onUploadSuccess?.(result.avatar_url);
+      onUploadSuccess?.(result.avatarUrl);
 
       URL.revokeObjectURL(objectUrl);
       setPreviewUrl(null);

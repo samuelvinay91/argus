@@ -13,21 +13,24 @@
 import { useAuth } from '@clerk/nextjs';
 import { useCallback, useMemo, useContext } from 'react';
 import { createAuthenticatedClient } from '@/lib/auth-api';
-import { convertKeysToSnakeCase } from '@/lib/api-client';
+import { convertKeysToSnakeCase, convertKeysToCamelCase } from '@/lib/api-client';
 
 // Backend URL (client-side needs NEXT_PUBLIC_ prefix)
-// In production, use the Railway backend URL directly to avoid Vercel rewrite issues
+// Uses Next.js rewrites to proxy /api/v1/* to the production backend,
+// avoiding CORS issues in local development
 const getBackendUrl = () => {
-  // Explicit override from environment
-  if (process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL) {
-    return process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL;
+  // Explicit override from environment (if set to production URL, use it directly)
+  const envUrl = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL;
+  if (envUrl) {
+    return envUrl;
   }
-  // Production default (Vercel rewrites may strip Authorization headers)
+  // Production: use direct URL (Vercel rewrites may strip Authorization headers)
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
     return 'https://argus-brain-production.up.railway.app';
   }
-  // Local development
-  return 'http://localhost:8000';
+  // Local development: use relative URLs so Next.js proxy works
+  // The proxy is configured in next.config.ts to forward /api/v1/* to production
+  return '';
 };
 
 const BACKEND_URL = getBackendUrl();
@@ -184,7 +187,8 @@ export function useAuthApi(options?: UseAuthApiOptions) {
         };
       }
 
-      const data = await response.json();
+      const rawData = await response.json();
+      const data = convertKeysToCamelCase(rawData) as T;
       return { data, error: null, status: response.status };
     } catch (error) {
       // Handle abort errors

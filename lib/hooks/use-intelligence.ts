@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { convertKeysToCamelCase } from '@/lib/api-client';
 import type {
   ProductionEvent,
   GeneratedTest,
@@ -240,7 +241,8 @@ export function useGenerateTest() {
         throw new Error(error.error || 'Failed to generate test');
       }
 
-      return response.json();
+      const data = await response.json();
+      return convertKeysToCamelCase(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['generated-tests'] });
@@ -352,7 +354,8 @@ export function useCalculateRiskScores() {
         throw new Error(error.error || 'Failed to calculate risk scores');
       }
 
-      return response.json();
+      const data = await response.json();
+      return convertKeysToCamelCase(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['risk-scores'] });
@@ -435,7 +438,8 @@ export function useAIQualityScore(projectId: string | null) {
         throw new Error(error.error || 'Failed to fetch quality score');
       }
 
-      return response.json() as Promise<AIQualityScore>;
+      const data = await response.json();
+      return convertKeysToCamelCase(data) as AIQualityScore;
     },
     enabled: !!projectId,
     refetchInterval: 60000, // Refetch every minute
@@ -487,13 +491,14 @@ export function useSemanticSearch() {
         throw new Error(error.error || 'Failed to search patterns');
       }
 
-      return response.json() as Promise<{
+      const data = await response.json();
+      return convertKeysToCamelCase(data) as {
         success: boolean;
         query: string;
         patterns: SimilarPattern[];
         count: number;
-        has_solutions: boolean;
-      }>;
+        hasSolutions: boolean;
+      };
     },
   });
 }
@@ -550,7 +555,8 @@ export function useAutonomousLoop() {
         throw new Error(error.error || 'Failed to run autonomous loop');
       }
 
-      return response.json();
+      const data = await response.json();
+      return convertKeysToCamelCase(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production-events'] });
@@ -620,7 +626,8 @@ export function usePredictiveQuality(projectId: string | null, timeframe: string
         throw new Error(error.error || 'Failed to fetch predictions');
       }
 
-      return response.json() as Promise<PredictiveQualityResponse>;
+      const data = await response.json();
+      return convertKeysToCamelCase(data) as PredictiveQualityResponse;
     },
     enabled: !!projectId,
     refetchInterval: 300000, // Refetch every 5 minutes

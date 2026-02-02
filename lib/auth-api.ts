@@ -5,23 +5,24 @@
  * It automatically includes the Clerk JWT token in all requests.
  */
 
-// Backend URL with production fallback
-// Note: In production, we connect directly to Railway backend; localhost is for development only
+// Backend URL configuration
+// Uses Next.js rewrites to proxy /api/v1/* to production backend in local development
 const getBackendUrl = () => {
   // Explicit override from environment
-  if (process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL) {
-    return process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL;
+  const envUrl = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL;
+  if (envUrl) {
+    return envUrl;
   }
-  // Server-side check
+  // Server-side: use environment variable or production URL
   if (typeof window === 'undefined') {
-    return process.env.ARGUS_BACKEND_URL || 'http://localhost:8000';
+    return process.env.ARGUS_BACKEND_URL || 'https://argus-brain-production.up.railway.app';
   }
-  // Client-side: Production fallback to Railway
+  // Client-side: Production - use direct URL
   if (window.location.hostname !== 'localhost') {
     return 'https://argus-brain-production.up.railway.app';
   }
-  // Local development
-  return 'http://localhost:8000';
+  // Local development: use relative URLs for Next.js proxy
+  return '';
 };
 const BACKEND_URL = getBackendUrl();
 

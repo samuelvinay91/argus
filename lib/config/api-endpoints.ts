@@ -19,11 +19,25 @@ export const WORKER_URL =
 /**
  * Backend API URL (Python/LangGraph)
  * Used for: orchestration, AI agents, test planning
+ * In local development, returns empty string to use Next.js proxy (rewrites in next.config.ts)
  */
-export const BACKEND_URL =
-  process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL ||
-  process.env.ARGUS_BACKEND_URL ||
-  'https://argus-brain-production.up.railway.app';
+const getBackendUrl = (): string => {
+  // Explicit override from environment
+  const envUrl = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL || process.env.ARGUS_BACKEND_URL;
+  if (envUrl) {
+    return envUrl;
+  }
+  // Client-side: use production for non-localhost, empty for localhost (proxy)
+  if (typeof window !== 'undefined') {
+    return window.location.hostname === 'localhost'
+      ? '' // Use relative URLs for Next.js proxy
+      : 'https://argus-brain-production.up.railway.app';
+  }
+  // Server-side: use production URL
+  return 'https://argus-brain-production.up.railway.app';
+};
+
+export const BACKEND_URL = getBackendUrl();
 
 /**
  * Supabase configuration

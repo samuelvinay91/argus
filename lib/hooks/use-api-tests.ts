@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BACKEND_URL } from '@/lib/config/api-endpoints';
+import { convertKeysToCamelCase } from '@/lib/api-client';
 
 // ============================================
 // Types
@@ -122,7 +123,7 @@ export interface RunTestsParams {
 // API Client Functions
 // ============================================
 
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
+async function fetchWithAuth<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -137,7 +138,8 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
     throw new Error(error.detail || `HTTP ${response.status}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  return convertKeysToCamelCase(data) as T;
 }
 
 // ============================================

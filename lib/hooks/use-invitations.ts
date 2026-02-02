@@ -10,7 +10,7 @@
  */
 
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { authenticatedFetch, BACKEND_URL } from '@/lib/api-client';
+import { authenticatedFetch, BACKEND_URL, convertKeysToCamelCase } from '@/lib/api-client';
 
 // Types
 export interface InvitationDetails {
@@ -69,7 +69,8 @@ export async function validateInvitation(token: string): Promise<InvitationValid
       };
     }
 
-    const invitation = await response.json();
+    const rawInvitation = await response.json();
+    const invitation = convertKeysToCamelCase(rawInvitation) as InvitationDetails;
 
     // Check if invitation is already used
     if (invitation.status === 'accepted') {
@@ -139,7 +140,8 @@ export function useAcceptInvitation() {
         throw new Error(data.detail || 'Failed to accept invitation');
       }
 
-      return response.json();
+      const data = await response.json();
+      return convertKeysToCamelCase(data);
     },
   });
 }

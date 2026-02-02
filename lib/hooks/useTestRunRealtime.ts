@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { convertKeysToCamelCase } from '@/lib/api-client';
 import type { TestRun, TestResult } from '@/lib/supabase/types';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
@@ -67,9 +68,10 @@ export function useTestRunRealtime(
       // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['test-run', testRunId] });
 
-      // Call the callback if provided
+      // Call the callback if provided - convert snake_case to camelCase
       if (onTestRunUpdate && payload.new) {
-        onTestRunUpdate(payload.new as TestRun);
+        const converted = convertKeysToCamelCase(payload.new) as TestRun;
+        onTestRunUpdate(converted);
       }
     },
     [queryClient, testRunId, onTestRunUpdate]
@@ -83,9 +85,10 @@ export function useTestRunRealtime(
       // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['test-results', testRunId] });
 
-      // Call the callback if provided
+      // Call the callback if provided - convert snake_case to camelCase
       if (onTestResultUpdate && payload.new) {
-        onTestResultUpdate(payload.new as TestResult);
+        const converted = convertKeysToCamelCase(payload.new) as TestResult;
+        onTestResultUpdate(converted);
       }
     },
     [queryClient, testRunId, onTestResultUpdate]

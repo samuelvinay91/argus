@@ -4,8 +4,10 @@ import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation';
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
 import { Sidebar } from '@/components/layout/sidebar';
-import { ChatInterface } from '@/components/chat/chat-interface';
+// Import the new modular ChatInterface
+import { ChatInterface } from '@/components/chat';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
   SheetContent,
@@ -23,6 +25,10 @@ import {
   useConversationMessages
 } from '@/lib/hooks/use-chat';
 import {
+  useAIPreferences,
+  useAIBudget,
+} from '@/lib/hooks/use-ai-settings';
+import {
   MessageSquarePlus,
   Trash2,
   Loader2,
@@ -31,6 +37,8 @@ import {
   History,
   Bot,
   AlertCircle,
+  Sparkles,
+  Wallet,
 } from 'lucide-react';
 import { safeFormatDistanceToNow } from '@/lib/utils';
 import type { Message } from 'ai/react';
@@ -113,6 +121,67 @@ function ConversationList({
         </button>
       ))}
     </div>
+  );
+}
+
+// Enhanced header for the chat area
+function ChatAreaHeader() {
+  const { data: preferences } = useAIPreferences();
+  const { data: budget } = useAIBudget();
+
+  const budgetPercent = budget && budget.daily_limit > 0
+    ? Math.min((budget.daily_spent / budget.daily_limit) * 100, 100)
+    : 0;
+
+  const isNearLimit = budgetPercent >= 80;
+  const isAtLimit = budgetPercent >= 100;
+
+  return (
+    <header className="hidden lg:flex sticky top-0 z-30 h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
+      {/* Title Section */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <Bot className="h-5 w-5 text-primary flex-shrink-0" />
+          <h1 className="text-lg font-semibold truncate">Hey Argus</h1>
+        </div>
+        <p className="text-xs text-muted-foreground truncate">
+          Your autonomous quality companion
+        </p>
+      </div>
+
+      {/* Status Indicators */}
+      <div className="flex items-center gap-3">
+        {/* Current Model Badge */}
+        {preferences?.default_model && (
+          <Badge variant="outline" className="gap-1.5 font-normal text-xs">
+            <Sparkles className="w-3 h-3 text-primary" />
+            <span className="hidden xl:inline">Model:</span>
+            <span className="truncate max-w-[100px]">
+              {preferences.default_model.replace('claude-', '').replace('gpt-', '')}
+            </span>
+          </Badge>
+        )}
+
+        {/* Budget Indicator */}
+        {budget && budget.has_budget && (
+          <Badge
+            variant="outline"
+            className={cn(
+              'gap-1.5 font-normal text-xs',
+              isAtLimit ? 'border-destructive text-destructive' :
+              isNearLimit ? 'border-orange-500 text-orange-500' :
+              ''
+            )}
+          >
+            <Wallet className="w-3 h-3" />
+            <span className="hidden xl:inline">Today:</span>
+            <span className="font-mono">${budget.daily_spent.toFixed(2)}</span>
+            <span className="text-muted-foreground">/</span>
+            <span className="font-mono">${budget.daily_limit.toFixed(2)}</span>
+          </Badge>
+        )}
+      </div>
+    </header>
   );
 }
 
@@ -367,16 +436,10 @@ function ChatPageContent() {
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-h-0">
-          <header className="hidden lg:flex sticky top-0 z-30 h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6">
-            <div className="flex-1">
-              <h1 className="text-xl font-semibold">Hey Argus</h1>
-              <p className="text-sm text-muted-foreground">
-                Your autonomous quality agents
-              </p>
-            </div>
-          </header>
+          {/* Enhanced Desktop Header */}
+          <ChatAreaHeader />
 
-          <div className="flex-1 p-3 sm:p-4 lg:p-6 overflow-hidden">
+          <div className="flex-1 overflow-hidden">
             {messagesLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -392,7 +455,7 @@ function ChatPageContent() {
           </div>
 
           {/* Backend Status - Fixed at bottom left */}
-          <div className="hidden lg:flex fixed bottom-4 left-[calc(16rem+1rem)] z-20 items-center gap-2 text-xs bg-background/80 backdrop-blur-sm border rounded-full px-3 py-1.5 shadow-sm">
+          <div className="hidden lg:flex fixed bottom-4 left-[calc(16rem+16rem+1.5rem)] z-20 items-center gap-2 text-xs bg-background/80 backdrop-blur-sm border rounded-full px-3 py-1.5 shadow-sm">
             <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-muted-foreground">Backend Connected</span>
           </div>

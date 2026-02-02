@@ -112,11 +112,11 @@ export default function MCPSessionsPage() {
     );
   }
 
-  const { connections = [], active_count = 0, total = 0 } = data || {};
+  const { connections = [], activeCount = 0, total = 0 } = data || {};
 
   // Filter sessions by search
   const filteredSessions = connections.filter((session) =>
-    (session.client_name || session.client_type || '')
+    (session.clientName || session.clientType || '')
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
   );
@@ -134,7 +134,7 @@ export default function MCPSessionsPage() {
 
           <div className="flex items-center gap-2 ml-4">
             <Badge variant="outline" className="text-green-600 border-green-600/30">
-              {active_count} Active
+              {activeCount} Active
             </Badge>
             <Badge variant="outline">
               {total} Total
@@ -213,17 +213,17 @@ export default function MCPSessionsPage() {
                           </div>
                           <div>
                             <CardTitle className="text-lg">
-                              {session.client_name || session.client_type}
+                              {session.clientName || session.clientType}
                             </CardTitle>
-                            {session.device_name && (
+                            {session.deviceName && (
                               <p className="text-sm text-muted-foreground">
-                                {session.device_name}
+                                {session.deviceName}
                               </p>
                             )}
                           </div>
                           <Badge
-                            variant={session.is_active ? 'default' : 'secondary'}
-                            className={session.is_active ? 'bg-green-500' : ''}
+                            variant={session.isActive ? 'default' : 'secondary'}
+                            className={session.isActive ? 'bg-green-500' : ''}
                           >
                             {session.status}
                           </Badge>
@@ -253,14 +253,14 @@ export default function MCPSessionsPage() {
                       <div className="flex gap-6 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1.5">
                           <Clock className="h-4 w-4" />
-                          {safeFormatDistanceToNow(session.last_activity_at, { addSuffix: true })}
+                          {safeFormatDistanceToNow(session.lastActivityAt, { addSuffix: true })}
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Activity className="h-4 w-4" />
-                          {session.request_count} requests
+                          {session.requestCount} requests
                         </div>
                         <div>
-                          {session.tools_used?.length || 0} tools used
+                          {session.toolsUsed?.length || 0} tools used
                         </div>
                       </div>
                     </CardContent>

@@ -1,35 +1,35 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { authenticatedFetch } from '@/lib/api-client';
+import { authenticatedFetch, convertKeysToCamelCase } from '@/lib/api-client';
 import { createClient } from '@/lib/supabase/client';
 
 interface MCPConnection {
   id: string;
-  user_id: string;
-  organization_id: string | null;
-  client_id: string;
-  client_name: string | null;
-  client_type: string;
-  session_id: string | null;
-  device_name: string | null;
+  userId: string;
+  organizationId: string | null;
+  clientId: string;
+  clientName: string | null;
+  clientType: string;
+  sessionId: string | null;
+  deviceName: string | null;
   status: string;
-  last_activity_at: string;
-  request_count: number;
-  tools_used: string[];
-  connected_at: string;
-  is_active: boolean;
+  lastActivityAt: string;
+  requestCount: number;
+  toolsUsed: string[];
+  connectedAt: string;
+  isActive: boolean;
 }
 
 interface MCPActivity {
   id: string;
-  connection_id: string;
-  activity_type: string;
-  tool_name: string | null;
-  duration_ms: number | null;
+  connectionId: string;
+  activityType: string;
+  toolName: string | null;
+  durationMs: number | null;
   success: boolean;
-  error_message: string | null;
-  created_at: string;
+  errorMessage: string | null;
+  createdAt: string;
 }
 
 export function useMCPSessions(orgId: string) {
@@ -45,7 +45,8 @@ export function useMCPSessions(orgId: string) {
       if (!response.ok) {
         throw new Error('Failed to fetch MCP sessions');
       }
-      return response.json() as Promise<{ connections: MCPConnection[]; total: number; active_count: number }>;
+      const data = await response.json();
+      return convertKeysToCamelCase(data) as { connections: MCPConnection[]; total: number; activeCount: number };
     },
     staleTime: 30 * 1000, // 30 seconds
     // Only fetch when auth is loaded, user is signed in, and orgId is set
@@ -76,7 +77,8 @@ export function useMCPSessionActivity(connectionId: string) {
           filter: `connection_id=eq.${connectionId}`,
         },
         (payload) => {
-          setActivities(prev => [payload.new as MCPActivity, ...prev]);
+          const converted = convertKeysToCamelCase(payload.new) as MCPActivity;
+          setActivities(prev => [converted, ...prev]);
         }
       )
       .subscribe();
@@ -101,7 +103,8 @@ export function useRevokeMCPSession() {
       if (!response.ok) {
         throw new Error('Failed to revoke session');
       }
-      return response.json();
+      const data = await response.json();
+      return convertKeysToCamelCase(data);
     },
     onSuccess: (_, { orgId }) => {
       queryClient.invalidateQueries({ queryKey: ['mcp-sessions', orgId] });

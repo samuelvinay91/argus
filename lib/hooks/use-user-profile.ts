@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { useAuthApi } from './use-auth-api';
+import { convertKeysToCamelCase } from '@/lib/api-client';
 
 /**
  * User Profile Interface
@@ -11,34 +12,34 @@ import { useAuthApi } from './use-auth-api';
  */
 export interface UserProfile {
   id: string;
-  user_id: string;
-  display_name: string;
+  userId: string;
+  displayName: string;
   email: string;
   bio: string | null;
-  avatar_url: string | null;
+  avatarUrl: string | null;
   timezone: string;
   language: string;
   theme: 'light' | 'dark' | 'system';
   // Professional info
-  job_title: string | null;
+  jobTitle: string | null;
   company: string | null;
   department: string | null;
   phone: string | null;
   // Social links
-  github_username: string | null;
-  linkedin_url: string | null;
-  twitter_handle: string | null;
-  website_url: string | null;
+  githubUsername: string | null;
+  linkedinUrl: string | null;
+  twitterHandle: string | null;
+  websiteUrl: string | null;
   // Preferences
-  default_organization_id: string | null;
-  default_project_id: string | null;
-  onboarding_completed: boolean;
-  onboarding_step: number | null;
-  last_login_at: string | null;
-  last_active_at: string | null;
-  login_count: number;
-  created_at: string;
-  updated_at: string;
+  defaultOrganizationId: string | null;
+  defaultProjectId: string | null;
+  onboardingCompleted: boolean;
+  onboardingStep: number | null;
+  lastLoginAt: string | null;
+  lastActiveAt: string | null;
+  loginCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -47,23 +48,23 @@ export interface UserProfile {
  * Fields that can be updated via PUT /api/v1/users/me
  */
 export interface UserProfileUpdate {
-  display_name?: string;
+  displayName?: string;
   bio?: string | null;
-  avatar_url?: string | null;
+  avatarUrl?: string | null;
   timezone?: string;
   language?: string;
   theme?: 'light' | 'dark' | 'system';
   // Professional info
-  job_title?: string | null;
+  jobTitle?: string | null;
   company?: string | null;
   department?: string | null;
   phone?: string | null;
   // Social links
-  github_username?: string | null;
-  linkedin_url?: string | null;
-  twitter_handle?: string | null;
-  website_url?: string | null;
-  default_organization_id?: string | null;
+  githubUsername?: string | null;
+  linkedinUrl?: string | null;
+  twitterHandle?: string | null;
+  websiteUrl?: string | null;
+  defaultOrganizationId?: string | null;
 }
 
 /**
@@ -71,7 +72,7 @@ export interface UserProfileUpdate {
  */
 export interface AvatarUploadResponse {
   success: boolean;
-  avatar_url: string;
+  avatarUrl: string;
   message: string;
 }
 
@@ -139,12 +140,12 @@ export interface ConnectedAccountsResponse {
  *   if (error) return <Error message={error} />;
  *
  *   const handleSave = async () => {
- *     await updateProfile({ display_name: 'New Name' });
+ *     await updateProfile({ displayName: 'New Name' });
  *   };
  *
  *   return (
  *     <div>
- *       <h1>{profile?.display_name}</h1>
+ *       <h1>{profile?.displayName}</h1>
  *       <button onClick={handleSave}>Update Name</button>
  *     </div>
  *   );
@@ -251,7 +252,7 @@ export function useUserDisplayName() {
   const { profile, loading } = useUserProfile();
 
   return {
-    displayName: profile?.display_name ?? null,
+    displayName: profile?.displayName ?? null,
     loading,
   };
 }
@@ -307,7 +308,7 @@ export function useUserTimezone() {
  *   const handleFileChange = async (file: File) => {
  *     try {
  *       const result = await uploadAvatar(file);
- *       console.log('Avatar URL:', result.avatar_url);
+ *       console.log('Avatar URL:', result.avatarUrl);
  *     } catch (err) {
  *       console.error('Upload failed:', err);
  *     }
@@ -350,14 +351,14 @@ export function useUploadAvatar() {
         throw new Error(errorMessage);
       }
 
-      const data = await response.json();
-      return data as AvatarUploadResponse;
+      const rawData = await response.json();
+      return convertKeysToCamelCase(rawData) as AvatarUploadResponse;
     },
     onSuccess: (data) => {
       // Update the profile cache with the new avatar URL
       queryClient.setQueryData(['user-profile', userId], (old: UserProfile | undefined) => {
         if (old) {
-          return { ...old, avatar_url: data.avatar_url };
+          return { ...old, avatarUrl: data.avatarUrl };
         }
         return old;
       });
