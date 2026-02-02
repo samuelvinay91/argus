@@ -444,9 +444,10 @@ describe('use-intelligence', () => {
 
   describe('useGenerateTest', () => {
     it('should generate a test via API', async () => {
+      // API returns snake_case, but convertKeysToCamelCase transforms it
       const mockResponse = {
         success: true,
-        test_id: 'new-test-123',
+        testId: 'new-test-123',
         code: 'test("generated test", () => {});',
       };
 
@@ -640,9 +641,10 @@ describe('use-intelligence', () => {
 
   describe('useCalculateRiskScores', () => {
     it('should call API to calculate risk scores', async () => {
+      // API response gets converted from snake_case to camelCase
       const mockResponse = {
         success: true,
-        scores_calculated: 15,
+        scoresCalculated: 15,
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -758,30 +760,31 @@ describe('use-intelligence', () => {
     });
 
     it('should fetch AI quality score from API', async () => {
+      // API response gets converted from snake_case to camelCase
       const mockQualityScore = {
         success: true,
-        project_id: 'proj-123',
-        overall_score: 78,
+        projectId: 'proj-123',
+        overallScore: 78,
         grade: 'B+',
-        grade_color: 'green',
-        component_scores: {
-          error_management: { score: 80, label: 'Good', description: 'Well managed' },
-          test_coverage: { score: 75, label: 'Good', description: 'Adequate coverage' },
-          risk_mitigation: { score: 82, label: 'Good', description: 'Proactive' },
+        gradeColor: 'green',
+        componentScores: {
+          errorManagement: { score: 80, label: 'Good', description: 'Well managed' },
+          testCoverage: { score: 75, label: 'Good', description: 'Adequate coverage' },
+          riskMitigation: { score: 82, label: 'Good', description: 'Proactive' },
           automation: { score: 70, label: 'Fair', description: 'Room for improvement' },
           prevention: { score: 85, label: 'Excellent', description: 'Strong prevention' },
         },
         metrics: {
-          total_events: 100,
-          unresolved_events: 10,
-          tests_generated: 50,
-          tests_approved: 45,
-          avg_confidence: 0.88,
-          high_risk_components: 3,
-          incidents_prevented: 12,
+          totalEvents: 100,
+          unresolvedEvents: 10,
+          testsGenerated: 50,
+          testsApproved: 45,
+          avgConfidence: 0.88,
+          highRiskComponents: 3,
+          incidentsPrevented: 12,
         },
         insights: ['Improve test coverage for checkout flow'],
-        calculated_at: '2024-01-15T12:00:00Z',
+        calculatedAt: '2024-01-15T12:00:00Z',
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -828,6 +831,7 @@ describe('use-intelligence', () => {
 
   describe('useSemanticSearch', () => {
     it('should search for similar patterns via API', async () => {
+      // API response gets converted from snake_case to camelCase
       const mockSearchResult = {
         success: true,
         query: 'TypeError: Cannot read property',
@@ -835,14 +839,14 @@ describe('use-intelligence', () => {
           {
             id: 'pattern-1',
             score: 0.95,
-            pattern_hash: 'abc123',
+            patternHash: 'abc123',
             category: 'type_error',
-            example_message: 'TypeError: Cannot read property of undefined',
-            known_solutions: ['Check for null values'],
+            exampleMessage: 'TypeError: Cannot read property of undefined',
+            knownSolutions: ['Check for null values'],
           },
         ],
         count: 1,
-        has_solutions: true,
+        hasSolutions: true,
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -897,10 +901,11 @@ describe('use-intelligence', () => {
 
   describe('useAutonomousLoop', () => {
     it('should trigger autonomous quality loop via API', async () => {
+      // API response gets converted from snake_case to camelCase
       const mockResponse = {
         success: true,
-        run_id: 'run-123',
-        stages_completed: ['discovery', 'visual', 'generation'],
+        runId: 'run-123',
+        stagesCompleted: ['discovery', 'visual', 'generation'],
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -1004,36 +1009,37 @@ describe('use-intelligence', () => {
     });
 
     it('should fetch predictive quality analysis from API', async () => {
+      // API response gets converted from snake_case to camelCase
       const mockPredictions = {
         success: true,
-        project_id: 'proj-123',
+        projectId: 'proj-123',
         timeframe: '7d',
         predictions: [
           {
             entity: '/checkout',
-            entity_type: 'page',
-            prediction_score: 0.85,
-            predicted_timeframe: '7 days',
-            risk_factors: ['High error frequency', 'Low test coverage'],
+            entityType: 'page',
+            predictionScore: 0.85,
+            predictedTimeframe: '7 days',
+            riskFactors: ['High error frequency', 'Low test coverage'],
             recommendations: ['Add more tests'],
-            similar_past_failures: 3,
+            similarPastFailures: 3,
             confidence: 0.8,
           },
         ],
         summary: {
-          total_analyzed: 50,
-          total_predicted: 5,
-          high_risk: 2,
-          medium_risk: 3,
-          increasing_trends: 1,
+          totalAnalyzed: 50,
+          totalPredicted: 5,
+          highRisk: 2,
+          mediumRisk: 3,
+          increasingTrends: 1,
         },
-        ai_summary: 'Checkout flow needs attention',
-        data_quality: {
-          events_analyzed: 100,
-          risk_scores_available: 45,
-          patterns_learned: 20,
+        aiSummary: 'Checkout flow needs attention',
+        dataQuality: {
+          eventsAnalyzed: 100,
+          riskScoresAvailable: 45,
+          patternsLearned: 20,
         },
-        calculated_at: '2024-01-15T12:00:00Z',
+        calculatedAt: '2024-01-15T12:00:00Z',
       };
 
       mockFetch.mockResolvedValueOnce({
