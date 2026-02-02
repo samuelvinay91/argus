@@ -308,10 +308,17 @@ function ChatPageContent() {
 
     const latestMessage = messages[messages.length - 1];
 
+    // Skip saving if content is empty (can happen during streaming or tool invocations)
+    const content = latestMessage.content?.trim() || '';
+    if (!content) {
+      console.debug('Skipping save: message has empty content (likely still streaming)');
+      return;
+    }
+
     // Check if already stored
     const isStored = storedMessages.some(
       (m: ChatMessage) =>
-        m.content === latestMessage.content &&
+        m.content === content &&
         m.role === latestMessage.role
     );
     if (isStored) return;
@@ -320,7 +327,7 @@ function ChatPageContent() {
       await addMessage.mutateAsync({
         conversation_id: currentConversationId,
         role: latestMessage.role as 'user' | 'assistant' | 'system',
-        content: latestMessage.content,
+        content: content,
         tool_invocations: latestMessage.toolInvocations as unknown as Record<string, unknown> | null,
       });
     } catch (error) {

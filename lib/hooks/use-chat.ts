@@ -146,15 +146,21 @@ export function useAddMessage() {
         throw new Error(`Invalid conversation_id: ${message.conversation_id}. Must be a valid UUID.`);
       }
 
+      // Validate content is not empty (backend requires min_length=1)
+      const content = message.content?.trim() || '';
+      if (!content) {
+        throw new Error('Message content cannot be empty. This usually happens during streaming - wait for the message to complete.');
+      }
+
       console.log('Adding message to conversation:', {
         conversation_id: message.conversation_id,
         role: message.role,
-        content_length: message.content?.length || 0
+        content_length: content.length
       });
 
       const request: CreateMessageRequest = {
         role: message.role,
-        content: message.content,
+        content: content,
         toolInvocations: message.tool_invocations,
       };
 
