@@ -168,6 +168,22 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
   // Derive isLoading from status (v6 pattern)
   const isLoading = status === 'streaming' || status === 'submitted';
 
+  // Structured logging for AI SDK message flow
+  useEffect(() => {
+    console.group('[useChatState] AI SDK State');
+    console.log('status:', status);
+    console.log('isLoading:', isLoading);
+    console.log('messages count:', messages.length);
+    messages.forEach((msg, i) => {
+      console.log(`[${i}] ${msg.role}:`, {
+        id: msg.id,
+        parts: msg.parts,
+        partsTypes: msg.parts?.map(p => p.type),
+      });
+    });
+    console.groupEnd();
+  }, [messages, status, isLoading]);
+
   // Sync loading state to store
   useEffect(() => {
     store.setLoading(isLoading);

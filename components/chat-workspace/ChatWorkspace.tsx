@@ -436,10 +436,21 @@ const ChatThread = React.memo(function ChatThread({
   const { messages, isLoading, input, setInput, handleSubmit, scrollRef } = chatState;
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Debug: Log messages to help diagnose rendering issues
+  // Structured logging for debugging message flow
   React.useEffect(() => {
-    console.log('[ChatThread] Messages updated:', messages.length, messages);
-  }, [messages]);
+    console.group('[ChatThread] Messages Update');
+    console.log('Count:', messages.length);
+    console.log('isLoading:', isLoading);
+    messages.forEach((msg, i) => {
+      console.log(`Message[${i}]:`, {
+        id: msg.id,
+        role: msg.role,
+        partsCount: msg.parts?.length ?? 0,
+        parts: msg.parts,
+      });
+    });
+    console.groupEnd();
+  }, [messages, isLoading]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -482,16 +493,10 @@ const ChatThread = React.memo(function ChatThread({
         ) : (
           messages.map((message) => {
             // Extract text content from parts array (AI SDK v6 format)
-            // With fallback to legacy content string for backwards compatibility
             const textParts = message.parts?.filter(
               (part): part is { type: 'text'; text: string } => part.type === 'text'
             ) || [];
-            const partsContent = textParts.map(p => p.text).join('\n');
-            // Fallback to legacy content field if parts is empty
-            const content = partsContent || (message as unknown as { content?: string }).content || '';
-
-            // Skip rendering if no content (can happen during streaming setup)
-            if (!content.trim()) return null;
+            const content = textParts.map(p => p.text).join('\n');
 
             return (
               <div
