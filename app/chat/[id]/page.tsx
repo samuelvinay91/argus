@@ -4,8 +4,8 @@ import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation';
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
 import { Sidebar } from '@/components/layout/sidebar';
-// Import the new modular ChatInterface
-import { ChatInterface } from '@/components/chat';
+// Import the new ChatWorkspace with glassmorphic design
+import { ChatWorkspace } from '@/components/chat-workspace';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -447,7 +447,7 @@ function ChatPageContent() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <ChatInterface
+            <ChatWorkspace
               key={conversationId}
               conversationId={conversationId}
               initialMessages={initialMessages}
