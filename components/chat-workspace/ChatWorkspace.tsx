@@ -712,7 +712,7 @@ export function ChatWorkspace({
   }, [layout]);
 
   return (
-    <div className={cn('h-full w-full relative', className)}>
+    <div className={cn('flex-1 h-full w-full relative flex flex-col', className)}>
       <WorkspaceLayout
         layoutState={layout.layoutState}
         panelContent={panelContent}

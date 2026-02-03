@@ -138,6 +138,32 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
       if (!response.ok) {
         const errorText = await response.clone().text();
         console.error('[Transport] Error response body:', errorText);
+      } else {
+        // Debug: Log stream content to understand the format
+        // Clone the response to peek at the body without consuming it
+        const clonedResponse = response.clone();
+        const reader = clonedResponse.body?.getReader();
+        if (reader) {
+          const decoder = new TextDecoder();
+          let debugText = '';
+          let chunkCount = 0;
+          // Read first few chunks to debug
+          try {
+            while (chunkCount < 5) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              debugText += decoder.decode(value, { stream: true });
+              chunkCount++;
+            }
+            console.group('[Transport] Stream Debug (first chunks)');
+            console.log('Raw stream content:', debugText.substring(0, 500));
+            console.log('Chunk count read:', chunkCount);
+            console.groupEnd();
+            reader.cancel(); // Cancel the cloned reader
+          } catch (e) {
+            console.warn('[Transport] Could not debug stream:', e);
+          }
+        }
       }
 
       return response;

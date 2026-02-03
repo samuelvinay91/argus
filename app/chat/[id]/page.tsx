@@ -452,6 +452,7 @@ function ChatPageContent() {
               conversationId={conversationId}
               initialMessages={initialMessages}
               onMessagesChange={handleMessagesChange}
+              className="flex-1"
             />
           )}
 
