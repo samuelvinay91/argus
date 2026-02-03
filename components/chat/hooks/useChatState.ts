@@ -101,6 +101,10 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
   const isValidConversationId = conversationId &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationId);
 
+  // TEMPORARY: Force fallback mode for debugging AI SDK v6 stream parsing
+  // Set to true to bypass Python backend and use direct Claude API
+  const FORCE_FALLBACK_MODE = true; // TODO: Remove after debugging
+
   // Create transport (v6 pattern) with debug logging
   const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/chat',
@@ -111,6 +115,7 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
         useBYOK: true,
       } : undefined,
       userId: user?.id,
+      forceFallback: FORCE_FALLBACK_MODE, // Bypass Python backend for testing
     },
     fetch: async (url, options) => {
       const token = await getToken();
@@ -138,32 +143,6 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
       if (!response.ok) {
         const errorText = await response.clone().text();
         console.error('[Transport] Error response body:', errorText);
-      } else {
-        // Debug: Log stream content to understand the format
-        // Clone the response to peek at the body without consuming it
-        const clonedResponse = response.clone();
-        const reader = clonedResponse.body?.getReader();
-        if (reader) {
-          const decoder = new TextDecoder();
-          let debugText = '';
-          let chunkCount = 0;
-          // Read first few chunks to debug
-          try {
-            while (chunkCount < 5) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              debugText += decoder.decode(value, { stream: true });
-              chunkCount++;
-            }
-            console.group('[Transport] Stream Debug (first chunks)');
-            console.log('Raw stream content:', debugText.substring(0, 500));
-            console.log('Chunk count read:', chunkCount);
-            console.groupEnd();
-            reader.cancel(); // Cancel the cloned reader
-          } catch (e) {
-            console.warn('[Transport] Could not debug stream:', e);
-          }
-        }
       }
 
       return response;

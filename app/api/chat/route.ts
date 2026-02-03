@@ -109,14 +109,20 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { messages, threadId, appUrl, aiConfig, userId } = body;
 
+    // Debug: Check if force fallback is requested (for testing)
+    const forceFallback = body.forceFallback === true;
+    if (forceFallback) {
+      console.log('[Chat API] Force fallback mode requested');
+    }
+
     // Convert messages using AI SDK to properly handle attachments
     // This transforms experimental_attachments into the correct format for Claude
     // Attachments (images, documents) are converted to multimodal content parts
     // Note: v6 convertToModelMessages is async (handles attachment fetching)
     const coreMessages: ModelMessage[] = await convertToModelMessages(messages);
 
-    // Check if Python backend is available
-    const backendAvailable = await isBackendAvailable();
+    // Check if Python backend is available (skip if forceFallback)
+    const backendAvailable = !forceFallback && await isBackendAvailable();
 
     if (backendAvailable) {
       // Route through Python LangGraph orchestrator for full capabilities
