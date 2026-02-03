@@ -32,6 +32,7 @@ import {
 
 // Chat components from existing chat system
 import { useChatState, type ChatStateResult } from '@/components/chat/hooks/useChatState';
+import { ChatModelSelector } from '@/components/chat/chat-model-selector';
 
 // =============================================================================
 // TYPES
@@ -433,24 +434,36 @@ const ChatThread = React.memo(function ChatThread({
   suggestions,
   onSuggestionClick,
 }: ChatThreadProps) {
-  const { messages, isLoading, input, setInput, handleSubmit, scrollRef } = chatState;
+  const { messages, isLoading, input, setInput, handleSubmit, scrollRef, aiStatus } = chatState;
   const formRef = useRef<HTMLFormElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Structured logging for debugging message flow
   React.useEffect(() => {
     console.group('[ChatThread] Messages Update');
     console.log('Count:', messages.length);
     console.log('isLoading:', isLoading);
+    console.log('aiStatus:', aiStatus);
     messages.forEach((msg, i) => {
+      // Extract content for logging
+      const textParts = msg.parts?.filter(
+        (part): part is { type: 'text'; text: string } => part.type === 'text'
+      ) || [];
+      const content = textParts.map(p => p.text).join('').substring(0, 100);
       console.log(`Message[${i}]:`, {
         id: msg.id,
         role: msg.role,
         partsCount: msg.parts?.length ?? 0,
-        parts: msg.parts,
+        contentPreview: content || '(empty)',
       });
     });
     console.groupEnd();
-  }, [messages, isLoading]);
+  }, [messages, isLoading, aiStatus]);
+
+  // Auto-scroll to bottom on new messages
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -460,16 +473,16 @@ const ChatThread = React.memo(function ChatThread({
   }, []);
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Messages Area */}
+    <div className="h-full flex flex-col min-h-0">
+      {/* Messages Area - Scrollable */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
+        className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0"
       >
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <h2 className="text-2xl font-semibold mb-2">Hey Argus</h2>
-            <p className="text-muted-foreground mb-6 max-w-md">
+          <div className="flex flex-col items-center justify-center h-full text-center px-4">
+            <h2 className="text-xl sm:text-2xl font-semibold mb-2">Hey Argus</h2>
+            <p className="text-muted-foreground mb-4 sm:mb-6 max-w-md text-sm sm:text-base">
               Your autonomous quality companion. Describe what you want to test in plain English.
             </p>
 
@@ -480,7 +493,7 @@ const ChatThread = React.memo(function ChatThread({
                   key={suggestion.id}
                   onClick={() => onSuggestionClick(suggestion.prompt)}
                   className={cn(
-                    'px-3 py-1.5 rounded-full text-sm',
+                    'px-3 py-1.5 rounded-full text-xs sm:text-sm',
                     'bg-white/[0.06] border border-white/[0.08]',
                     'hover:bg-white/[0.1] transition-colors'
                   )}
@@ -491,71 +504,89 @@ const ChatThread = React.memo(function ChatThread({
             </div>
           </div>
         ) : (
-          messages.map((message) => {
-            // Extract text content from parts array (AI SDK v6 format)
-            const textParts = message.parts?.filter(
-              (part): part is { type: 'text'; text: string } => part.type === 'text'
-            ) || [];
-            const content = textParts.map(p => p.text).join('\n');
+          <>
+            {messages.map((message) => {
+              // Extract text content from parts array (AI SDK v6 format)
+              const textParts = message.parts?.filter(
+                (part): part is { type: 'text'; text: string } => part.type === 'text'
+              ) || [];
+              const content = textParts.map(p => p.text).join('\n');
 
-            return (
-              <div
-                key={message.id}
-                className={cn(
-                  'max-w-[85%] p-3 rounded-lg',
-                  message.role === 'user'
-                    ? 'ml-auto bg-primary text-primary-foreground'
-                    : 'bg-white/[0.06]'
-                )}
-              >
-                <p className="text-sm whitespace-pre-wrap">{content}</p>
-              </div>
-            );
-          })
+              return (
+                <div
+                  key={message.id}
+                  className={cn(
+                    'max-w-[90%] sm:max-w-[85%] p-3 rounded-lg',
+                    message.role === 'user'
+                      ? 'ml-auto bg-primary text-primary-foreground'
+                      : 'bg-muted/50 border border-border/50'
+                  )}
+                >
+                  <p className="text-sm whitespace-pre-wrap break-words">{content || '...'}</p>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </>
         )}
 
         {isLoading && (
-          <div className="bg-white/[0.06] max-w-[85%] p-3 rounded-lg">
+          <div className="bg-muted/50 border border-border/50 max-w-[90%] sm:max-w-[85%] p-3 rounded-lg">
             <div className="flex items-center gap-2">
               <div className="flex gap-1">
                 <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
-              <span className="text-sm text-muted-foreground">Thinking...</span>
+              <span className="text-sm text-muted-foreground">
+                {aiStatus === 'thinking' ? 'Thinking...' : 'Typing...'}
+              </span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-white/[0.08] p-4">
-        <form ref={formRef} onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe what to test... (type / for commands)"
-            className={cn(
-              'flex-1 px-4 py-2 rounded-lg',
-              'bg-white/[0.06] border border-white/[0.08]',
-              'focus:outline-none focus:ring-2 focus:ring-primary/50',
-              'placeholder:text-muted-foreground'
-            )}
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || isLoading}
-            className={cn(
-              'px-4 py-2 rounded-lg bg-primary text-primary-foreground',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-              'hover:bg-primary/90 transition-colors'
-            )}
-          >
-            Send
-          </button>
-        </form>
+      {/* Input Area - Fixed at bottom with model selector */}
+      <div className="flex-shrink-0 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-2 sm:p-3 md:p-4 safe-area-inset-bottom">
+        <div className="max-w-4xl mx-auto space-y-2">
+          {/* Model selector row - compact on mobile */}
+          <div className="flex items-center justify-between gap-2">
+            <ChatModelSelector compact className="flex-shrink-0" />
+            <div className="text-xs text-muted-foreground hidden sm:block">
+              Press Enter to send
+            </div>
+          </div>
+
+          {/* Input form */}
+          <form ref={formRef} onSubmit={handleSubmit} className="flex gap-2">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Describe what to test..."
+              className={cn(
+                'flex-1 min-w-0 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-sm',
+                'bg-muted/50 border border-border',
+                'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary',
+                'placeholder:text-muted-foreground'
+              )}
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              className={cn(
+                'flex-shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm font-medium',
+                'bg-primary text-primary-foreground',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'hover:bg-primary/90 transition-colors',
+                'touch-manipulation' // Better touch handling on mobile
+              )}
+            >
+              Send
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

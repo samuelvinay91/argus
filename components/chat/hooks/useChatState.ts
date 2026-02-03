@@ -101,7 +101,7 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
   const isValidConversationId = conversationId &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationId);
 
-  // Create transport (v6 pattern)
+  // Create transport (v6 pattern) with debug logging
   const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/chat',
     body: {
@@ -114,17 +114,37 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
     },
     fetch: async (url, options) => {
       const token = await getToken();
-      return fetch(url, {
+      console.group('[Transport] Fetch Request');
+      console.log('URL:', url);
+      console.log('Method:', options?.method);
+      console.log('Body preview:', options?.body ? JSON.stringify(JSON.parse(options.body as string), null, 2).substring(0, 500) : 'none');
+      console.groupEnd();
+
+      const response = await fetch(url, {
         ...options,
         headers: {
           ...options?.headers,
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
       });
+
+      console.group('[Transport] Fetch Response');
+      console.log('Status:', response.status, response.statusText);
+      console.log('Content-Type:', response.headers.get('content-type'));
+      console.log('OK:', response.ok);
+      console.groupEnd();
+
+      // If not ok, log the error body
+      if (!response.ok) {
+        const errorText = await response.clone().text();
+        console.error('[Transport] Error response body:', errorText);
+      }
+
+      return response;
     },
   }), [aiPreferences, user?.id, getToken]);
 
-  // AI SDK v6 useChat
+  // AI SDK v6 useChat with comprehensive logging
   const {
     messages,
     sendMessage,
@@ -135,9 +155,12 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
   } = useChat({
     transport,
     id: isValidConversationId ? conversationId : undefined,
-    messages: initialMessages,
+    messages: initialMessages, // v6 uses 'messages' not 'initialMessages'
     onError: (err) => {
-      console.error('Chat error:', err);
+      console.error('[useChat] onError triggered:', err);
+      console.error('[useChat] Error name:', err.name);
+      console.error('[useChat] Error message:', err.message);
+      console.error('[useChat] Error stack:', err.stack);
       store.setError(err.message);
       toast.error({
         title: 'Chat Error',
@@ -146,11 +169,19 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
     },
     // v6 onFinish receives an object with { message, messages, ... }
     onFinish: ({ message: finishedMessage }) => {
+      console.group('[useChat] onFinish triggered');
+      console.log('Finished message:', finishedMessage);
+      console.log('Message id:', finishedMessage?.id);
+      console.log('Message role:', finishedMessage?.role);
+      console.log('Message parts:', finishedMessage?.parts);
+      console.groupEnd();
+
       const currentConversationId = conversationIdRef.current;
       const currentOnMessagesChange = onMessagesChangeRef.current;
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!currentConversationId || !uuidRegex.test(currentConversationId)) {
+        console.log('[useChat] onFinish - skipping save (invalid conversationId)');
         return;
       }
 
@@ -168,19 +199,34 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
   // Derive isLoading from status (v6 pattern)
   const isLoading = status === 'streaming' || status === 'submitted';
 
+  // Log status changes for debugging streaming lifecycle
+  useEffect(() => {
+    console.log('[useChatState] Status changed:', status);
+    if (status === 'error') {
+      console.error('[useChatState] Status is error - check onError callback');
+    }
+  }, [status]);
+
   // Structured logging for AI SDK message flow
   useEffect(() => {
-    console.group('[useChatState] AI SDK State');
+    console.group('[useChatState] AI SDK State Update');
     console.log('status:', status);
     console.log('isLoading:', isLoading);
     console.log('messages count:', messages.length);
-    messages.forEach((msg, i) => {
-      console.log(`[${i}] ${msg.role}:`, {
-        id: msg.id,
-        parts: msg.parts,
-        partsTypes: msg.parts?.map(p => p.type),
+    if (messages.length > 0) {
+      messages.forEach((msg, i) => {
+        const textParts = msg.parts?.filter(
+          (part): part is { type: 'text'; text: string } => part.type === 'text'
+        ) || [];
+        const textPreview = textParts.map(p => p.text).join('').substring(0, 100);
+        console.log(`[${i}] ${msg.role}:`, {
+          id: msg.id,
+          partsCount: msg.parts?.length ?? 0,
+          partsTypes: msg.parts?.map(p => p.type),
+          textPreview: textPreview || '(no text)',
+        });
       });
-    });
+    }
     console.groupEnd();
   }, [messages, status, isLoading]);
 
