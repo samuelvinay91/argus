@@ -3,20 +3,14 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Check, ChevronDown, Loader2, Zap, Sparkles, Eye, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  ModelSelector,
-  ModelSelectorTrigger,
-  ModelSelectorContent,
-  ModelSelectorInput,
-  ModelSelectorList,
-  ModelSelectorEmpty,
-  ModelSelectorGroup,
-  ModelSelectorItem,
-  ModelSelectorLogo,
-  ModelSelectorName,
-} from '@/components/ai-elements/model-selector';
 import { useAIPreferences, useAvailableModels, useUpdateAIPreferences, type ModelInfo } from '@/lib/hooks/use-ai-settings';
 import { Button } from '@/components/ui/button';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Provider display names
 const PROVIDER_NAMES: Record<string, string> = {
@@ -51,7 +45,7 @@ const PROVIDER_LOGO_MAP: Record<string, string> = {
   deepseek: 'deepseek',
   mistral: 'mistral',
   perplexity: 'perplexity',
-  cohere: 'inference', // fallback
+  cohere: 'inference',
   xai: 'xai',
   azure_openai: 'azure',
   aws_bedrock: 'amazon-bedrock',
@@ -85,6 +79,22 @@ const MODEL_SHORT_NAMES: Record<string, string> = {
   'mistral-large': 'Mistral Large',
   'qwen-2.5-72b': 'Qwen 2.5 72B',
 };
+
+// Provider logo component
+function ProviderLogo({ provider, className }: { provider: string; className?: string }) {
+  const logoId = PROVIDER_LOGO_MAP[provider] || provider;
+  return (
+    <img
+      src={`https://models.dev/logos/${logoId}.svg`}
+      alt={`${provider} logo`}
+      className={cn('h-4 w-4 dark:invert', className)}
+      onError={(e) => {
+        // Hide broken images
+        (e.target as HTMLImageElement).style.display = 'none';
+      }}
+    />
+  );
+}
 
 interface ChatModelSelectorProps {
   className?: string;
@@ -121,10 +131,8 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
     // Sort models within each provider by capability/price
     Object.keys(grouped).forEach((provider) => {
       grouped[provider].sort((a, b) => {
-        // Premium models first
         if (a.tier === 'premium' && b.tier !== 'premium') return -1;
         if (b.tier === 'premium' && a.tier !== 'premium') return 1;
-        // Then by output price descending (better models usually cost more)
         return b.outputPrice - a.outputPrice;
       });
     });
@@ -135,11 +143,16 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
   // Handle model selection
   const handleSelectModel = useCallback(
     async (model: ModelInfo) => {
-      await updatePreferences({
-        defaultModel: model.modelId,
-        defaultProvider: model.provider,
-      });
-      setOpen(false);
+      console.log('[ModelSelector] Selecting model:', model.modelId);
+      try {
+        await updatePreferences({
+          defaultModel: model.modelId,
+          defaultProvider: model.provider,
+        });
+        setOpen(false);
+      } catch (error) {
+        console.error('[ModelSelector] Failed to update:', error);
+      }
     },
     [updatePreferences]
   );
@@ -157,7 +170,6 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
   }, []);
 
   const displayName = MODEL_SHORT_NAMES[currentModel] || currentModelInfo?.displayName || currentModel;
-  const providerLogoId = PROVIDER_LOGO_MAP[currentProvider] || currentProvider;
   const isLoading = prefsLoading || modelsLoading;
 
   if (isLoading) {
@@ -170,144 +182,123 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
   }
 
   return (
-    <ModelSelector open={open} onOpenChange={setOpen}>
-      <ModelSelectorTrigger asChild>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
         <Button
           variant="outline"
           size="sm"
+          role="combobox"
+          aria-expanded={open}
           className={cn(
-            'gap-2 font-medium transition-all',
+            'gap-2 font-medium transition-all justify-between',
             'hover:bg-accent hover:border-primary/20',
             isUpdating && 'opacity-70',
             className
           )}
           disabled={isUpdating}
         >
-          {isUpdating ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <ModelSelectorLogo provider={providerLogoId} className="h-4 w-4" />
-          )}
-          {!compact && (
-            <>
-              <span className="max-w-[120px] truncate text-xs">{displayName}</span>
-              {currentModelInfo && (
-                <span className="text-[10px] text-muted-foreground">
-                  ${currentModelInfo.inputPrice}/${currentModelInfo.outputPrice}
-                </span>
-              )}
-            </>
-          )}
-          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            {isUpdating ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <ProviderLogo provider={currentProvider} className="h-4 w-4" />
+            )}
+            {!compact && (
+              <span className="max-w-[100px] truncate text-xs">{displayName}</span>
+            )}
+          </div>
+          <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
         </Button>
-      </ModelSelectorTrigger>
+      </PopoverTrigger>
 
-      <ModelSelectorContent className="w-[400px]" title="Select AI Model">
-        <ModelSelectorInput placeholder="Search models... (⌘M to toggle)" />
-        <ModelSelectorList className="max-h-[400px]">
-          <ModelSelectorEmpty>
-            <div className="flex flex-col items-center gap-2 py-4">
-              <p className="text-sm text-muted-foreground">No models found.</p>
-              <p className="text-xs text-muted-foreground">
-                Add API keys in Settings → AI Hub
-              </p>
-            </div>
-          </ModelSelectorEmpty>
+      <PopoverContent
+        className="w-[340px] p-0"
+        align="start"
+        sideOffset={4}
+      >
+        <div className="px-3 py-2 border-b">
+          <h4 className="text-sm font-medium">Select AI Model</h4>
+          <p className="text-xs text-muted-foreground">⌘M to toggle</p>
+        </div>
 
-          {Object.entries(modelsByProvider).map(([provider, models]) => (
-            <ModelSelectorGroup
-              key={provider}
-              heading={
-                <div className="flex items-center gap-2">
-                  <ModelSelectorLogo
-                    provider={PROVIDER_LOGO_MAP[provider] || provider}
-                    className="h-3 w-3"
-                  />
-                  <span>{PROVIDER_NAMES[provider] || provider}</span>
-                  <span className="text-[10px] text-muted-foreground/60">
-                    {models.length} model{models.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              }
-            >
-              {models.map((model) => {
-                const isSelected = model.modelId === currentModel;
-                const modelName = MODEL_SHORT_NAMES[model.modelId] || model.displayName;
-
-                return (
-                  <ModelSelectorItem
-                    key={model.modelId}
-                    value={`${model.provider}-${model.modelId}-${model.displayName}`}
-                    onSelect={() => handleSelectModel(model)}
-                    className={cn(
-                      'flex items-center justify-between py-2',
-                      isSelected && 'bg-accent'
-                    )}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      {isSelected ? (
-                        <Check className="h-4 w-4 text-primary shrink-0" />
-                      ) : (
-                        <div className="w-4 shrink-0" />
-                      )}
-                      <ModelSelectorName>{modelName}</ModelSelectorName>
-
-                      {/* Capability badges */}
-                      <div className="flex items-center gap-1 shrink-0">
-                        {(model.capabilities?.includes('fast_inference') ||
-                          model.capabilities?.includes('fast') ||
-                          model.tier === 'free') && (
-                          <span title="Fast inference">
-                            <Zap className="h-3 w-3 text-yellow-500" />
-                          </span>
-                        )}
-                        {(model.capabilities?.includes('extended_context') ||
-                          (model.contextWindow && model.contextWindow >= 100000)) && (
-                          <span title="Extended context">
-                            <Sparkles className="h-3 w-3 text-purple-500" />
-                          </span>
-                        )}
-                        {model.supportsVision && (
-                          <span title="Vision capable">
-                            <Eye className="h-3 w-3 text-blue-500" />
-                          </span>
-                        )}
-                        {model.supportsFunctionCalling && (
-                          <span title="Tool use">
-                            <Wrench className="h-3 w-3 text-green-500" />
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Pricing */}
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-                      {model.contextWindow && (
-                        <span className="text-[10px]">
-                          {Math.round(model.contextWindow / 1000)}K
-                        </span>
-                      )}
-                      <span>
-                        ${model.inputPrice}/{model.outputPrice}
-                      </span>
-                    </div>
-                  </ModelSelectorItem>
-                );
-              })}
-            </ModelSelectorGroup>
-          ))}
-
-          {Object.keys(modelsByProvider).length === 0 && (
+        <ScrollArea className="h-[300px]">
+          {Object.keys(modelsByProvider).length === 0 ? (
             <div className="px-4 py-8 text-center">
               <p className="text-sm font-medium">No models available</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Add your API keys in Settings → AI Hub to unlock models
+                Add API keys in Settings → AI Hub
               </p>
             </div>
+          ) : (
+            <div className="p-2">
+              {Object.entries(modelsByProvider).map(([provider, models]) => (
+                <div key={provider} className="mb-3">
+                  {/* Provider header */}
+                  <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    <ProviderLogo provider={provider} className="h-3 w-3" />
+                    <span>{PROVIDER_NAMES[provider] || provider}</span>
+                    <span className="text-[10px] opacity-60">
+                      ({models.length})
+                    </span>
+                  </div>
+
+                  {/* Models */}
+                  {models.map((model) => {
+                    const isSelected = model.modelId === currentModel;
+                    const modelName = MODEL_SHORT_NAMES[model.modelId] || model.displayName;
+
+                    return (
+                      <button
+                        key={model.modelId}
+                        onClick={() => handleSelectModel(model)}
+                        className={cn(
+                          'w-full flex items-center justify-between px-2 py-2 rounded-md text-sm',
+                          'hover:bg-accent cursor-pointer transition-colors',
+                          isSelected && 'bg-accent'
+                        )}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {isSelected ? (
+                            <Check className="h-4 w-4 text-primary shrink-0" />
+                          ) : (
+                            <div className="w-4 shrink-0" />
+                          )}
+                          <span className="truncate">{modelName}</span>
+
+                          {/* Capability badges */}
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            {(model.capabilities?.includes('fast_inference') ||
+                              model.capabilities?.includes('fast') ||
+                              model.tier === 'free') && (
+                              <Zap className="h-3 w-3 text-yellow-500" aria-label="Fast" />
+                            )}
+                            {(model.capabilities?.includes('extended_context') ||
+                              (model.contextWindow && model.contextWindow >= 100000)) && (
+                              <Sparkles className="h-3 w-3 text-purple-500" aria-label="Extended context" />
+                            )}
+                            {model.supportsVision && (
+                              <Eye className="h-3 w-3 text-blue-500" aria-label="Vision" />
+                            )}
+                            {model.supportsFunctionCalling && (
+                              <Wrench className="h-3 w-3 text-green-500" aria-label="Tools" />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Pricing */}
+                        <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
+                          ${model.inputPrice}/${model.outputPrice}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           )}
-        </ModelSelectorList>
-      </ModelSelectorContent>
-    </ModelSelector>
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
   );
 }
 

@@ -112,7 +112,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 // Core - Always visible, no header (essential navigation)
 const coreNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Chat', href: '/', icon: MessageSquare, badge: 'AI' },
+  { name: 'Chat', href: '/chat', icon: MessageSquare, badge: 'AI' },
   { name: 'Projects', href: '/projects', icon: FolderKanban },
 ];
 

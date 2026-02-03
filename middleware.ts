@@ -39,14 +39,27 @@ const isRscRequest = (request: Request) => {
 };
 
 export default clerkMiddleware(async (auth, request) => {
-  // Skip auth check for public routes
-  if (isPublicRoute(request)) {
+  const url = new URL(request.url);
+
+  // Skip auth check for public routes (except home page which needs auth check for redirect)
+  if (isPublicRoute(request) && url.pathname !== '/') {
     return;
   }
 
   const { userId, redirectToSignIn } = await auth();
 
+  // Handle authenticated users on home page - redirect to dashboard
+  if (userId && url.pathname === '/') {
+    return Response.redirect(new URL('/dashboard', request.url), 302);
+  }
+
+  // Handle unauthenticated users
   if (!userId) {
+    // Home page for unauthenticated users - show landing page
+    if (url.pathname === '/') {
+      return;
+    }
+
     // For API routes, return 401 instead of redirecting
     if (isApiRoute(request)) {
       return new Response(

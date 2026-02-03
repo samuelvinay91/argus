@@ -239,6 +239,17 @@ export async function POST(req: Request) {
     // Fallback: Direct Claude API (limited capabilities)
     console.log('Using direct Claude API (Python backend not available)');
 
+    // Build auth headers for tool calls
+    const toolAuthHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) {
+      toolAuthHeaders['Authorization'] = authHeader;
+    }
+    if (apiKey) {
+      toolAuthHeaders['X-API-Key'] = apiKey;
+    }
+
     const result = streamText({
       model: anthropic('claude-sonnet-4-20250514'),
       system: `You are Argus, an AI-powered E2E Testing Agent. You help users:
@@ -287,7 +298,7 @@ MULTIMODAL SUPPORT:
             try {
               const response = await fetchWithTimeout(`${BACKEND_URL}/api/v1/browser/act`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: toolAuthHeaders,
                 body: JSON.stringify({
                   url,
                   instruction,
@@ -333,7 +344,7 @@ MULTIMODAL SUPPORT:
             try {
               const response = await fetchWithTimeout(`${BACKEND_URL}/api/v1/browser/test`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: toolAuthHeaders,
                 body: JSON.stringify({
                   url,
                   steps,
@@ -392,7 +403,7 @@ MULTIMODAL SUPPORT:
             try {
               const response = await fetchWithTimeout(`${BACKEND_URL}/api/v1/browser/observe`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: toolAuthHeaders,
                 body: JSON.stringify({
                   url,
                   instruction: instruction || 'What actions can I take on this page?',
@@ -427,7 +438,7 @@ MULTIMODAL SUPPORT:
             try {
               const response = await fetchWithTimeout(`${WORKER_URL}/extract`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: toolAuthHeaders,
                 body: JSON.stringify({
                   url,
                   instruction,
@@ -467,7 +478,7 @@ MULTIMODAL SUPPORT:
             try {
               const response = await fetchWithTimeout(`${WORKER_URL}/agent`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: toolAuthHeaders,
                 body: JSON.stringify({
                   url,
                   instruction,
@@ -549,7 +560,10 @@ MULTIMODAL SUPPORT:
       },
     });
 
-    return result.toTextStreamResponse();
+    // Use toUIMessageStreamResponse() for AI SDK v6
+    // This returns the UI Message stream format that useChat's DefaultChatTransport expects
+    // The stream contains UIMessage parts (text, tool calls, etc.) that get parsed into message.parts
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error('Chat API error:', error);
     return new Response(

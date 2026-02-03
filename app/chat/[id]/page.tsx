@@ -16,6 +16,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { Tooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
   useConversations,
@@ -39,6 +40,8 @@ import {
   AlertCircle,
   Sparkles,
   Wallet,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react';
 import { safeFormatDistanceToNow } from '@/lib/utils';
 import type { UIMessage } from '@ai-sdk/react';
@@ -195,7 +198,8 @@ function ChatPageContent() {
   const router = useRouter();
   const conversationId = params.id as string;
 
-  const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
+  // Unified history panel state (hidden by default on all screens)
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   // Ref for stable callback
@@ -254,7 +258,7 @@ function ChatPageContent() {
   const handleNewConversation = async () => {
     try {
       const conversation = await createConversation.mutateAsync({});
-      setMobileHistoryOpen(false);
+      setHistoryOpen(false);
       router.push(`/chat/${conversation.id}`);
     } catch (error) {
       console.error('Failed to create conversation:', error);
@@ -275,7 +279,7 @@ function ChatPageContent() {
   };
 
   const handleSelectConversation = (id: string) => {
-    setMobileHistoryOpen(false);
+    setHistoryOpen(false);
     router.push(`/chat/${id}`);
   };
 
@@ -367,21 +371,45 @@ function ChatPageContent() {
   return (
     <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 lg:ml-64 min-w-0 flex flex-col lg:flex-row">
-        {/* Mobile Header */}
-        <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between h-14 px-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex items-center gap-3">
-            <Sheet open={mobileHistoryOpen} onOpenChange={setMobileHistoryOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <History className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] p-0">
-                <SheetHeader className="p-4 border-b">
-                  <SheetTitle>Chat History</SheetTitle>
+      <main className="flex-1 lg:ml-64 min-w-0 flex flex-col">
+        {/* Unified Header - works on all screen sizes */}
+        <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center gap-2">
+            {/* History Toggle Button */}
+            <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+              <Tooltip content="Chat History" side="bottom">
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    {historyOpen ? (
+                      <PanelLeftClose className="h-5 w-5" />
+                    ) : (
+                      <PanelLeft className="h-5 w-5" />
+                    )}
+                  </Button>
+                </SheetTrigger>
+              </Tooltip>
+              <SheetContent side="left" className="w-[320px] p-0 flex flex-col">
+                <SheetHeader className="p-4 border-b shrink-0">
+                  <SheetTitle className="flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    Chat History
+                  </SheetTitle>
                   <SheetDescription className="sr-only">View and manage your previous conversations</SheetDescription>
                 </SheetHeader>
+                <div className="p-3 border-b shrink-0">
+                  <Button
+                    onClick={handleNewConversation}
+                    className="w-full"
+                    disabled={createConversation.isPending}
+                  >
+                    {createConversation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <MessageSquarePlus className="h-4 w-4 mr-2" />
+                    )}
+                    New Chat
+                  </Button>
+                </div>
                 <div className="flex-1 overflow-y-auto">
                   <ConversationList
                     conversations={conversations}
@@ -393,54 +421,35 @@ function ChatPageContent() {
                 </div>
               </SheetContent>
             </Sheet>
+
+            {/* Title */}
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-primary" />
-              <span className="font-semibold">AI Assistant</span>
+              <span className="font-semibold hidden sm:inline">Hey Argus</span>
             </div>
           </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={handleNewConversation}
-            disabled={createConversation.isPending}
-            className="h-9 w-9"
-          >
-            {createConversation.isPending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <MessageSquarePlus className="h-5 w-5" />
-            )}
-          </Button>
-        </div>
 
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:flex w-64 border-r bg-muted/30 flex-col">
-          <div className="p-4 border-b">
-            <Button
-              onClick={handleNewConversation}
-              className="w-full"
-              disabled={createConversation.isPending}
-            >
-              {createConversation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <MessageSquarePlus className="h-4 w-4 mr-2" />
-              )}
-              New Chat
-            </Button>
+          {/* Right side actions */}
+          <div className="flex items-center gap-2">
+            <Tooltip content="New Chat" side="bottom">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleNewConversation}
+                disabled={createConversation.isPending}
+                className="h-9 w-9"
+              >
+                {createConversation.isPending ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <MessageSquarePlus className="h-5 w-5" />
+                )}
+              </Button>
+            </Tooltip>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            <ConversationList
-              conversations={conversations}
-              activeConversationId={conversationId}
-              onSelect={handleSelectConversation}
-              onDelete={handleDeleteConversation}
-              isLoading={conversationsLoading}
-            />
-          </div>
-        </div>
+        </header>
 
-        {/* Chat Area */}
+        {/* Chat Area - Full width now */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
           {messagesLoading ? (
             <div className="flex-1 flex items-center justify-center">
@@ -457,7 +466,7 @@ function ChatPageContent() {
           )}
 
           {/* Backend Status - Fixed at bottom left */}
-          <div className="hidden lg:flex fixed bottom-4 left-[calc(16rem+16rem+1.5rem)] z-20 items-center gap-2 text-xs bg-background/80 backdrop-blur-sm border rounded-full px-3 py-1.5 shadow-sm">
+          <div className="hidden lg:flex fixed bottom-4 left-[calc(16rem+1.5rem)] z-20 items-center gap-2 text-xs bg-background/80 backdrop-blur-sm border rounded-full px-3 py-1.5 shadow-sm">
             <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-muted-foreground">Backend Connected</span>
           </div>

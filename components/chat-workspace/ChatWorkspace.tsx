@@ -33,6 +33,7 @@ import {
 // Chat components from existing chat system
 import { useChatState, type ChatStateResult } from '@/components/chat/hooks/useChatState';
 import { ChatModelSelector } from '@/components/chat/chat-model-selector';
+import { MarkdownRenderer } from '@/components/chat/renderers/MarkdownRenderer';
 
 // =============================================================================
 // TYPES
@@ -504,43 +505,131 @@ const ChatThread = React.memo(function ChatThread({
             </div>
           </div>
         ) : (
-          <>
+          <div className="max-w-3xl mx-auto w-full space-y-4">
             {messages.map((message) => {
-              // Extract text content from parts array (AI SDK v6 format)
+              // Extract different part types from AI SDK v6 format
               const textParts = message.parts?.filter(
                 (part): part is { type: 'text'; text: string } => part.type === 'text'
               ) || [];
+              // AI SDK v6 tool parts have type starting with 'tool-'
+              const toolParts = message.parts?.filter(
+                (part) => part.type.startsWith('tool-')
+              ) || [];
               const content = textParts.map(p => p.text).join('\n');
+
+              const isUser = message.role === 'user';
 
               return (
                 <div
                   key={message.id}
                   className={cn(
-                    'max-w-[90%] sm:max-w-[85%] p-3 rounded-lg',
-                    message.role === 'user'
-                      ? 'ml-auto bg-primary text-primary-foreground'
-                      : 'bg-muted/50 border border-border/50'
+                    'flex w-full',
+                    isUser ? 'justify-end' : 'justify-start'
                   )}
                 >
-                  <p className="text-sm whitespace-pre-wrap break-words">{content || '...'}</p>
+                  <div
+                    className={cn(
+                      'max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3',
+                      isUser
+                        ? 'bg-primary text-primary-foreground rounded-br-md'
+                        : 'bg-muted/60 border border-border/50 rounded-bl-md'
+                    )}
+                  >
+                    {isUser ? (
+                      <p className="text-sm whitespace-pre-wrap break-words">{content || '...'}</p>
+                    ) : (
+                      <div className="text-sm space-y-3">
+                        {/* Render text content */}
+                        {content && (
+                          <MarkdownRenderer
+                            content={content}
+                            className="text-foreground [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                          />
+                        )}
+
+                        {/* Render tool invocations */}
+                        {toolParts.map((toolPart, idx) => {
+                          const part = toolPart as Record<string, unknown>;
+                          const toolName = String(part.toolName || part.name || 'tool');
+                          const state = String(part.state || '');
+                          const input = part.input as Record<string, unknown> | undefined;
+                          const output = part.output as unknown;
+                          const isLoading = state === 'input-streaming' || state === 'output-streaming' || !state;
+                          const hasResult = state === 'result' || output !== undefined;
+                          const inputStr = input ? JSON.stringify(input) : '';
+                          const outputStr = output !== undefined
+                            ? (typeof output === 'string' ? output : JSON.stringify(output, null, 2))
+                            : '';
+
+                          return (
+                            <div
+                              key={`${message.id}-tool-${idx}`}
+                              className="bg-black/20 border border-border/30 rounded-lg p-3 text-xs"
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="font-mono text-primary">{toolName}</span>
+                                {isLoading && (
+                                  <span className="flex items-center gap-1 text-muted-foreground">
+                                    <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-pulse" />
+                                    Running...
+                                  </span>
+                                )}
+                                {hasResult && (
+                                  <span className="text-green-500">✓ Complete</span>
+                                )}
+                              </div>
+
+                              {input && Object.keys(input).length > 0 && (
+                                <div className="mb-2">
+                                  <span className="text-muted-foreground">Args: </span>
+                                  <code className="text-[10px] bg-black/30 px-1 py-0.5 rounded">
+                                    {inputStr.substring(0, 100)}
+                                    {inputStr.length > 100 ? '...' : ''}
+                                  </code>
+                                </div>
+                              )}
+
+                              {hasResult && outputStr && (
+                                <div className="mt-2 pt-2 border-t border-border/30">
+                                  <span className="text-muted-foreground">Result: </span>
+                                  <pre className="text-[10px] bg-black/30 p-2 rounded mt-1 overflow-x-auto max-h-32 overflow-y-auto">
+                                    {outputStr}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Show placeholder if no content and no tools */}
+                        {!content && toolParts.length === 0 && (
+                          <span className="text-muted-foreground">...</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
             <div ref={messagesEndRef} />
-          </>
+          </div>
         )}
 
         {isLoading && (
-          <div className="bg-muted/50 border border-border/50 max-w-[90%] sm:max-w-[85%] p-3 rounded-lg">
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          <div className="max-w-3xl mx-auto w-full">
+            <div className="flex justify-start">
+              <div className="max-w-[85%] sm:max-w-[75%] bg-muted/60 border border-border/50 rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {aiStatus === 'thinking' ? 'Thinking...' : 'Typing...'}
+                  </span>
+                </div>
               </div>
-              <span className="text-sm text-muted-foreground">
-                {aiStatus === 'thinking' ? 'Thinking...' : 'Typing...'}
-              </span>
             </div>
           </div>
         )}
