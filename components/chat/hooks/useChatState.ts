@@ -3,12 +3,15 @@
  *
  * Combines Zustand store with AI SDK's useChat for a unified API.
  * Handles state synchronization between local store and AI SDK.
+ *
+ * Updated for AI SDK v6 with transport-based configuration.
  */
 
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useChat, type Message } from 'ai/react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useChat, type UIMessage } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useAIPreferences } from '@/lib/hooks/use-ai-settings';
 import { useChatStore, type TestingPhase, type ActiveAgent } from '@/lib/chat/chat-store';
@@ -16,13 +19,13 @@ import { toast } from '@/lib/hooks/useToast';
 
 export interface UseChatStateOptions {
   conversationId?: string;
-  initialMessages?: Message[];
-  onMessagesChange?: (messages: Message[]) => void;
+  initialMessages?: UIMessage[];
+  onMessagesChange?: (messages: UIMessage[]) => void;
 }
 
 export interface ChatStateResult {
   // Messages
-  messages: Message[];
+  messages: UIMessage[];
   isLoading: boolean;
   error: string | null;
 
@@ -36,7 +39,7 @@ export interface ChatStateResult {
   stop: () => void;
   reload: () => void;
   append: (message: { role: 'user' | 'assistant'; content: string }) => Promise<string | null | undefined>;
-  setMessages: (messages: Message[]) => void;
+  setMessages: (messages: UIMessage[]) => void;
 
   // Agent Activity
   activeAgents: ActiveAgent[];
@@ -69,6 +72,14 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
   const conversationIdRef = useRef(conversationId);
   const onMessagesChangeRef = useRef(onMessagesChange);
 
+  // Local input state (v6 doesn't manage input)
+  const [input, setInput] = useState('');
+
+  // Input change handler
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  }, []);
+
   // Keep refs updated
   useEffect(() => {
     conversationIdRef.current = conversationId;
@@ -90,23 +101,9 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
   const isValidConversationId = conversationId &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationId);
 
-  // AI SDK useChat
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit: aiSdkSubmit,
-    isLoading,
-    setInput,
-    stop,
-    append,
-    setMessages,
-    reload,
-  } = useChat({
+  // Create transport (v6 pattern)
+  const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/chat',
-    id: isValidConversationId ? conversationId : undefined,
-    initialMessages,
-    maxSteps: 3,
     body: {
       aiConfig: aiPreferences ? {
         model: aiPreferences.defaultModel,
@@ -125,6 +122,20 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
         },
       });
     },
+  }), [aiPreferences, user?.id, getToken]);
+
+  // AI SDK v6 useChat
+  const {
+    messages,
+    sendMessage,
+    status,
+    stop,
+    setMessages,
+    regenerate,
+  } = useChat({
+    transport,
+    id: isValidConversationId ? conversationId : undefined,
+    messages: initialMessages,
     onError: (err) => {
       console.error('Chat error:', err);
       store.setError(err.message);
@@ -133,7 +144,8 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
         description: err.message || 'An error occurred while processing your request',
       });
     },
-    onFinish: (message) => {
+    // v6 onFinish receives an object with { message, messages, ... }
+    onFinish: ({ message: finishedMessage }) => {
       const currentConversationId = conversationIdRef.current;
       const currentOnMessagesChange = onMessagesChangeRef.current;
 
@@ -142,8 +154,8 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
         return;
       }
 
-      if (currentOnMessagesChange && message) {
-        currentOnMessagesChange([message]);
+      if (currentOnMessagesChange && finishedMessage) {
+        currentOnMessagesChange([finishedMessage]);
         lastSavedCountRef.current += 1;
       }
 
@@ -152,6 +164,9 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
       store.clearActiveAgents();
     },
   });
+
+  // Derive isLoading from status (v6 pattern)
+  const isLoading = status === 'streaming' || status === 'submitted';
 
   // Sync loading state to store
   useEffect(() => {
@@ -163,11 +178,15 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
     store.setMessages(messages);
   }, [messages]);
 
-  // Determine AI status
+  // Determine AI status - updated for AI SDK v6 parts-based messages
   const aiStatus = useMemo(() => {
     if (!isLoading) return 'ready' as const;
     const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.role === 'assistant' && lastMessage.content) {
+    // Check if last message has any text parts (content in v6)
+    const hasContent = lastMessage?.parts?.some(
+      (part) => part.type === 'text' && (part as { text?: string }).text
+    );
+    if (lastMessage?.role === 'assistant' && hasContent) {
       return 'typing' as const;
     }
     return 'thinking' as const;
@@ -192,10 +211,21 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Custom append function using sendMessage (v6 replacement)
+  const append = useCallback(async (message: { role: 'user' | 'assistant'; content: string }) => {
+    if (message.role === 'user') {
+      await sendMessage({ text: message.content });
+    }
+    return null;
+  }, [sendMessage]);
+
+  // Alias regenerate as reload for backwards compatibility
+  const reload = regenerate;
+
   // Enhanced submit with persistence
-  const handleSubmit = useCallback((
+  const handleSubmit = useCallback(async (
     e: React.FormEvent<HTMLFormElement>,
-    submitOptions?: { experimental_attachments?: Array<{ name: string; contentType: string; url: string }> }
+    _submitOptions?: { experimental_attachments?: Array<{ name: string; contentType: string; url: string }> }
   ) => {
     e.preventDefault();
     const userInput = input.trim();
@@ -204,23 +234,25 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
     const currentConversationId = conversationIdRef.current;
     const currentOnMessagesChange = onMessagesChangeRef.current;
 
-    // Submit to AI SDK
-    aiSdkSubmit(e, submitOptions);
+    // Clear input immediately
+    setInput('');
 
-    // Persist user message immediately
+    // Submit to AI SDK v6 using sendMessage
+    await sendMessage({ text: userInput });
+
+    // Persist user message immediately - AI SDK v6 uses parts array
     if (currentOnMessagesChange && currentConversationId) {
-      const userMessage: Message = {
+      const userMessage: UIMessage = {
         id: crypto.randomUUID(),
         role: 'user',
-        content: userInput,
-        createdAt: new Date(),
+        parts: [{ type: 'text', text: userInput }],
       };
 
       setTimeout(() => {
         currentOnMessagesChange([...messages, userMessage]);
       }, 100);
     }
-  }, [aiSdkSubmit, input, messages]);
+  }, [sendMessage, input, messages]);
 
   return {
     // Messages

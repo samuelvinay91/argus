@@ -19,7 +19,7 @@ import {
   ReactNode,
   useMemo,
 } from 'react';
-import { Message } from 'ai/react';
+import type { UIMessage } from '@ai-sdk/react';
 
 // Types for chat state
 export interface ChatSession {
@@ -51,8 +51,8 @@ export interface ChatContextValue {
   setCurrentSessionId: (id: string | null) => void;
 
   // Messages from current session
-  messages: Message[];
-  setMessages: (messages: Message[]) => void;
+  messages: UIMessage[];
+  setMessages: (messages: UIMessage[]) => void;
 
   // Active test runs
   activeTestRuns: TestRunSummary[];
@@ -97,7 +97,7 @@ interface ChatContextProviderProps {
 export function ChatContextProvider({ children }: ChatContextProviderProps) {
   // Session state
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<UIMessage[]>([]);
 
   // Test runs
   const [activeTestRuns, setActiveTestRuns] = useState<TestRunSummary[]>([]);

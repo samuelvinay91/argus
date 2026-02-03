@@ -1,6 +1,15 @@
 'use client';
 
-import { useChat, Message } from 'ai/react';
+import { useChat, type UIMessage } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import {
+  type CompatMessage,
+  getMessageContent,
+  getToolInvocations,
+  hasContent,
+  hasToolInvocations,
+  toCompatMessage,
+} from '@/lib/chat/message-compat';
 import { useRef, useEffect, useState, useCallback, memo, useMemo, Suspense, lazy } from 'react';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useAIPreferences } from '@/lib/hooks/use-ai-settings';
@@ -160,8 +169,8 @@ const getOneDarkStyle = () => import('react-syntax-highlighter/dist/esm/styles/p
 
 interface ChatInterfaceProps {
   conversationId?: string;
-  initialMessages?: Message[];
-  onMessagesChange?: (messages: Message[]) => void;
+  initialMessages?: UIMessage[];
+  onMessagesChange?: (messages: UIMessage[]) => void;
 }
 
 // AI Status types
@@ -1545,16 +1554,21 @@ function ResultDisplay({ result, onAction }: { result: unknown; onAction?: (acti
   );
 }
 
-// Message content renderer
-function MessageContent({ message, isStreaming, onAction }: { message: Message; isStreaming?: boolean; onAction?: (action: string, data: unknown) => void }) {
-  // Handle tool invocations (new AI SDK format)
-  if (message.toolInvocations && message.toolInvocations.length > 0) {
-    const isStillStreaming = isStreaming && !message.toolInvocations.some(t => t.state === 'result');
+// Message content renderer - updated for AI SDK v6 compatibility
+function MessageContent({ message, isStreaming, onAction }: { message: UIMessage; isStreaming?: boolean; onAction?: (action: string, data: unknown) => void }) {
+  // Convert to compat message for easier access
+  const compat = toCompatMessage(message);
+  const content = getMessageContent(message);
+  const toolInvocations = getToolInvocations(message);
+
+  // Handle tool invocations (supports both v5 and v6 formats)
+  if (toolInvocations.length > 0) {
+    const isStillStreaming = isStreaming && !toolInvocations.some(t => t.state === 'result');
     return (
       <div className="min-w-0 max-w-full overflow-hidden">
-        {message.content && (
+        {content && (
           <div className="min-w-0 max-w-full overflow-hidden mb-3">
-            <MarkdownRenderer content={message.content} />
+            <MarkdownRenderer content={content} />
             {isStillStreaming && (
               <motion.span
                 className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle"
@@ -1564,7 +1578,7 @@ function MessageContent({ message, isStreaming, onAction }: { message: Message; 
             )}
           </div>
         )}
-        {message.toolInvocations.map((tool, index) => (
+        {toolInvocations.map((tool, index) => (
           <ToolCallDisplay
             key={index}
             toolName={tool.toolName}
@@ -1582,7 +1596,7 @@ function MessageContent({ message, isStreaming, onAction }: { message: Message; 
   // This prevents the jarring flash from raw markdown to rendered markdown
   return (
     <div className="min-w-0 max-w-full overflow-hidden">
-      <MarkdownRenderer content={message.content} />
+      <MarkdownRenderer content={content} />
       {isStreaming && (
         <motion.span
           className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle"
@@ -1680,12 +1694,17 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   const isValidConversationId = conversationId &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationId);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setInput, stop, append, setMessages, reload } = useChat({
+  // Local input state management (AI SDK v6 doesn't manage input)
+  const [input, setInput] = useState('');
+
+  // Input change handler for controlled input
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  }, []);
+
+  // Create transport with custom fetch for auth (AI SDK v6 pattern)
+  const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/chat',
-    // Only pass ID if it's a valid UUID, otherwise let AI SDK generate one temporarily
-    id: isValidConversationId ? conversationId : undefined,
-    initialMessages,
-    maxSteps: 3, // Allow multi-step tool calls (reduced from 5 to prevent duplicate calls)
     // Pass AI config and user ID for model selection and BYOK support
     body: {
       aiConfig: aiPreferences ? {
@@ -1706,6 +1725,15 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
         },
       });
     },
+  }), [aiPreferences, user?.id, getToken]);
+
+  const { messages, sendMessage, status, stop, setMessages, regenerate } = useChat({
+    // AI SDK v6: transport handles api, body, fetch, headers
+    transport,
+    // Only pass ID if it's a valid UUID, otherwise let AI SDK generate one temporarily
+    id: isValidConversationId ? conversationId : undefined,
+    // v6 uses 'messages' instead of 'initialMessages'
+    messages: initialMessages,
     onError: (err) => {
       console.error('Chat error:', err);
       toast.error({
@@ -1713,7 +1741,8 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
         description: err.message || 'An error occurred while processing your request',
       });
     },
-    onFinish: (message) => {
+    // v6 onFinish receives an object with { message, messages, isAbort, ... }
+    onFinish: ({ message: finishedMessage }) => {
       // Use refs to get latest values, avoiding stale closures
       const currentConversationId = conversationIdRef.current;
       const currentOnMessagesChange = onMessagesChangeRef.current;
@@ -1727,13 +1756,27 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
 
       // Persist the completed AI message directly using the fresh `message` parameter
       // (not the stale `messages` array from closure which may be outdated)
-      if (currentOnMessagesChange && message) {
+      if (currentOnMessagesChange && finishedMessage) {
         // Create an array with just this completed message for persistence
-        currentOnMessagesChange([message]);
+        currentOnMessagesChange([finishedMessage]);
         lastSavedCountRef.current += 1;
       }
     },
   });
+
+  // Computed loading state from status (v6 uses status instead of isLoading)
+  const isLoading = status === 'streaming' || status === 'submitted';
+
+  // Custom append function using sendMessage (v6 replacement for append)
+  const append = useCallback(async (message: { role: 'user' | 'assistant'; content: string }) => {
+    if (message.role === 'user') {
+      await sendMessage({ text: message.content });
+    }
+    return null;
+  }, [sendMessage]);
+
+  // Alias regenerate as reload for backwards compatibility
+  const reload = regenerate;
 
   // Slash command detection (must be after useChat which declares `input`)
   const { showMenu: showSlashMenu } = useSlashCommands(input);
@@ -1754,14 +1797,16 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
 
   // Proactive intelligence engine
   const proactiveContext = useMemo(() => {
-    const recentFailures = messages.filter(m =>
-      m.toolInvocations?.some(t =>
+    // Use getToolInvocations helper for v6 compatibility
+    const recentFailures = messages.filter(m => {
+      const toolInvocations = getToolInvocations(m);
+      return toolInvocations.some(t =>
         t.state === 'result' &&
         typeof t.result === 'object' &&
         t.result !== null &&
-        ('error' in t.result || (t.result as any).success === false)
-      )
-    ).length;
+        ('error' in (t.result as object) || (t.result as Record<string, unknown>).success === false)
+      );
+    }).length;
 
     const lastVisitTime = typeof window !== 'undefined'
       ? localStorage.getItem('argus_last_visit')
@@ -1815,7 +1860,8 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   const aiStatus: AIStatus = useMemo(() => {
     if (!isLoading) return 'ready';
     const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.role === 'assistant' && lastMessage.content) {
+    // v6 uses parts array - check if there's text content
+    if (lastMessage?.role === 'assistant' && getMessageContent(lastMessage)) {
       return 'typing';
     }
     return 'thinking';
@@ -1825,12 +1871,16 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   const contextualSuggestions = useMemo(() => {
     if (messages.length === 0) return CONTEXTUAL_SUGGESTIONS.empty;
     const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
-    if (lastAssistantMessage?.toolInvocations?.some(t =>
-      t.state === 'result' && typeof t.result === 'object' && t.result && 'error' in t.result
+    if (!lastAssistantMessage) return CONTEXTUAL_SUGGESTIONS.empty;
+
+    // v6 uses getToolInvocations helper
+    const toolInvocations = getToolInvocations(lastAssistantMessage);
+    if (toolInvocations.some(t =>
+      t.state === 'result' && typeof t.result === 'object' && t.result && 'error' in (t.result as object)
     )) {
       return CONTEXTUAL_SUGGESTIONS.afterError;
     }
-    if (lastAssistantMessage?.toolInvocations?.some(t => t.state === 'result')) {
+    if (toolInvocations.some(t => t.state === 'result')) {
       return CONTEXTUAL_SUGGESTIONS.afterTest;
     }
     return CONTEXTUAL_SUGGESTIONS.empty;
@@ -1842,7 +1892,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
   }, [messages]);
 
   // Persist user message immediately when they submit (before AI responds)
-  const handleSubmitWithPersist = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitWithPersist = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const userInput = input.trim();
     if (!userInput && attachments.length === 0) return;
@@ -1851,30 +1901,35 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     const currentConversationId = conversationIdRef.current;
     const currentOnMessagesChange = onMessagesChangeRef.current;
 
-    // Submit to AI SDK with attachments if any
+    // Clear input immediately for better UX
+    setInput('');
+
+    // Submit to AI SDK v6 using sendMessage
     if (attachments.length > 0) {
-      // Use experimental_attachments for file uploads
-      handleSubmit(e, {
-        experimental_attachments: attachments.map(a => ({
-          name: a.name,
-          contentType: a.contentType,
+      // Use files for file uploads in v6 - uses mediaType not mimeType
+      await sendMessage({
+        text: userInput,
+        files: attachments.map(a => ({
+          type: 'file' as const,
           url: a.url,
+          name: a.name,
+          mediaType: a.contentType,
         })),
       });
       // Clear attachments after sending
       clearAttachments();
     } else {
-      handleSubmit(e);
+      await sendMessage({ text: userInput });
     }
 
     // Immediately persist the user message
     if (currentOnMessagesChange && currentConversationId) {
-      // Create a user message object to persist immediately
-      const userMessage: Message = {
+      // Create a user message object to persist immediately (v6 format with parts)
+      // Note: v6 UIMessage doesn't have createdAt property
+      const userMessage: UIMessage = {
         id: crypto.randomUUID(),
         role: 'user',
-        content: userInput,
-        createdAt: new Date(),
+        parts: [{ type: 'text', text: userInput }],
       };
 
       // Call with just the user message - the parent will handle deduplication
@@ -1884,7 +1939,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
         currentOnMessagesChange([...messages, userMessage]);
       }, 100);
     }
-  }, [handleSubmit, input, messages, attachments, clearAttachments]);
+  }, [sendMessage, input, messages, attachments, clearAttachments]);
 
   // Handle actions from tool result cards (test preview, web search, etc.)
   const handleTestPreviewAction = useCallback((action: string, data: unknown) => {
@@ -2226,8 +2281,8 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                 const isEditing = editingMessageId === message.id;
                 const isLastAssistantMessage = isLastMessage && message.role === 'assistant' && !isLoading;
 
-                // Extract artifacts from assistant messages
-                const messageArtifacts = message.role === 'assistant' ? extractArtifactsFromContent(message.content) : [];
+                // Extract artifacts from assistant messages (v6 uses parts)
+                const messageArtifacts = message.role === 'assistant' ? extractArtifactsFromContent(getMessageContent(message)) : [];
 
                 return (
                   <motion.div
@@ -2280,7 +2335,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                             </div>
                           ) : (
                             <div className="min-w-0 max-w-full overflow-hidden text-primary-foreground [&_p]:text-primary-foreground [&_a]:text-primary-foreground [&_code]:bg-primary-foreground/20">
-                              <MarkdownRenderer content={message.content} />
+                              <MarkdownRenderer content={getMessageContent(message)} />
                             </div>
                           )
                         ) : (
@@ -2317,7 +2372,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleStartEditMessage(message.id, message.content)}
+                              onClick={() => handleStartEditMessage(message.id, getMessageContent(message))}
                               className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                               title="Edit message"
                             >

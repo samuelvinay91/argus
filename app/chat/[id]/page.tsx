@@ -41,7 +41,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { safeFormatDistanceToNow } from '@/lib/utils';
-import type { Message } from 'ai/react';
+import type { UIMessage } from '@ai-sdk/react';
 import type { ChatMessage } from '@/lib/supabase/types';
 
 // UUID validation helper
@@ -226,43 +226,27 @@ function ChatPageContent() {
     }
   }, [conversations, conversationsLoading, conversationId]);
 
-  // Convert stored messages to AI SDK format - computed directly, not in useEffect
+  // Convert stored messages to AI SDK v6 format - using parts array
   // This fixes the race condition where ChatInterface mounted before messages were converted
-  const initialMessages: Message[] = useMemo(() => {
+  const initialMessages: UIMessage[] = useMemo(() => {
     if (!storedMessages || storedMessages.length === 0 || !conversationId) {
       return [];
     }
 
     return storedMessages.map((msg: ChatMessage) => {
-      // For messages with incomplete tool invocations (state='call'), mark them as completed
-      // to prevent Claude from trying to continue old executions
-      let toolInvocations = msg.tool_invocations as unknown as Message['toolInvocations'];
+      // Build parts array for the AI SDK v6 message format
+      const parts: UIMessage['parts'] = [];
 
-      // If this is an assistant message with pending tool calls, convert them to show as "interrupted"
-      if (toolInvocations && Array.isArray(toolInvocations)) {
-        toolInvocations = toolInvocations.map((tool: any) => {
-          if (tool.state === 'call') {
-            // Mark incomplete tool calls as completed with an "interrupted" result
-            return {
-              ...tool,
-              state: 'result',
-              result: {
-                success: false,
-                error: 'Session interrupted - this action was not completed',
-                interrupted: true,
-              },
-            };
-          }
-          return tool;
-        });
+      // Add text content as a text part
+      if (msg.content) {
+        parts.push({ type: 'text', text: msg.content });
       }
 
       return {
         id: msg.id,
         role: msg.role as 'user' | 'assistant' | 'system',
-        content: msg.content,
-        createdAt: new Date(msg.created_at),
-        toolInvocations,
+        parts,
+        createdAt: msg.created_at ? new Date(msg.created_at) : undefined,
       };
     });
   }, [storedMessages, conversationId]);
@@ -295,8 +279,8 @@ function ChatPageContent() {
     router.push(`/chat/${id}`);
   };
 
-  // Message persistence callback
-  const handleMessagesChange = useCallback(async (messages: Message[]) => {
+  // Message persistence callback - AI SDK v6 uses parts-based format
+  const handleMessagesChange = useCallback(async (messages: UIMessage[]) => {
     const currentConversationId = conversationIdRef.current;
 
     if (!isValidUUID(currentConversationId)) {
@@ -308,12 +292,22 @@ function ChatPageContent() {
 
     const latestMessage = messages[messages.length - 1];
 
+    // Extract text content from parts array (AI SDK v6 format)
+    const textParts = latestMessage.parts?.filter(
+      (part): part is { type: 'text'; text: string } => part.type === 'text'
+    ) || [];
+    const content = textParts.map(p => p.text).join('\n').trim();
+
     // Skip saving if content is empty (can happen during streaming or tool invocations)
-    const content = latestMessage.content?.trim() || '';
     if (!content) {
       console.debug('Skipping save: message has empty content (likely still streaming)');
       return;
     }
+
+    // Extract tool invocations from parts (AI SDK v6 format)
+    const toolParts = latestMessage.parts?.filter(
+      (part) => part.type === 'tool-invocation'
+    ) || [];
 
     // Check if already stored
     const isStored = storedMessages.some(
@@ -328,7 +322,7 @@ function ChatPageContent() {
         conversation_id: currentConversationId,
         role: latestMessage.role as 'user' | 'assistant' | 'system',
         content: content,
-        tool_invocations: latestMessage.toolInvocations as unknown as Record<string, unknown> | null,
+        tool_invocations: toolParts.length > 0 ? toolParts as unknown as Record<string, unknown> : null,
       });
     } catch (error) {
       console.error('Failed to save message:', error);

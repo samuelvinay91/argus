@@ -1,7 +1,8 @@
 'use client';
 
 import { memo, useState, useMemo, useCallback } from 'react';
-import { Message } from 'ai/react';
+import type { UIMessage } from '@ai-sdk/react';
+import { getToolInvocations } from '@/lib/chat/message-compat';
 import {
   Images,
   X,
@@ -54,7 +55,7 @@ interface ScreenshotGroup {
 }
 
 interface SessionScreenshotsPanelProps {
-  messages: Message[];
+  messages: UIMessage[];
   isOpen: boolean;
   onClose: () => void;
   className?: string;
@@ -131,16 +132,22 @@ function formatScreenshotSrc(src: string): string {
   return `data:image/png;base64,${src}`;
 }
 
-function extractScreenshotsFromMessages(messages: Message[]): Screenshot[] {
+function extractScreenshotsFromMessages(messages: UIMessage[]): Screenshot[] {
   const screenshots: Screenshot[] = [];
   const seenIds = new Set<string>();
 
   messages.forEach((message) => {
-    if (message.role !== 'assistant' || !message.toolInvocations) {
+    if (message.role !== 'assistant') {
       return;
     }
 
-    message.toolInvocations.forEach((tool) => {
+    // Use v6 helper to extract tool invocations from parts array
+    const toolInvocations = getToolInvocations(message);
+    if (toolInvocations.length === 0) {
+      return;
+    }
+
+    toolInvocations.forEach((tool) => {
       if (tool.state !== 'result' || !tool.result) {
         return;
       }
@@ -148,7 +155,8 @@ function extractScreenshotsFromMessages(messages: Message[]): Screenshot[] {
       const result = tool.result as Record<string, unknown>;
       const toolName = tool.toolName;
       const toolLabel = TOOL_LABELS[toolName] || toolName;
-      const timestamp = message.createdAt ? new Date(message.createdAt) : new Date();
+      // v6 UIMessage doesn't have createdAt
+      const timestamp = new Date();
 
       // Extract from 'screenshots' array
       if (Array.isArray(result.screenshots)) {

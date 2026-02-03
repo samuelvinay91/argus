@@ -10,14 +10,14 @@
 
 import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { useVirtualizer, type VirtualItem, type Virtualizer } from '@tanstack/react-virtual';
-import type { Message } from 'ai/react';
+import type { UIMessage } from '@ai-sdk/react';
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 export interface VirtualizedMessage {
-  message: Message;
+  message: UIMessage;
   virtualItem: VirtualItem;
   isFirst: boolean;
   isLast: boolean;
@@ -25,9 +25,9 @@ export interface VirtualizedMessage {
 }
 
 export interface UseMessageVirtualizationOptions {
-  messages: Message[];
+  messages: UIMessage[];
   streamingMessageId?: string | null;
-  estimateMessageHeight?: (message: Message) => number;
+  estimateMessageHeight?: (message: UIMessage) => number;
   overscan?: number;
   scrollPaddingStart?: number;
   scrollPaddingEnd?: number;
@@ -65,18 +65,27 @@ export interface MessageVirtualizationResult {
 /**
  * Estimate message height based on content
  * More accurate estimates = smoother scrolling
+ * Updated for AI SDK v6 parts-based messages
  */
-export function estimateMessageHeight(message: Message): number {
+export function estimateMessageHeight(message: UIMessage): number {
   const baseHeight = 80; // Avatar + padding
   const charHeight = 20; // ~20px per line
   const codeBlockHeight = 150; // Average code block height
 
-  const content = message.content || '';
+  // Extract text content from parts array (v6 format)
+  const textParts = message.parts?.filter(
+    (part): part is { type: 'text'; text: string } => part.type === 'text'
+  ) || [];
+  const content = textParts.map(p => p.text).join('\n');
+
   const lineCount = Math.ceil(content.length / 80); // ~80 chars per line
   const codeBlocks = (content.match(/```/g) || []).length / 2;
 
-  // Tool invocations add height
-  const toolHeight = (message.toolInvocations?.length || 0) * 120;
+  // Count tool invocation parts (v6 format)
+  const toolParts = message.parts?.filter(
+    (part) => part.type === 'tool-invocation'
+  ) || [];
+  const toolHeight = toolParts.length * 120;
 
   return baseHeight +
     (lineCount * charHeight) +

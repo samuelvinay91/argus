@@ -12,7 +12,7 @@
  */
 
 import { anthropic } from '@ai-sdk/anthropic';
-import { streamText, tool, convertToCoreMessages, CoreMessage } from 'ai';
+import { streamText, tool, convertToModelMessages, type ModelMessage } from 'ai';
 import { z } from 'zod';
 import { WORKER_URL, BACKEND_URL } from '@/lib/config/api-endpoints';
 
@@ -112,7 +112,8 @@ export async function POST(req: Request) {
     // Convert messages using AI SDK to properly handle attachments
     // This transforms experimental_attachments into the correct format for Claude
     // Attachments (images, documents) are converted to multimodal content parts
-    const coreMessages: CoreMessage[] = convertToCoreMessages(messages);
+    // Note: v6 convertToModelMessages is async (handles attachment fetching)
+    const coreMessages: ModelMessage[] = await convertToModelMessages(messages);
 
     // Check if Python backend is available
     const backendAvailable = await isBackendAvailable();
@@ -136,7 +137,7 @@ export async function POST(req: Request) {
         }
 
         // Use coreMessages which properly handles multimodal content (images, attachments)
-        // The convertToCoreMessages function transforms experimental_attachments into
+        // The convertToModelMessages function transforms experimental_attachments into
         // content arrays with image_url parts for images
         const response = await fetchWithTimeout(`${BACKEND_URL}/api/v1/chat/stream`, {
           method: 'POST',
@@ -272,7 +273,7 @@ MULTIMODAL SUPPORT:
         // Execute a browser action using natural language
         executeAction: tool({
           description: 'Execute a browser action like clicking, typing, or navigating. Use for quick single actions.',
-          parameters: z.object({
+          inputSchema: z.object({
             url: z.string().describe('URL of the page to test'),
             instruction: z.string().describe('Natural language instruction (e.g., "Click the login button")'),
           }),
@@ -314,7 +315,7 @@ MULTIMODAL SUPPORT:
         // Run a multi-step test
         runTest: tool({
           description: 'Run a multi-step E2E test with self-healing and screenshots. Use for quick test execution.',
-          parameters: z.object({
+          inputSchema: z.object({
             url: z.string().describe('Application URL to test'),
             steps: z.array(z.string()).describe('Array of test step instructions'),
             browser: z.string().optional().describe('Browser to use (chrome, firefox, safari)'),
@@ -377,7 +378,7 @@ MULTIMODAL SUPPORT:
         // Discover interactive elements on a page
         discoverElements: tool({
           description: 'Discover interactive elements and possible actions on a page',
-          parameters: z.object({
+          inputSchema: z.object({
             url: z.string().describe('URL to analyze'),
             instruction: z.string().optional().describe('What to look for (e.g., "Find all buttons")'),
           }),
@@ -411,7 +412,7 @@ MULTIMODAL SUPPORT:
         // Extract data from a page
         extractData: tool({
           description: 'Extract structured data from a web page',
-          parameters: z.object({
+          inputSchema: z.object({
             url: z.string().describe('URL to extract data from'),
             instruction: z.string().describe('What data to extract'),
             schema: z.record(z.string(), z.string()).optional().describe('Expected data schema'),
@@ -447,7 +448,7 @@ MULTIMODAL SUPPORT:
         // Run an autonomous agent task
         runAgent: tool({
           description: 'Run an autonomous agent to complete a complex task with screenshots',
-          parameters: z.object({
+          inputSchema: z.object({
             url: z.string().describe('Starting URL'),
             instruction: z.string().describe('Task to complete (e.g., "Sign up for a new account")'),
             maxSteps: z.number().optional().describe('Maximum steps to take'),
@@ -511,7 +512,7 @@ MULTIMODAL SUPPORT:
         // Check system status
         checkSystemStatus: tool({
           description: 'Check the status of Argus components (Brain and Browser Worker)',
-          parameters: z.object({}),
+          inputSchema: z.object({}),
           execute: async () => {
             const [brainStatus, workerStatus] = await Promise.all([
               isBackendAvailable().then(ok => ({
@@ -542,7 +543,7 @@ MULTIMODAL SUPPORT:
       },
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error) {
     console.error('Chat API error:', error);
     return new Response(

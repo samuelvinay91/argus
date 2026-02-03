@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useChatStore } from '@/lib/chat/chat-store';
-import type { Message } from 'ai/react';
+import type { UIMessage } from '@ai-sdk/react';
 
 // =============================================================================
 // TYPES
@@ -106,7 +106,7 @@ export function useMessagePagination(
       }
 
       const data = await response.json();
-      const newMessages: Message[] = data.messages || [];
+      const newMessages: UIMessage[] = data.messages || [];
       const hasMore = data.hasMore ?? (newMessages.length === pageSize);
 
       if (newMessages.length > 0) {

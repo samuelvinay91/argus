@@ -10,7 +10,7 @@
 
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import type { Message } from 'ai/react';
+import type { UIMessage } from '@ai-sdk/react';
 
 // =============================================================================
 // TYPES
@@ -79,7 +79,7 @@ export type AIStatus = 'ready' | 'thinking' | 'typing';
 export interface ChatState {
   // === Conversation State ===
   conversationId: string | null;
-  messages: Message[];
+  messages: UIMessage[];
   isLoading: boolean;
   error: string | null;
 
@@ -110,9 +110,9 @@ export interface ChatState {
   // === Actions ===
   // Conversation
   setConversationId: (id: string | null) => void;
-  setMessages: (messages: Message[]) => void;
-  addMessage: (message: Message) => void;
-  updateMessage: (id: string, updates: Partial<Message>) => void;
+  setMessages: (messages: UIMessage[]) => void;
+  addMessage: (message: UIMessage) => void;
+  updateMessage: (id: string, updates: Partial<UIMessage>) => void;
   removeMessage: (id: string) => void;
   clearMessages: () => void;
 
@@ -140,7 +140,7 @@ export interface ChatState {
   // Pagination
   setHasMoreMessages: (hasMore: boolean) => void;
   setLoadingMore: (loading: boolean) => void;
-  prependMessages: (messages: Message[]) => void;
+  prependMessages: (messages: UIMessage[]) => void;
   setOldestMessageId: (id: string | null) => void;
 
   // UI

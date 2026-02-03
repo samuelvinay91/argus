@@ -8,7 +8,7 @@
 'use client';
 
 import { createContext, useContext, type ReactNode } from 'react';
-import type { Message } from 'ai/react';
+import type { UIMessage } from '@ai-sdk/react';
 import { useChatState, type ChatStateResult } from '../hooks/useChatState';
 
 // =============================================================================
@@ -24,8 +24,8 @@ const ChatContext = createContext<ChatStateResult | null>(null);
 export interface ChatProviderProps {
   children: ReactNode;
   conversationId?: string;
-  initialMessages?: Message[];
-  onMessagesChange?: (messages: Message[]) => void;
+  initialMessages?: UIMessage[];
+  onMessagesChange?: (messages: UIMessage[]) => void;
 }
 
 // =============================================================================

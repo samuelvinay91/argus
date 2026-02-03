@@ -10,8 +10,9 @@
 import { memo, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { User, Pencil, RotateCcw, PanelRightOpen } from 'lucide-react';
-import type { Message } from 'ai/react';
+import type { UIMessage } from '@ai-sdk/react';
 import { cn } from '@/lib/utils';
+import { getMessageContent } from '@/lib/chat/message-compat';
 import { Button } from '@/components/ui/button';
 import { useChatContext } from '../core/ChatProvider';
 import { AIAvatar } from './AIAvatar';
@@ -23,7 +24,7 @@ import { AssistantMessage } from './AssistantMessage';
 // =============================================================================
 
 export interface MessageItemProps {
-  message: Message;
+  message: UIMessage;
   isStreaming?: boolean;
   isLast?: boolean;
   onAction?: (action: string, data: unknown) => void;
@@ -34,7 +35,7 @@ export interface MessageItemProps {
 // =============================================================================
 
 interface MessageActionsProps {
-  message: Message;
+  message: UIMessage;
   isUser: boolean;
   isLastAssistant: boolean;
   onEdit?: () => void;
@@ -121,6 +122,9 @@ export const MessageItem = memo(function MessageItem({
   const isAssistant = message.role === 'assistant';
   const isLastAssistant = isLast && isAssistant && !isLoading;
 
+  // Get text content from message (v6 uses parts array)
+  const messageContent = useMemo(() => getMessageContent(message), [message]);
+
   // Extract artifacts from content (code blocks)
   const artifacts = useMemo(() => {
     if (!isAssistant) return [];
@@ -129,7 +133,7 @@ export const MessageItem = memo(function MessageItem({
     const extracted: Array<{ language: string; code: string }> = [];
     let match;
 
-    while ((match = codeBlockPattern.exec(message.content)) !== null) {
+    while ((match = codeBlockPattern.exec(messageContent)) !== null) {
       const code = match[2].trim();
       if (code.length > 50) {
         extracted.push({
@@ -140,13 +144,13 @@ export const MessageItem = memo(function MessageItem({
     }
 
     return extracted;
-  }, [isAssistant, message.content]);
+  }, [isAssistant, messageContent]);
 
   // Handlers
   const handleStartEdit = useCallback(() => {
-    setEditContent(message.content);
+    setEditContent(messageContent);
     setIsEditing(true);
-  }, [message.content]);
+  }, [messageContent]);
 
   const handleCancelEdit = useCallback(() => {
     setIsEditing(false);
@@ -200,7 +204,7 @@ export const MessageItem = memo(function MessageItem({
       <div className={cn('flex gap-3 min-w-0 max-w-full group justify-end')}>
         <div className="flex flex-col min-w-0 max-w-[90%] sm:max-w-[85%]">
           <UserMessage
-            content={message.content}
+            content={messageContent}
             isEditing={isEditing}
             editContent={editContent}
             onEditChange={setEditContent}
@@ -263,7 +267,7 @@ export const MessageItem = memo(function MessageItem({
   return (
     <div className="flex justify-center">
       <div className="text-sm text-muted-foreground bg-muted/50 px-4 py-2 rounded-lg">
-        {message.content}
+        {messageContent}
       </div>
     </div>
   );

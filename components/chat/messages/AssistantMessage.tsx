@@ -10,10 +10,11 @@
 
 'use client';
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import type { Message } from 'ai/react';
+import type { UIMessage } from '@ai-sdk/react';
 import { cn } from '@/lib/utils';
+import { getMessageContent, getToolInvocations, hasToolInvocations } from '@/lib/chat/message-compat';
 import { MarkdownRenderer } from '../renderers/MarkdownRenderer';
 import { ToolCallDisplay } from '../renderers/ToolCallDisplay';
 import { ArtifactTrigger } from '../artifacts-panel';
@@ -23,7 +24,7 @@ import { ArtifactTrigger } from '../artifacts-panel';
 // =============================================================================
 
 export interface AssistantMessageProps {
-  message: Message;
+  message: UIMessage;
   isStreaming?: boolean;
   onAction?: (action: string, data: unknown) => void;
   artifacts?: Array<{ language: string; code: string }>;
@@ -91,26 +92,29 @@ export const AssistantMessage = memo(function AssistantMessage({
   artifacts = [],
   className,
 }: AssistantMessageProps) {
-  // Check for tool invocations
-  const hasToolInvocations = message.toolInvocations && message.toolInvocations.length > 0;
-  const isToolsStillStreaming = isStreaming && hasToolInvocations &&
-    !message.toolInvocations?.some(t => t.state === 'result');
+  // Extract content and tool invocations using v6 helpers
+  const messageContent = useMemo(() => getMessageContent(message), [message]);
+  const toolInvocations = useMemo(() => getToolInvocations(message), [message]);
+  const hasTools = hasToolInvocations(message);
+
+  const isToolsStillStreaming = isStreaming && hasTools &&
+    !toolInvocations.some(t => t.state === 'result');
 
   return (
     <MessageBubble className={className}>
       {/* Text content */}
-      {message.content && (
+      {messageContent && (
         <div className="min-w-0 max-w-full overflow-hidden">
-          <MarkdownRenderer content={message.content} />
-          {(isStreaming && !hasToolInvocations) && <StreamingCursor />}
+          <MarkdownRenderer content={messageContent} />
+          {(isStreaming && !hasTools) && <StreamingCursor />}
           {isToolsStillStreaming && <StreamingCursor />}
         </div>
       )}
 
       {/* Tool invocations */}
-      {hasToolInvocations && (
-        <div className={cn('min-w-0 max-w-full overflow-hidden', message.content && 'mt-3')}>
-          {message.toolInvocations!.map((tool, index) => (
+      {hasTools && (
+        <div className={cn('min-w-0 max-w-full overflow-hidden', messageContent && 'mt-3')}>
+          {toolInvocations.map((tool, index) => (
             <ToolCallDisplay
               key={`${tool.toolName}-${index}`}
               toolName={tool.toolName}

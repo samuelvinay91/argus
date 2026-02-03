@@ -16,7 +16,7 @@
 'use client';
 
 import { memo, useState, useCallback } from 'react';
-import type { Message } from 'ai/react';
+import type { UIMessage } from '@ai-sdk/react';
 import { AnimatePresence } from 'framer-motion';
 
 // Core components
@@ -51,8 +51,8 @@ import { ArtifactsPanel, Artifact } from './artifacts-panel';
 
 export interface ChatInterfaceProps {
   conversationId?: string;
-  initialMessages?: Message[];
-  onMessagesChange?: (messages: Message[]) => void;
+  initialMessages?: UIMessage[];
+  onMessagesChange?: (messages: UIMessage[]) => void;
 }
 
 // =============================================================================
