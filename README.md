@@ -2,8 +2,8 @@
 
 <div align="center">
   <img src="public/argus-logo.png" alt="Argus Logo" width="120" />
-  <h3>AI-Powered E2E Testing Platform</h3>
-  <p>Autonomous end-to-end testing with Claude AI integration</p>
+  <h3>Autonomous Intelligence Agent for Quality</h3>
+  <p>AI-powered quality intelligence platform with Claude AI integration</p>
 
   [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/RaphaEnterprises-AI/argus/releases)
   [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)

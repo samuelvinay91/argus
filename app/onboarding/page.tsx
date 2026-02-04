@@ -352,7 +352,7 @@ export default function OnboardingPage() {
                 </div>
                 <CardTitle className="text-3xl">Welcome to Argus!</CardTitle>
                 <CardDescription className="text-lg">
-                  Your AI-powered E2E testing companion
+                  Your Autonomous Intelligence Agent for Quality
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6 pt-6">
