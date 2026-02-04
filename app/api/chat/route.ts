@@ -14,7 +14,7 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { streamText, tool, convertToModelMessages, type ModelMessage } from 'ai';
 import { z } from 'zod';
-import { WORKER_URL, BACKEND_URL } from '@/lib/config/api-endpoints';
+import { BACKEND_URL } from '@/lib/config/api-endpoints';
 
 // Use Edge runtime to avoid serverless function size limits
 export const runtime = 'edge';
@@ -437,7 +437,7 @@ MULTIMODAL SUPPORT:
           }),
           execute: async ({ url, instruction, schema }) => {
             try {
-              const response = await fetchWithTimeout(`${WORKER_URL}/extract`, {
+              const response = await fetchWithTimeout(`${BACKEND_URL}/api/v1/browser/extract`, {
                 method: 'POST',
                 headers: toolAuthHeaders,
                 body: JSON.stringify({
@@ -477,7 +477,7 @@ MULTIMODAL SUPPORT:
             const timeout = Math.max(180000, steps * 45000 + 60000);
 
             try {
-              const response = await fetchWithTimeout(`${WORKER_URL}/agent`, {
+              const response = await fetchWithTimeout(`${BACKEND_URL}/api/v1/browser/agent`, {
                 method: 'POST',
                 headers: toolAuthHeaders,
                 body: JSON.stringify({

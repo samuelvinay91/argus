@@ -8,8 +8,16 @@
  */
 
 /**
- * Cloudflare Worker URL for browser automation (E2E testing)
- * Used for: test execution, visual testing, quality observations
+ * @deprecated Use BACKEND_URL with /api/v1/browser/* endpoints instead.
+ * The Cloudflare Worker is deprecated - all browser automation now routes
+ * through the Python backend which connects to the Browser Pool/Selenium Grid.
+ *
+ * Browser endpoints available on BACKEND_URL:
+ * - /api/v1/browser/test - Run multi-step tests
+ * - /api/v1/browser/act - Execute single actions
+ * - /api/v1/browser/observe - Discover page elements
+ * - /api/v1/browser/extract - Extract structured data
+ * - /api/v1/browser/agent - Run autonomous agent tasks
  */
 export const WORKER_URL =
   process.env.NEXT_PUBLIC_E2E_WORKER_URL ||
