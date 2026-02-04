@@ -103,12 +103,28 @@ interface ChatModelSelectorProps {
 
 export function ChatModelSelector({ className, compact = false }: ChatModelSelectorProps) {
   const [open, setOpen] = useState(false);
-  const { data: preferences, isLoading: prefsLoading } = useAIPreferences();
-  const { data: modelsData, isLoading: modelsLoading } = useAvailableModels();
+  const { data: preferences, isLoading: prefsLoading, error: prefsError } = useAIPreferences();
+  const { data: modelsData, isLoading: modelsLoading, error: modelsError } = useAvailableModels();
   const { mutateAsync: updatePreferences, isPending: isUpdating } = useUpdateAIPreferences();
 
   const currentModel = preferences?.defaultModel || 'claude-sonnet-4-5';
   const currentProvider = preferences?.defaultProvider || 'anthropic';
+
+  // Debug logging
+  useEffect(() => {
+    if (!modelsLoading) {
+      const totalModels = modelsData?.models?.length || 0;
+      const availableModels = modelsData?.models?.filter(m => m.isAvailable).length || 0;
+      const userProviders = modelsData?.userProviders || [];
+      console.log('[ModelSelector] Data loaded:', {
+        totalModels,
+        availableModels,
+        userProviders,
+        prefsError: prefsError?.message,
+        modelsError: modelsError?.message,
+      });
+    }
+  }, [modelsLoading, modelsData, prefsError, modelsError]);
 
   // Get current model info
   const currentModelInfo = useMemo(() => {
@@ -225,9 +241,17 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
           {Object.keys(modelsByProvider).length === 0 ? (
             <div className="px-4 py-8 text-center">
               <p className="text-sm font-medium">No models available</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Add API keys in Settings → AI Hub
+              <p className="text-xs text-muted-foreground mt-1 mb-3">
+                {modelsData?.models?.length
+                  ? `${modelsData.models.length} models found, but none are available for your configured providers.`
+                  : 'Unable to load models from the server.'}
               </p>
+              <a
+                href="/settings/ai-hub/providers"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                Add API keys in AI Hub →
+              </a>
             </div>
           ) : (
             <div className="p-2">
