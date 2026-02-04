@@ -159,15 +159,18 @@ export function ChatModelSelector({ className, compact = false }: ChatModelSelec
   // Handle model selection
   const handleSelectModel = useCallback(
     async (model: ModelInfo) => {
-      console.log('[ModelSelector] Selecting model:', model.modelId);
+      console.log('[ModelSelector] Selecting model:', model.modelId, 'provider:', model.provider);
       try {
-        await updatePreferences({
+        const result = await updatePreferences({
           defaultModel: model.modelId,
           defaultProvider: model.provider,
         });
+        console.log('[ModelSelector] Update success:', result);
         setOpen(false);
       } catch (error) {
         console.error('[ModelSelector] Failed to update:', error);
+        // Show error to user
+        alert(`Failed to update model: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     },
     [updatePreferences]
