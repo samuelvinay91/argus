@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -50,7 +51,7 @@ export default clerkMiddleware(async (auth, request) => {
 
   // Handle authenticated users on home page - redirect to dashboard
   if (userId && url.pathname === '/') {
-    return Response.redirect(new URL('/dashboard', request.url), 302);
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   // Handle unauthenticated users
@@ -62,21 +63,16 @@ export default clerkMiddleware(async (auth, request) => {
 
     // For API routes, return 401 instead of redirecting
     if (isApiRoute(request)) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized', message: 'Please sign in to access this resource' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Please sign in to access this resource' },
+        { status: 401 }
       );
     }
 
-    // For RSC prefetch requests, return 401 to trigger client-side navigation
+    // For RSC prefetch requests, rewrite to sign-in page
     // This avoids CORS issues when Clerk tries to redirect prefetch requests
     if (isRscRequest(request)) {
-      return new Response(null, {
-        status: 401,
-        headers: {
-          'x-middleware-rewrite': new URL('/sign-in', request.url).toString(),
-        }
-      });
+      return NextResponse.rewrite(new URL('/sign-in', request.url));
     }
 
     // For regular page routes, redirect to sign-in
