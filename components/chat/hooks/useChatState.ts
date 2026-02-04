@@ -304,21 +304,21 @@ export function useChatState(options: UseChatStateOptions = {}): ChatStateResult
     // Clear input immediately
     setInput('');
 
-    // Submit to AI SDK v6 using sendMessage
-    await sendMessage({ text: userInput });
-
-    // Persist user message immediately - AI SDK v6 uses parts array
+    // CRITICAL: Persist user message BEFORE sending to AI
+    // This prevents race condition where assistant response
+    // could be saved before the user message
     if (currentOnMessagesChange && currentConversationId) {
       const userMessage: UIMessage = {
         id: crypto.randomUUID(),
         role: 'user',
         parts: [{ type: 'text', text: userInput }],
       };
-
-      setTimeout(() => {
-        currentOnMessagesChange([...messages, userMessage]);
-      }, 100);
+      // Save user message synchronously before streaming starts
+      currentOnMessagesChange([...messages, userMessage]);
     }
+
+    // Now submit to AI SDK v6 - streaming will start after user message is saved
+    await sendMessage({ text: userInput });
   }, [sendMessage, input, messages]);
 
   return {
