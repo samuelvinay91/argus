@@ -232,12 +232,20 @@ function ChatPageContent() {
 
   // Convert stored messages to AI SDK v6 format - using parts array
   // This fixes the race condition where ChatInterface mounted before messages were converted
+  // IMPORTANT: Sort by created_at to ensure correct chronological order
   const initialMessages: UIMessage[] = useMemo(() => {
     if (!storedMessages || storedMessages.length === 0 || !conversationId) {
       return [];
     }
 
-    return storedMessages.map((msg: ChatMessage) => {
+    // Sort messages by created_at to ensure correct order (oldest first)
+    const sortedMessages = [...storedMessages].sort((a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateA - dateB;
+    });
+
+    return sortedMessages.map((msg: ChatMessage) => {
       // Build parts array for the AI SDK v6 message format
       const parts: UIMessage['parts'] = [];
 
