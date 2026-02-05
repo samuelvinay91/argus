@@ -52,6 +52,14 @@ const serwist = new Serwist({
       matcher: /^https:\/\/assets\.apollo\.io\/.*/i,
       handler: new NetworkOnly(),
     },
+    {
+      matcher: /^https:\/\/aplo-evnt\.com\/.*/i,
+      handler: new NetworkOnly(),
+    },
+    {
+      matcher: /^https:\/\/pro\.ip-api\.com\/.*/i,
+      handler: new NetworkOnly(),
+    },
     // Include default caching strategies for Next.js assets
     ...defaultCache,
   ],
