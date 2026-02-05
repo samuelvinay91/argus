@@ -1,6 +1,6 @@
 {
   "name": "argus-dashboard",
-  "version": "1.9.1",
+  "version": "2.0.0",
   "description": "Argus - Agentic AI Quality Intelligence",
   "private": true,
   "scripts": {
