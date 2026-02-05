@@ -265,6 +265,12 @@ export default function RootLayout({
               __html: `!function(key){if(window.reb2b)return;window.reb2b={loaded:true};var s=document.createElement("script");s.async=true;s.src="https://ddwl4m2hdecbv.cloudfront.net/b/"+key+"/"+key+".js.gz";document.getElementsByTagName("script")[0].parentNode.insertBefore(s,document.getElementsByTagName("script")[0]);}("4O7Z0HE8RXNX")`,
             }}
           />
+          {/* Apollo.io Website Tracking */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `function initApollo(){var n=Math.random().toString(36).substring(7),o=document.createElement("script");o.src="https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache="+n,o.async=!0,o.defer=!0,o.onload=function(){window.trackingFunctions.onLoad({appId:"698433f8b8d9480011c24307"})},document.head.appendChild(o)}initApollo();`,
+            }}
+          />
         </head>
         <body className={inter.className} suppressHydrationWarning>
           <a href="#main-content" className="skip-link">
