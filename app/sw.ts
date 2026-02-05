@@ -43,6 +43,15 @@ const serwist = new Serwist({
       matcher: /^https:\/\/.*\.supabase\.co\/.*/i,
       handler: new NetworkOnly(),
     },
+    // Tracking scripts - bypass service worker to avoid CSP issues
+    {
+      matcher: /^https:\/\/ddwl4m2hdecbv\.cloudfront\.net\/.*/i,
+      handler: new NetworkOnly(),
+    },
+    {
+      matcher: /^https:\/\/assets\.apollo\.io\/.*/i,
+      handler: new NetworkOnly(),
+    },
     // Include default caching strategies for Next.js assets
     ...defaultCache,
   ],
