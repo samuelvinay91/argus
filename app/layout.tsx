@@ -259,8 +259,14 @@ export default function RootLayout({
               __html: `if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(function(r){for(var i of r)i.unregister()})}`,
             }}
           />
+          {/* ReB2B Analytics Tracking */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `!function(key){if(window.reb2b)return;window.reb2b={loaded:true};var s=document.createElement("script");s.async=true;s.src="https://ddwl4m2hdecbv.cloudfront.net/b/"+key+"/"+key+".js.gz";document.getElementsByTagName("script")[0].parentNode.insertBefore(s,document.getElementsByTagName("script")[0]);}("4O7Z0HE8RXNX")`,
+            }}
+          />
         </head>
-        <body className={inter.className}>
+        <body className={inter.className} suppressHydrationWarning>
           <a href="#main-content" className="skip-link">
             Skip to main content
           </a>
