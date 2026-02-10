@@ -11,7 +11,7 @@ import { VersionBadge } from '@/components/ui/version-badge';
 // Mock the version module
 vi.mock('@/lib/version', () => ({
   APP_VERSION: '1.2.3',
-  APP_NAME: 'Argus',
+  APP_NAME: 'Skopaq',
 }));
 
 describe('VersionBadge Component', () => {
@@ -23,12 +23,12 @@ describe('VersionBadge Component', () => {
 
     it('does not show app name by default', () => {
       render(<VersionBadge />);
-      expect(screen.queryByText('Argus')).not.toBeInTheDocument();
+      expect(screen.queryByText('Skopaq')).not.toBeInTheDocument();
     });
 
     it('shows app name when showName is true', () => {
       render(<VersionBadge showName />);
-      expect(screen.getByText('Argus')).toBeInTheDocument();
+      expect(screen.getByText('Skopaq')).toBeInTheDocument();
     });
 
     it('applies correct default styling', () => {
@@ -85,7 +85,7 @@ describe('VersionBadge Component', () => {
   describe('Full Variant', () => {
     it('renders app name and version', () => {
       render(<VersionBadge variant="full" />);
-      expect(screen.getByText('Argus')).toBeInTheDocument();
+      expect(screen.getByText('Skopaq')).toBeInTheDocument();
       expect(screen.getByText('v1.2.3')).toBeInTheDocument();
     });
 
@@ -97,7 +97,7 @@ describe('VersionBadge Component', () => {
 
     it('renders app name with correct styling', () => {
       render(<VersionBadge variant="full" />);
-      const appName = screen.getByText('Argus');
+      const appName = screen.getByText('Skopaq');
       expect(appName).toHaveClass('text-sm', 'font-medium');
     });
 
@@ -124,20 +124,20 @@ describe('VersionBadge Component', () => {
   describe('Props', () => {
     it('showName prop is ignored in minimal variant', () => {
       render(<VersionBadge variant="minimal" showName />);
-      expect(screen.queryByText('Argus')).not.toBeInTheDocument();
+      expect(screen.queryByText('Skopaq')).not.toBeInTheDocument();
     });
 
     it('showName prop is ignored in full variant (always shows name)', () => {
       render(<VersionBadge variant="full" showName={false} />);
-      expect(screen.getByText('Argus')).toBeInTheDocument();
+      expect(screen.getByText('Skopaq')).toBeInTheDocument();
     });
 
     it('default variant respects showName prop', () => {
       const { rerender } = render(<VersionBadge showName={false} />);
-      expect(screen.queryByText('Argus')).not.toBeInTheDocument();
+      expect(screen.queryByText('Skopaq')).not.toBeInTheDocument();
 
       rerender(<VersionBadge showName={true} />);
-      expect(screen.getByText('Argus')).toBeInTheDocument();
+      expect(screen.getByText('Skopaq')).toBeInTheDocument();
     });
   });
 
@@ -183,7 +183,7 @@ describe('VersionBadge Component', () => {
           <VersionBadge variant="full" />
         </header>
       );
-      expect(screen.getByText('Argus')).toBeInTheDocument();
+      expect(screen.getByText('Skopaq')).toBeInTheDocument();
       expect(screen.getByText('v1.2.3')).toBeInTheDocument();
     });
 
@@ -194,7 +194,7 @@ describe('VersionBadge Component', () => {
           <VersionBadge variant="full" />
         </div>
       );
-      expect(screen.getByText('Argus')).toBeInTheDocument();
+      expect(screen.getByText('Skopaq')).toBeInTheDocument();
     });
 
     it('can be styled for dark mode', () => {

@@ -6,7 +6,7 @@
 
 ## ✅ What's Already Done
 
-I've implemented the following SEO improvements to your Argus dashboard:
+I've implemented the following SEO improvements to your Skopaq dashboard:
 
 ### 1. Core SEO Files Created
 - ✅ `app/robots.ts` - Search engine crawling rules
@@ -16,7 +16,7 @@ I've implemented the following SEO improvements to your Argus dashboard:
 - ✅ `components/analytics/GoogleAnalytics.tsx` - GA4 & Clarity components
 
 ### 2. Metadata Enhancements
-- ✅ Template-based titles (`%s | Argus`)
+- ✅ Template-based titles (`%s | Skopaq`)
 - ✅ Enhanced keywords (7 → 18 keywords)
 - ✅ Canonical URLs
 - ✅ Better Open Graph tags
@@ -48,7 +48,7 @@ I've implemented the following SEO improvements to your Argus dashboard:
 1. Go to https://www.canva.com/create/og-images/
 2. Search for "Open Graph" template
 3. Add:
-   - Argus logo (upload `/public/argus-logo.png`)
+   - Skopaq logo (upload `/public/argus-logo.png`)
    - Text: "AI-Powered E2E Testing"
    - Tagline: "Generate tests from production errors"
    - Background color: #14b8a6 (teal) or dark gradient
@@ -68,7 +68,7 @@ convert argus-logo.png -resize 1200x630 -gravity center -extent 1200x630 og-imag
 ```
 
 **Test it:**
-- https://www.opengraph.xyz/ (paste https://heyargus.ai)
+- https://www.opengraph.xyz/ (paste https://skopaq.ai)
 - https://cards-dev.twitter.com/validator
 
 ---
@@ -80,7 +80,7 @@ convert argus-logo.png -resize 1200x630 -gravity center -extent 1200x630 og-imag
 1. **Create GA4 Property:**
    - Go to https://analytics.google.com
    - Click "Admin" → "Create Property"
-   - Enter "Argus Dashboard"
+   - Enter "Skopaq Dashboard"
    - Choose your timezone
    - Click "Create"
    - Copy the Measurement ID (starts with `G-`)
@@ -116,7 +116,7 @@ convert argus-logo.png -resize 1200x630 -gravity center -extent 1200x630 og-imag
    - Go to https://search.google.com/search-console
    - Click "Add Property"
    - Select "URL prefix"
-   - Enter `https://heyargus.ai`
+   - Enter `https://skopaq.ai`
 
 2. **Verify Ownership:**
    - Choose "HTML tag" method
@@ -152,7 +152,7 @@ Heat maps and session recordings to see how users interact.
 
 1. Go to https://clarity.microsoft.com
 2. Click "Add New Project"
-3. Enter "Argus Dashboard"
+3. Enter "Skopaq Dashboard"
 4. Copy Project ID
 5. Add to `.env.local`:
    ```bash
@@ -179,9 +179,9 @@ export const metadata: Metadata = {
   title: 'Test Library',
   description: 'Browse, manage, and run your AI-generated E2E tests. Self-healing tests that adapt to UI changes.',
   openGraph: {
-    title: 'Test Library | Argus',
+    title: 'Test Library | Skopaq',
     description: 'Browse and manage your AI-generated E2E tests',
-    url: 'https://heyargus.ai/tests',
+    url: 'https://skopaq.ai/tests',
   },
 };
 
@@ -191,11 +191,11 @@ export default function TestsPage() {
 ```
 
 **Priority pages:**
-1. `/tests/page.tsx` - "Test Library | Argus"
-2. `/quality/page.tsx` - "Quality Dashboard | Argus"
-3. `/intelligence/page.tsx` - "Quality Intelligence | Argus"
-4. `/projects/page.tsx` - "Projects | Argus"
-5. `/sign-up/[[...sign-up]]/page.tsx` - "Sign Up | Argus"
+1. `/tests/page.tsx` - "Test Library | Skopaq"
+2. `/quality/page.tsx` - "Quality Dashboard | Skopaq"
+3. `/intelligence/page.tsx` - "Quality Intelligence | Skopaq"
+4. `/projects/page.tsx` - "Projects | Skopaq"
+5. `/sign-up/[[...sign-up]]/page.tsx` - "Sign Up | Skopaq"
 
 ---
 
@@ -220,7 +220,7 @@ npm run seo:validate
 
 1. **Structured Data:**
    - Go to https://validator.schema.org/
-   - Paste https://heyargus.ai
+   - Paste https://skopaq.ai
    - Should show "SoftwareApplication" and "Organization" schemas
 
 2. **Open Graph:**
@@ -229,7 +229,7 @@ npm run seo:validate
 
 3. **Mobile-Friendly:**
    - https://search.google.com/test/mobile-friendly
-   - Paste https://heyargus.ai
+   - Paste https://skopaq.ai
 
 4. **Page Speed:**
    - https://pagespeed.web.dev/
@@ -245,7 +245,7 @@ npm run seo:validate
 - 0-100 impressions/day in Search Console
 
 ### Week 2-4
-- Brand keywords start ranking ("Argus testing", "Argus AI testing")
+- Brand keywords start ranking ("Skopaq testing", "Skopaq AI testing")
 - First organic traffic (5-20 visitors/day)
 
 ### Month 2-3
@@ -314,7 +314,7 @@ All detailed documentation is in the `/dashboard` folder:
 - Check view-source to confirm meta tag is present
 
 **Q: Sitemap not showing in Search Console?**
-- A: Submit full URL: `https://heyargus.ai/sitemap.xml`
+- A: Submit full URL: `https://skopaq.ai/sitemap.xml`
 - Wait 24 hours for processing
 
 ---

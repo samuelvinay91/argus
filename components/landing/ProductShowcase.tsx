@@ -38,7 +38,7 @@ const qualityMetrics = [
 
 export function ProductShowcase({
   title = 'Experience the Future of Testing',
-  subtitle = 'Watch Argus automatically generate, execute, and heal tests in real-time',
+  subtitle = 'Watch Skopaq automatically generate, execute, and heal tests in real-time',
 }: ProductShowcaseProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true, margin: '-100px' });
@@ -149,7 +149,7 @@ export function ProductShowcase({
               </div>
               <div className="flex-1 flex justify-center">
                 <div className="px-4 py-1 rounded-md bg-muted/20 text-xs text-muted-foreground/80 font-mono">
-                  app.heyargus.ai/dashboard
+                  app.skopaq.ai/dashboard
                 </div>
               </div>
               <button

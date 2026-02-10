@@ -227,7 +227,7 @@ export default function NewOrganizationPage() {
                 <div>
                   <label className="text-sm font-medium">Slug</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-muted-foreground">app.heyargus.ai/</span>
+                    <span className="text-sm text-muted-foreground">app.skopaq.ai/</span>
                     <Input
                       value={slug}
                       onChange={(e) => handleSlugChange(e.target.value)}

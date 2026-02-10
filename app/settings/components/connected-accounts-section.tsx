@@ -101,7 +101,7 @@ function ConnectedAccountRow({ account }: { account: ConnectedAccount }) {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => window.open('https://accounts.heyargus.ai/user/security', '_blank')}
+        onClick={() => window.open('https://accounts.skopaq.ai/user/security', '_blank')}
       >
         <ExternalLink className="h-4 w-4" />
         <span className="sr-only">Manage {account.providerName}</span>
@@ -231,7 +231,7 @@ export function ConnectedAccountsSection({
           <Button
             variant="outline"
             className="w-full mt-3"
-            onClick={() => window.open('https://accounts.heyargus.ai/user/security', '_blank')}
+            onClick={() => window.open('https://accounts.skopaq.ai/user/security', '_blank')}
           >
             <ExternalLink className="h-4 w-4 mr-2" />
             Manage Security Settings in Clerk
@@ -273,7 +273,7 @@ export function ConnectedAccountsSection({
           </div>
 
           <p className="text-xs text-muted-foreground mt-2">
-            API keys are used to authenticate programmatic access to the Argus API.
+            API keys are used to authenticate programmatic access to the Skopaq API.
           </p>
         </div>
       </CardContent>

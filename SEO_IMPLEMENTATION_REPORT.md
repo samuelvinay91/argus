@@ -1,4 +1,4 @@
-# SEO Implementation Report - Argus Dashboard
+# SEO Implementation Report - Skopaq Dashboard
 
 **Date:** January 18, 2026  
 **Status:** ⚠️ Partially Implemented - Needs Completion for Marketing
@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-The Argus dashboard has **foundational SEO** in place but is **missing critical components** required for effective search engine visibility and marketing. This report details what's implemented, what's missing, and actionable next steps.
+The Skopaq dashboard has **foundational SEO** in place but is **missing critical components** required for effective search engine visibility and marketing. This report details what's implemented, what's missing, and actionable next steps.
 
 ### Current SEO Score: 6.5/10
 
@@ -95,7 +95,7 @@ Added two Schema.org types:
 ```json
 {
   "@type": "SoftwareApplication",
-  "name": "Argus",
+  "name": "Skopaq",
   "applicationCategory": "DeveloperApplication",
   "offers": { "price": "0" },
   "aggregateRating": { "ratingValue": "4.9" },
@@ -113,9 +113,9 @@ Added two Schema.org types:
 ```json
 {
   "@type": "Organization",
-  "name": "Argus",
-  "logo": "https://heyargus.ai/argus-logo.png",
-  "sameAs": ["twitter.com/heyargus", "github.com/argus-labs"]
+  "name": "Skopaq",
+  "logo": "https://skopaq.ai/argus-logo.png",
+  "sameAs": ["twitter.com/skopaq", "github.com/skopaq"]
 }
 ```
 
@@ -147,7 +147,7 @@ Added two Schema.org types:
 ### 4. Keywords Added
 
 **Previous (7 keywords):**
-- e2e testing, ai testing, automated testing, qa automation, argus, test generation, self-healing tests
+- e2e testing, ai testing, automated testing, qa automation, skopaq, test generation, self-healing tests
 
 **New (18 keywords total - 11 added):**
 - end-to-end testing
@@ -183,7 +183,7 @@ images: [{ url: '/og-image.png', width: 1200, height: 630 }]
 **Action Required:**
 - Create `dashboard/public/og-image.png` (1200x630px)
 - Include:
-  - Argus logo
+  - Skopaq logo
   - Tagline: "AI-Powered E2E Testing"
   - Visual showing test generation or self-healing
   - Brand color (#14b8a6 teal)
@@ -231,7 +231,7 @@ images: [{ url: '/og-image.png', width: 1200, height: 630 }]
 
 **Google Search Console:**
 1. Go to https://search.google.com/search-console
-2. Add property: `https://heyargus.ai`
+2. Add property: `https://skopaq.ai`
 3. Get verification code
 4. Add to `layout.tsx`:
    ```typescript
@@ -239,7 +239,7 @@ images: [{ url: '/og-image.png', width: 1200, height: 630 }]
      google: 'your-verification-code-here',
    }
    ```
-5. Submit sitemap: `https://heyargus.ai/sitemap.xml`
+5. Submit sitemap: `https://skopaq.ai/sitemap.xml`
 
 **Bing Webmaster Tools:**
 1. Go to https://www.bing.com/webmasters
@@ -340,13 +340,13 @@ const faqSchema = {
 // Add testimonials with schema
 const reviewSchema = {
   "@type": "Product",
-  "name": "Argus",
+  "name": "Skopaq",
   "review": [
     {
       "@type": "Review",
       "author": { "@type": "Person", "name": "John Doe" },
       "reviewRating": { "@type": "Rating", "ratingValue": "5" },
-      "reviewBody": "Argus saved us 20 hours/week on testing"
+      "reviewBody": "Skopaq saved us 20 hours/week on testing"
     }
   ]
 };
@@ -355,10 +355,10 @@ const reviewSchema = {
 **Add sections:**
 - Hero: H1 "AI-Powered E2E Testing Platform"
 - Features: H2 "Features" with H3 subsections
-- How It Works: H2 "How Argus Works"
+- How It Works: H2 "How Skopaq Works"
 - Testimonials: H2 "What Our Customers Say"
 - FAQ: H2 "Frequently Asked Questions"
-- CTA: H2 "Get Started with Argus Today"
+- CTA: H2 "Get Started with Skopaq Today"
 
 ---
 
@@ -376,19 +376,19 @@ export const metadata: Metadata = {
   title: 'Test Library',
   description: 'Browse, manage, and run your AI-generated E2E tests. Self-healing tests that adapt to your UI changes.',
   openGraph: {
-    title: 'Test Library | Argus',
+    title: 'Test Library | Skopaq',
     description: 'Browse, manage, and run your AI-generated E2E tests',
-    url: 'https://heyargus.ai/tests',
+    url: 'https://skopaq.ai/tests',
   },
 };
 ```
 
 **Priority pages to update:**
-1. `/tests` - "Test Library | Argus"
-2. `/quality` - "Quality Dashboard | Argus"
-3. `/intelligence` - "Quality Intelligence | Argus"
-4. `/projects` - "Projects | Argus"
-5. `/sign-up` - "Sign Up | Argus"
+1. `/tests` - "Test Library | Skopaq"
+2. `/quality` - "Quality Dashboard | Skopaq"
+3. `/intelligence` - "Quality Intelligence | Skopaq"
+4. `/projects` - "Projects | Skopaq"
+5. `/sign-up` - "Sign Up | Skopaq"
 
 ---
 
@@ -564,11 +564,11 @@ Based on industry benchmarks for SaaS tools:
    - https://cards-dev.twitter.com/validator
 
 3. **Check robots.txt:**
-   - Visit `https://heyargus.ai/robots.txt`
+   - Visit `https://skopaq.ai/robots.txt`
    - Verify rules are correct
 
 4. **Test sitemap:**
-   - Visit `https://heyargus.ai/sitemap.xml`
+   - Visit `https://skopaq.ai/sitemap.xml`
    - Verify all URLs are correct
 
 5. **Mobile-friendly test:**
@@ -629,7 +629,7 @@ Based on industry benchmarks for SaaS tools:
 - **Month 6:** 1,000+ visitors/month, page 2-3 for competitive keywords
 - **Month 12:** 10,000+ visitors/month, page 1 for some keywords
 
-**Estimated ROI:** After 12 months of consistent effort, organic search can generate $50,000-$100,000/year in revenue for a SaaS product like Argus.
+**Estimated ROI:** After 12 months of consistent effort, organic search can generate $50,000-$100,000/year in revenue for a SaaS product like Skopaq.
 
 ---
 

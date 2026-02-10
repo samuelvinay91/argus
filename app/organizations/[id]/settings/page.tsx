@@ -529,7 +529,7 @@ export default function OrganizationSettingsPage() {
                           disabled={!isAdmin}
                         />
                         <p className="text-xs text-muted-foreground mt-1">
-                          Used in URLs: app.heyargus.ai/{editSlug}
+                          Used in URLs: app.skopaq.ai/{editSlug}
                         </p>
                       </div>
                     </div>

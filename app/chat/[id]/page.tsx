@@ -150,7 +150,7 @@ function ChatAreaHeader() {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-primary flex-shrink-0" />
-          <h1 className="text-lg font-semibold truncate">Hey Argus</h1>
+          <h1 className="text-lg font-semibold truncate">Hey Skopaq</h1>
         </div>
         <p className="text-xs text-muted-foreground truncate">
           Your autonomous quality companion
@@ -433,7 +433,7 @@ function ChatPageContent() {
             {/* Title */}
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-primary" />
-              <span className="font-semibold hidden sm:inline">Hey Argus</span>
+              <span className="font-semibold hidden sm:inline">Hey Skopaq</span>
             </div>
           </div>
 

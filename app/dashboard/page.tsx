@@ -190,7 +190,7 @@ export default function DashboardPage() {
               <TestTube className="h-8 w-8 text-primary" />
             </div>
             <h2 className="text-xl sm:text-2xl font-semibold tracking-tight mb-2">
-              Welcome to Argus
+              Welcome to Skopaq
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base mb-6">
               Get started by creating your first project to begin testing.

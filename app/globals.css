@@ -50,7 +50,7 @@
     --safe-area-left: env(safe-area-inset-left, 0px);
     --safe-area-right: env(safe-area-inset-right, 0px);
 
-    /* Argus Brand Colors */
+    /* Skopaq Brand Colors */
     --argus-teal: 173 80% 40%;
     --argus-cyan: 185 85% 50%;
     --argus-amber: 38 92% 50%;
@@ -88,7 +88,7 @@
   }
 
   .dark {
-    /* Argus Dark Background - #0a0a0f with subtle blue tint */
+    /* Skopaq Dark Background - #0a0a0f with subtle blue tint */
     --background: 240 20% 4%;
     --foreground: 0 0% 95%;
 
@@ -125,7 +125,7 @@
     --input: 240 10% 15%;
     --ring: 173 80% 45%;
 
-    /* Argus Brand Colors - Dark Mode */
+    /* Skopaq Brand Colors - Dark Mode */
     --argus-teal: 173 80% 45%;
     --argus-cyan: 185 85% 55%;
     --argus-amber: 38 92% 55%;

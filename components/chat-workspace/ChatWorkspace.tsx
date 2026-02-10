@@ -482,7 +482,7 @@ const ChatThread = React.memo(function ChatThread({
       >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <h2 className="text-xl sm:text-2xl font-semibold mb-2">Hey Argus</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold mb-2">Hey Skopaq</h2>
             <p className="text-muted-foreground mb-4 sm:mb-6 max-w-md text-sm sm:text-base">
               Your autonomous quality companion. Describe what you want to test in plain English.
             </p>

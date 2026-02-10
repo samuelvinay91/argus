@@ -84,7 +84,7 @@ export interface MessageListProps {
 export const MessageList = memo(function MessageList({
   className,
   onAction,
-  emptyStateTitle = "Hey Argus",
+  emptyStateTitle = "Hey Skopaq",
   emptyStateDescription = "Your autonomous quality companion. Describe what you want to test in plain English.",
 }: MessageListProps) {
   const { messages, isLoading, aiStatus, streamingMessageId } = useChatContext();

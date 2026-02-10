@@ -634,7 +634,7 @@ function SidebarContent({ onNavigate, isMobile = false }: { onNavigate?: () => v
             <>
               <Tooltip content="Documentation" side="right" sideOffset={12}>
                 <a
-                  href="https://docs.heyargus.ai"
+                  href="https://docs.skopaq.ai"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
@@ -644,7 +644,7 @@ function SidebarContent({ onNavigate, isMobile = false }: { onNavigate?: () => v
               </Tooltip>
               <Tooltip content="GitHub" side="right" sideOffset={12}>
                 <a
-                  href="https://github.com/heyargus"
+                  href="https://github.com/skopaq"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
@@ -654,7 +654,7 @@ function SidebarContent({ onNavigate, isMobile = false }: { onNavigate?: () => v
               </Tooltip>
               <Tooltip content="Help & Support" side="right" sideOffset={12}>
                 <a
-                  href="https://heyargus.ai/help"
+                  href="https://skopaq.ai/help"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
@@ -666,7 +666,7 @@ function SidebarContent({ onNavigate, isMobile = false }: { onNavigate?: () => v
           ) : (
             <>
               <a
-                href="https://docs.heyargus.ai"
+                href="https://docs.skopaq.ai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
@@ -675,7 +675,7 @@ function SidebarContent({ onNavigate, isMobile = false }: { onNavigate?: () => v
                 <BookOpen className="h-4 w-4" />
               </a>
               <a
-                href="https://github.com/heyargus"
+                href="https://github.com/skopaq"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
@@ -684,7 +684,7 @@ function SidebarContent({ onNavigate, isMobile = false }: { onNavigate?: () => v
                 <Github className="h-4 w-4" />
               </a>
               <a
-                href="https://heyargus.ai/help"
+                href="https://skopaq.ai/help"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
@@ -909,7 +909,7 @@ export function MobileHeader() {
               <Eye className="h-4 w-4 text-white" />
             </div>
           </div>
-          <span className="font-bold text-lg tracking-tight">Argus</span>
+          <span className="font-bold text-lg tracking-tight">Skopaq</span>
         </div>
       </div>
       <div className="flex items-center gap-1">

@@ -25,9 +25,9 @@ const footerLinks = {
   ],
   support: [
     { name: 'Help Center', href: '/help' },
-    { name: 'Status', href: 'https://status.heyargus.ai' },
+    { name: 'Status', href: 'https://status.skopaq.ai' },
     { name: 'API Reference', href: '/api' },
-    { name: 'Contact Us', href: 'mailto:hello@heyargus.com' },
+    { name: 'Contact Us', href: 'mailto:hello@skopaq.ai' },
   ],
 };
 
@@ -44,7 +44,7 @@ export function Footer() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                 <Eye className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="font-bold text-lg">Argus</span>
+              <span className="font-bold text-lg">Skopaq</span>
             </Link>
             <p className="text-sm text-muted-foreground">
               AI-powered end-to-end testing. Your intelligent testing companion.
@@ -124,7 +124,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground" suppressHydrationWarning>
-            &copy; {currentYear} Argus Technologies. All rights reserved.
+            &copy; {currentYear} Skopaq Technologies. All rights reserved.
           </p>
           <div className="flex gap-6">
             <Link

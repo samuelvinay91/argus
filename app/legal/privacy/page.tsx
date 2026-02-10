@@ -22,9 +22,9 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Argus Technologies (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) respects your privacy and is committed
+              Skopaq Technologies (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) respects your privacy and is committed
               to protecting your personal data. This Privacy Policy explains how we collect, use, disclose,
-              and safeguard your information when you use the Argus platform (&quot;Service&quot;) at heyargus.ai.
+              and safeguard your information when you use the Skopaq platform (&quot;Service&quot;) at skopaq.ai.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
               This policy applies to information collected through our website, API, and related services.
@@ -53,7 +53,7 @@ export default function PrivacyPolicyPage() {
 
             <h3 className="text-xl font-medium mb-3 mt-6">2.3 Test Execution Data</h3>
             <p className="text-muted-foreground leading-relaxed">
-              When you run tests through Argus, we may temporarily process:
+              When you run tests through Skopaq, we may temporarily process:
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-2 text-muted-foreground">
               <li>Screenshots and recordings of test executions</li>
@@ -72,7 +72,7 @@ export default function PrivacyPolicyPage() {
               We use collected information for the following purposes:
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-2 text-muted-foreground">
-              <li><strong>Service Delivery:</strong> To provide, operate, and maintain the Argus platform</li>
+              <li><strong>Service Delivery:</strong> To provide, operate, and maintain the Skopaq platform</li>
               <li><strong>Account Management:</strong> To create and manage your user account</li>
               <li><strong>Communication:</strong> To send service updates, security alerts, and support messages</li>
               <li><strong>Improvement:</strong> To analyze usage patterns and improve our Service</li>
@@ -175,7 +175,7 @@ export default function PrivacyPolicyPage() {
             </ul>
 
             <p className="text-muted-foreground leading-relaxed mt-4">
-              To exercise your rights, contact us at privacy@heyargus.ai or use the settings in your account dashboard.
+              To exercise your rights, contact us at privacy@skopaq.ai or use the settings in your account dashboard.
             </p>
           </section>
 
@@ -235,9 +235,9 @@ export default function PrivacyPolicyPage() {
               For questions, concerns, or to exercise your rights, contact our Data Protection team:
             </p>
             <div className="mt-4 p-4 rounded-lg bg-muted/30 border">
-              <p className="font-medium">Argus Technologies - Data Protection</p>
-              <p className="text-muted-foreground">Email: privacy@heyargus.ai</p>
-              <p className="text-muted-foreground">Website: https://heyargus.ai</p>
+              <p className="font-medium">Skopaq Technologies - Data Protection</p>
+              <p className="text-muted-foreground">Email: privacy@skopaq.ai</p>
+              <p className="text-muted-foreground">Website: https://skopaq.ai</p>
             </div>
             <p className="text-muted-foreground leading-relaxed mt-4">
               EEA residents may also contact their local data protection authority.

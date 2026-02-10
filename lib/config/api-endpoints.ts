@@ -22,7 +22,7 @@
 export const WORKER_URL =
   process.env.NEXT_PUBLIC_E2E_WORKER_URL ||
   process.env.E2E_WORKER_URL ||
-  'https://argus-api.samuelvinay-kumar.workers.dev';
+  'https://skopaq-api.samuelvinay-kumar.workers.dev';
 
 /**
  * Backend API URL (Python/LangGraph)
@@ -39,10 +39,10 @@ const getBackendUrl = (): string => {
   if (typeof window !== 'undefined') {
     return window.location.hostname === 'localhost'
       ? '' // Use relative URLs for Next.js proxy
-      : 'https://argus-brain-production.up.railway.app';
+      : 'https://skopaq-brain-production.up.railway.app';
   }
   // Server-side: use production URL
-  return 'https://argus-brain-production.up.railway.app';
+  return 'https://skopaq-brain-production.up.railway.app';
 };
 
 export const BACKEND_URL = getBackendUrl();

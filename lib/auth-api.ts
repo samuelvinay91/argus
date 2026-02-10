@@ -1,5 +1,5 @@
 /**
- * Authenticated API Client for Argus Backend
+ * Authenticated API Client for Skopaq Backend
  *
  * This module provides authenticated fetch calls to the Python backend.
  * It automatically includes the Clerk JWT token in all requests.
@@ -15,11 +15,11 @@ const getBackendUrl = () => {
   }
   // Server-side: use environment variable or production URL
   if (typeof window === 'undefined') {
-    return process.env.ARGUS_BACKEND_URL || 'https://argus-brain-production.up.railway.app';
+    return process.env.ARGUS_BACKEND_URL || 'https://skopaq-brain-production.up.railway.app';
   }
   // Client-side: Production - use direct URL
   if (window.location.hostname !== 'localhost') {
-    return 'https://argus-brain-production.up.railway.app';
+    return 'https://skopaq-brain-production.up.railway.app';
   }
   // Local development: use relative URLs for Next.js proxy
   return '';
@@ -32,7 +32,7 @@ export interface AuthenticatedFetchOptions extends RequestInit {
 }
 
 /**
- * Make an authenticated request to the Argus backend
+ * Make an authenticated request to the Skopaq backend
  *
  * @param endpoint - API endpoint (e.g., '/api/v1/tests')
  * @param options - Fetch options including optional token/apiKey

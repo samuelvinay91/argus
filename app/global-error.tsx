@@ -108,7 +108,7 @@ export default function GlobalError({
             <p style={{ color: '#71717a', fontSize: '14px', marginBottom: '12px' }}>Need help?</p>
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a
-                href="https://status.heyargus.ai"
+                href="https://status.skopaq.ai"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: '#a1a1aa', fontSize: '14px', textDecoration: 'none' }}
@@ -116,10 +116,10 @@ export default function GlobalError({
                 Status Page
               </a>
               <a
-                href="mailto:support@heyargus.com"
+                href="mailto:support@skopaq.ai"
                 style={{ color: '#a1a1aa', fontSize: '14px', textDecoration: 'none' }}
               >
-                support@heyargus.com
+                support@skopaq.ai
               </a>
             </div>
           </div>

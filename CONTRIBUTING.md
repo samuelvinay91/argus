@@ -1,6 +1,6 @@
-# Contributing to Argus Dashboard
+# Contributing to Skopaq Dashboard
 
-Thank you for your interest in contributing to Argus! This document provides guidelines and information about contributing to the frontend dashboard.
+Thank you for your interest in contributing to Skopaq! This document provides guidelines and information about contributing to the frontend dashboard.
 
 ## Table of Contents
 
@@ -14,7 +14,7 @@ Thank you for your interest in contributing to Argus! This document provides gui
 
 ## Code of Conduct
 
-This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [conduct@heyargus.ai](mailto:conduct@heyargus.ai).
+This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [conduct@skopaq.ai](mailto:conduct@skopaq.ai).
 
 ## Getting Started
 
@@ -35,13 +35,13 @@ This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participatin
 
    ```bash
    git clone https://github.com/YOUR_USERNAME/argus.git
-   cd argus
+   cd skopaq
    ```
 
 3. **Add upstream remote**
 
    ```bash
-   git remote add upstream https://github.com/samuelvinay91/argus.git
+   git remote add upstream https://github.com/skopaq/skopaq.git
    ```
 
 4. **Install dependencies**
@@ -119,7 +119,7 @@ git rebase upstream/main
    git push origin feature/your-feature-name
    ```
 
-2. Go to the [Argus repository](https://github.com/samuelvinay91/argus) and click "New Pull Request"
+2. Go to the [Skopaq repository](https://github.com/skopaq/skopaq) and click "New Pull Request"
 
 3. Select your branch and fill out the PR template
 
@@ -309,10 +309,10 @@ When requesting a feature, please include:
 
 ## Questions?
 
-- **Discord**: [Join our community](https://discord.gg/argus)
-- **Discussions**: [GitHub Discussions](https://github.com/samuelvinay91/argus/discussions)
-- **Email**: [support@heyargus.ai](mailto:support@heyargus.ai)
+- **Discord**: [Join our community](https://discord.gg/skopaq)
+- **Discussions**: [GitHub Discussions](https://github.com/skopaq/skopaq/discussions)
+- **Email**: [support@skopaq.ai](mailto:support@skopaq.ai)
 
 ---
 
-Thank you for contributing to Argus! Your efforts help make E2E testing better for everyone.
+Thank you for contributing to Skopaq! Your efforts help make E2E testing better for everyone.

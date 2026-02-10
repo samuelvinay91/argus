@@ -120,8 +120,8 @@ const testimonials = [
 // FAQ items
 const faqItems = [
   {
-    question: "What makes Argus 'agentic' vs just 'AI-powered'?",
-    answer: "AI-powered tools assist humans with suggestions. Agentic tools make decisions and take actions autonomously. Argus agents understand your code, decide what to test, execute tests, and fix themselves - all without human intervention. You set a goal; agents figure out how to achieve it."
+    question: "What makes Skopaq 'agentic' vs just 'AI-powered'?",
+    answer: "AI-powered tools assist humans with suggestions. Agentic tools make decisions and take actions autonomously. Skopaq agents understand your code, decide what to test, execute tests, and fix themselves - all without human intervention. You set a goal; agents figure out how to achieve it."
   },
   {
     question: "How do the agents work together?",
@@ -129,19 +129,19 @@ const faqItems = [
   },
   {
     question: "Is the self-healing really 99.9% accurate?",
-    answer: "Yes, because we don't guess. Unlike DOM-heuristic tools, Argus reads your git history to find exactly when and why a selector changed. We see the commit, the author, the message, and the new selector. This code-aware healing is what makes the difference."
+    answer: "Yes, because we don't guess. Unlike DOM-heuristic tools, Skopaq reads your git history to find exactly when and why a selector changed. We see the commit, the author, the message, and the new selector. This code-aware healing is what makes the difference."
   },
   {
     question: "What AI models power the agents?",
     answer: "Claude Sonnet 4.5 handles most testing decisions (best cost/capability ratio). Claude Opus 4.5 is used for complex debugging. Claude Haiku 4.5 handles quick verifications. The Computer Use API enables real browser interaction where agents can see and interact with your UI like a human."
   },
   {
-    question: "How does Argus integrate with my existing tools?",
-    answer: "Argus agents connect to your existing tools (Sentry, GitHub, Jest, Playwright, etc.) via webhooks and APIs. We don't replace anything—agents correlate data from all your tools into one unified quality intelligence brain and take autonomous action."
+    question: "How does Skopaq integrate with my existing tools?",
+    answer: "Skopaq agents connect to your existing tools (Sentry, GitHub, Jest, Playwright, etc.) via webhooks and APIs. We don't replace anything—agents correlate data from all your tools into one unified quality intelligence brain and take autonomous action."
   },
   {
     question: "Is there a free tier?",
-    answer: "Yes! Argus Core is free forever. You get the AI Quality Score dashboard, 3 integrations, and basic agent capabilities. Upgrade to Pro to unlock all agents and unlimited autonomous testing."
+    answer: "Yes! Skopaq Core is free forever. You get the AI Quality Score dashboard, 3 integrations, and basic agent capabilities. Upgrade to Pro to unlock all agents and unlimited autonomous testing."
   },
   {
     question: "Can I deploy agents in my CI/CD pipeline?",
@@ -281,7 +281,7 @@ const steps = [
   {
     num: '01',
     title: 'Point',
-    desc: 'Point Argus at your codebase and running app. That\'s it.',
+    desc: 'Point Skopaq at your codebase and running app. That\'s it.',
     icon: Target,
   },
   {
@@ -406,7 +406,7 @@ export function LandingPage() {
                 </div>
                 <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-background" />
               </div>
-              <span className="text-xl font-bold tracking-tight text-foreground">Argus</span>
+              <span className="text-xl font-bold tracking-tight text-foreground">Skopaq</span>
             </Link>
 
             {/* Nav Links */}
@@ -605,7 +605,7 @@ export function LandingPage() {
               <span className="gradient-text">This is AI-Agentic.</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Other tools assist humans with suggestions. Argus agents make decisions and take actions autonomously.
+              Other tools assist humans with suggestions. Skopaq agents make decisions and take actions autonomously.
             </p>
           </ScrollReveal>
 
@@ -633,7 +633,7 @@ export function LandingPage() {
 
             {/* AI-Agentic Column */}
             <div className="p-8 rounded-2xl bg-gradient-to-br from-primary/10 via-cyan-500/5 to-transparent backdrop-blur-xl border border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.15)]">
-              <h3 className="text-lg font-semibold mb-6 text-primary">AI-Agentic (Argus)</h3>
+              <h3 className="text-lg font-semibold mb-6 text-primary">AI-Agentic (Skopaq)</h3>
               <ul className="space-y-4">
                 {[
                   'Agents discover and create tests',
@@ -662,7 +662,7 @@ export function LandingPage() {
       {/* Product Showcase - Animated Dashboard Preview */}
       <ProductShowcase
         title="Experience the Future of Testing"
-        subtitle="Watch Argus automatically generate, execute, and heal tests in real-time"
+        subtitle="Watch Skopaq automatically generate, execute, and heal tests in real-time"
       />
 
       {/* How It Works */}
@@ -849,14 +849,14 @@ export function LandingPage() {
               {
                 icon: GitBranch,
                 title: 'Self-Healing That Actually Works',
-                desc: 'Other tools use brittle DOM heuristics. Argus reads your git commits to understand WHY a selector changed.',
+                desc: 'Other tools use brittle DOM heuristics. Skopaq reads your git commits to understand WHY a selector changed.',
                 highlight: '99.9% accuracy - code-aware, not guessing.',
                 gradient: 'from-emerald-500 to-teal-500'
               },
               {
                 icon: Brain,
                 title: 'Long-Term Memory & Learning',
-                desc: 'Every failure makes Argus smarter. Healing patterns are stored in a semantic memory store (pgvector).',
+                desc: 'Every failure makes Skopaq smarter. Healing patterns are stored in a semantic memory store (pgvector).',
                 highlight: 'Your testing gets better over time, automatically.',
                 gradient: 'from-violet-500 to-purple-500'
               },
@@ -909,7 +909,7 @@ export function LandingPage() {
                   </div>
                 </div>
                 <p className="text-muted-foreground mb-4 leading-relaxed">
-                  Test directly from your IDE. Our MCP server brings Argus into Claude Code, Cursor, and any MCP-compatible editor.
+                  Test directly from your IDE. Our MCP server brings Skopaq into Claude Code, Cursor, and any MCP-compatible editor.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {['argus_discover', 'argus_act', 'argus_test', 'argus_agent'].map((tool) => (
@@ -1215,7 +1215,7 @@ export function LandingPage() {
                 <div className="flex items-center gap-6">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-emerald-400">Argus Agentic Testing</span>
+                      <span className="text-sm font-medium text-emerald-400">Skopaq Agentic Testing</span>
                       <span className="text-2xl font-bold text-emerald-400">93%</span>
                     </div>
                     <div className="h-4 bg-muted/40 rounded-full overflow-hidden">
@@ -1247,7 +1247,7 @@ export function LandingPage() {
               <span className="gradient-text">Autonomous Agents</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Engineering teams worldwide have deployed Argus agents to eliminate test maintenance forever.
+              Engineering teams worldwide have deployed Skopaq agents to eliminate test maintenance forever.
             </p>
           </div>
 
@@ -1301,7 +1301,7 @@ export function LandingPage() {
                 )}
 
                 <div className="mb-8">
-                  <h3 className="text-lg font-semibold mb-2 text-foreground">Argus {plan.name}</h3>
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">Skopaq {plan.name}</h3>
                   <div className="flex items-baseline gap-1 mb-2">
                     <span className={`text-4xl font-bold ${plan.popular ? 'text-primary' : 'text-foreground'}`}>{plan.price}</span>
                     {plan.period && <span className="text-muted-foreground/80">{plan.period}</span>}
@@ -1354,7 +1354,7 @@ export function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <AuthButtons variant="cta" />
                 <a
-                  href="https://github.com/RaphaEnterprises-AI/argus"
+                  href="https://github.com/skopaq/skopaq"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-glass px-6 py-3.5 text-base rounded-xl"
@@ -1405,16 +1405,16 @@ export function LandingPage() {
                 <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center">
                   <Eye className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold">Argus</span>
+                <span className="text-xl font-bold">Skopaq</span>
               </Link>
               <p className="text-muted-foreground mb-4 max-w-sm">
                 World&apos;s first fully autonomous agentic AI quality intelligence platform. Autonomous agents that understand, test, heal, and report - without human intervention.
               </p>
               <p className="text-sm text-muted-foreground mb-4">
-                <a href="mailto:hello@heyargus.com" className="hover:text-foreground transition-colors">hello@heyargus.com</a>
+                <a href="mailto:hello@skopaq.ai" className="hover:text-foreground transition-colors">hello@skopaq.ai</a>
               </p>
               <div className="flex items-center gap-4">
-                <a href="https://github.com/RaphaEnterprises-AI/argus" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground p-2 hover:bg-muted/40 rounded-lg transition-colors">
+                <a href="https://github.com/skopaq/skopaq" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground p-2 hover:bg-muted/40 rounded-lg transition-colors">
                   <Github className="w-5 h-5" />
                 </a>
                 <a href="https://twitter.com/argaborai" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground p-2 hover:bg-muted/40 rounded-lg transition-colors">
@@ -1442,13 +1442,13 @@ export function LandingPage() {
               <h6 className="font-semibold mb-4">Resources</h6>
               <ul className="space-y-3">
                 <li>
-                  <a href="https://docs.heyargus.ai" target="_blank" rel="noopener noreferrer" className="text-sm link-subtle inline-flex items-center gap-1">
+                  <a href="https://docs.skopaq.ai" target="_blank" rel="noopener noreferrer" className="text-sm link-subtle inline-flex items-center gap-1">
                     Documentation <ArrowUpRight className="w-3 h-3" />
                   </a>
                 </li>
                 <li><Link href="/api-docs" className="text-sm link-subtle">API Reference</Link></li>
                 <li>
-                  <a href="https://github.com/RaphaEnterprises-AI/argus" target="_blank" rel="noopener noreferrer" className="text-sm link-subtle inline-flex items-center gap-1">
+                  <a href="https://github.com/skopaq/skopaq" target="_blank" rel="noopener noreferrer" className="text-sm link-subtle inline-flex items-center gap-1">
                     GitHub <ArrowUpRight className="w-3 h-3" />
                   </a>
                 </li>
@@ -1471,7 +1471,7 @@ export function LandingPage() {
           {/* Bottom Bar */}
           <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground" suppressHydrationWarning>
-              © {new Date().getFullYear()} Argus. All rights reserved.
+              © {new Date().getFullYear()} Skopaq. All rights reserved.
             </p>
           </div>
         </div>

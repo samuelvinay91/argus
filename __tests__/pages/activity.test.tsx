@@ -395,7 +395,7 @@ describe('Activity Page', () => {
       render(<ActivityPage />, { wrapper: createWrapper() });
 
       expect(screen.getByText('No activity found')).toBeInTheDocument();
-      expect(screen.getByText('Activity will appear here as you use Argus.')).toBeInTheDocument();
+      expect(screen.getByText('Activity will appear here as you use Skopaq.')).toBeInTheDocument();
     });
 
     it('should show filter hint when filters applied', async () => {

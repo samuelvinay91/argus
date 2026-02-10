@@ -1,5 +1,5 @@
 /**
- * Test Setup for Argus Dashboard Integration Tests
+ * Test Setup for Skopaq Dashboard Integration Tests
  *
  * This file provides utilities for testing against Supabase.
  * It can be configured to use either a real test database or mock Supabase client.

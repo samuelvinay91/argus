@@ -102,7 +102,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     description: 'Check system and browser pool status',
     icon: Activity,
     category: 'infra',
-    transform: () => 'Check the status of all Argus components',
+    transform: () => 'Check the status of all Skopaq components',
   },
   {
     command: '/infra',

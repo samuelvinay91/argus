@@ -10,7 +10,7 @@
  */
 
 // Worker URL for screenshot access
-export const WORKER_SCREENSHOT_URL = 'https://argus-api.samuelvinay-kumar.workers.dev/screenshots';
+export const WORKER_SCREENSHOT_URL = 'https://skopaq-api.samuelvinay-kumar.workers.dev/screenshots';
 
 // LRU cache configuration
 const SIGNED_URL_CACHE_MAX_SIZE = 100;
@@ -243,7 +243,7 @@ export function resolveScreenshotUrl(src: string | null | undefined): string {
   if (src.startsWith('http://') || src.startsWith('https://')) {
     // Fix broken R2 URLs by routing through Worker proxy
     // Old format: https://argus-artifacts.r2.cloudflarestorage.com/screenshots/screenshot_xxx.png
-    // New format: https://argus-api.samuelvinay-kumar.workers.dev/screenshots/screenshot_xxx
+    // New format: https://skopaq-api.samuelvinay-kumar.workers.dev/screenshots/screenshot_xxx
     if (src.includes('r2.cloudflarestorage.com')) {
       const match = src.match(/screenshots\/([^.]+)(?:\.png)?$/);
       if (match) {

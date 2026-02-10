@@ -25,7 +25,7 @@ export default function SecurityPage() {
           <section className="p-6 rounded-lg border bg-card">
             <h2 className="text-2xl font-semibold mb-4">Our Security Commitment</h2>
             <p className="text-muted-foreground leading-relaxed">
-              At Argus, security is not an afterthought - it&apos;s foundational to everything we build.
+              At Skopaq, security is not an afterthought - it&apos;s foundational to everything we build.
               We understand that you&apos;re trusting us with access to your applications and test data.
               This document outlines our security practices, compliance certifications, and commitments.
             </p>
@@ -333,7 +333,7 @@ export default function SecurityPage() {
             </p>
             <div className="p-4 rounded-lg bg-muted/30 border">
               <p className="font-medium">Security Team</p>
-              <p className="text-muted-foreground">Email: security@heyargus.ai</p>
+              <p className="text-muted-foreground">Email: security@skopaq.ai</p>
               <p className="text-muted-foreground mt-2 text-sm">
                 Please include a detailed description of the vulnerability, steps to reproduce,
                 and any relevant evidence. We aim to respond within 24 hours.
@@ -355,7 +355,7 @@ export default function SecurityPage() {
               <li>Business Associate Agreement (BAA)</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-4">
-              Contact <a href="mailto:security@heyargus.ai" className="text-primary hover:underline">security@heyargus.ai</a> to
+              Contact <a href="mailto:security@skopaq.ai" className="text-primary hover:underline">security@skopaq.ai</a> to
               request documentation.
             </p>
           </section>

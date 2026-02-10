@@ -1,7 +1,7 @@
 /**
  * Chat Workspace Layout Components
  *
- * Adaptive layout system for the Argus chat workspace redesign.
+ * Adaptive layout system for the Skopaq chat workspace redesign.
  * Supports three layout states:
  * - focused: Full-width chat
  * - split: Resizable chat + panel

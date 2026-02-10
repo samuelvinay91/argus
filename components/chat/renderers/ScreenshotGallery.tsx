@@ -34,7 +34,7 @@ export interface ScreenshotGalleryProps {
 // URL RESOLVER
 // =============================================================================
 
-const WORKER_SCREENSHOT_URL = 'https://argus-api.samuelvinay-kumar.workers.dev/screenshots';
+const WORKER_SCREENSHOT_URL = 'https://skopaq-api.samuelvinay-kumar.workers.dev/screenshots';
 
 function resolveScreenshotUrl(
   screenshot: string,

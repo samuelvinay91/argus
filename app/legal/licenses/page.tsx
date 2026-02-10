@@ -107,7 +107,7 @@ export default function LicensesPage() {
           <h1 className="text-4xl font-bold">Open Source Licenses</h1>
         </div>
         <p className="text-muted-foreground mb-8">
-          Argus is built on the shoulders of giants. We are grateful to the open source community
+          Skopaq is built on the shoulders of giants. We are grateful to the open source community
           for the amazing tools and libraries that make our product possible.
         </p>
 
@@ -115,12 +115,12 @@ export default function LicensesPage() {
           <section className="p-6 rounded-lg border bg-card">
             <h2 className="text-2xl font-semibold mb-4">Our Commitment to Open Source</h2>
             <p className="text-muted-foreground leading-relaxed">
-              At Argus, we believe in the power of open source software. We use open source libraries
+              At Skopaq, we believe in the power of open source software. We use open source libraries
               in our products and contribute back to the community. All the libraries listed below
               are used in accordance with their respective licenses.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
-              <strong>Note:</strong> Argus itself is proprietary software. However, the underlying
+              <strong>Note:</strong> Skopaq itself is proprietary software. However, the underlying
               infrastructure and many of the tools we use are open source. No proprietary code from
               other companies is used in our products.
             </p>
@@ -171,7 +171,7 @@ export default function LicensesPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">Infrastructure & Services</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              In addition to open source libraries, Argus uses the following third-party services.
+              In addition to open source libraries, Skopaq uses the following third-party services.
               These are commercial services and are not open source:
             </p>
             <ul className="space-y-2 text-muted-foreground">
@@ -201,8 +201,8 @@ export default function LicensesPage() {
             <p className="text-muted-foreground leading-relaxed">
               If you believe we are using a library incorrectly or have questions about our use
               of open source software, please contact us at{' '}
-              <a href="mailto:legal@heyargus.ai" className="text-primary hover:underline">
-                legal@heyargus.ai
+              <a href="mailto:legal@skopaq.ai" className="text-primary hover:underline">
+                legal@skopaq.ai
               </a>.
             </p>
           </section>
@@ -212,7 +212,7 @@ export default function LicensesPage() {
             <p className="text-sm text-muted-foreground">
               Complete license texts for all dependencies can be found in the LICENSE files of their
               respective repositories linked above. You can also request a copy of all licenses by
-              contacting us at legal@heyargus.ai.
+              contacting us at legal@skopaq.ai.
             </p>
           </section>
         </div>

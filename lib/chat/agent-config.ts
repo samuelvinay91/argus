@@ -1,7 +1,7 @@
 /**
  * Agent Configuration
  *
- * UI metadata for all 30+ AI agents in the Argus system.
+ * UI metadata for all 30+ AI agents in the Skopaq system.
  * Maps agent types to display names, icons, colors, and capabilities
  * for the agent visibility panel.
  */

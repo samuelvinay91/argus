@@ -49,7 +49,7 @@ const defaultStats: Stat[] = [
     displayValue: '10K',
     suffix: '+',
     label: 'Enterprises',
-    description: 'Companies trusting Argus',
+    description: 'Companies trusting Skopaq',
     icon: <Building2 className="w-6 h-6" />,
     gradient: 'from-amber-500 to-orange-500',
     trend: { value: 12, direction: 'up' },

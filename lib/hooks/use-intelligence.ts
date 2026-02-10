@@ -217,7 +217,7 @@ export function useGenerateTest() {
         test_directory?: string;
       };
     }) => {
-      // Get Argus API URL from environment
+      // Get Skopaq API URL from environment
       const apiUrl = process.env.NEXT_PUBLIC_ARGUS_API_URL || 'https://argus-api.your-domain.workers.dev';
       const apiToken = process.env.NEXT_PUBLIC_ARGUS_API_TOKEN;
 
@@ -333,7 +333,7 @@ export function useCalculateRiskScores() {
       projectId: string;
       entityTypes?: string[];
     }) => {
-      // Get Argus API URL from environment
+      // Get Skopaq API URL from environment
       const apiUrl = process.env.NEXT_PUBLIC_ARGUS_API_URL || 'https://argus-api.your-domain.workers.dev';
       const apiToken = process.env.NEXT_PUBLIC_ARGUS_API_TOKEN;
 

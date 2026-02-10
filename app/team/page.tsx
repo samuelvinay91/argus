@@ -241,8 +241,8 @@ export default function TeamPage() {
                   <p>No organization configured yet</p>
                   <p className="text-sm">
                     Contact support at{' '}
-                    <a href="mailto:support@heyargus.com" className="text-primary hover:underline">
-                      support@heyargus.com
+                    <a href="mailto:support@skopaq.ai" className="text-primary hover:underline">
+                      support@skopaq.ai
                     </a>{' '}
                     to set up your organization
                   </p>

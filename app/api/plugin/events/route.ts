@@ -6,7 +6,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
  * POST /api/plugin/events
  * Record a new plugin event from Claude Code
  *
- * This endpoint is called by the Argus Claude Code plugin's hooks
+ * This endpoint is called by the Skopaq Claude Code plugin's hooks
  * to record events for monitoring in the dashboard.
  *
  * Note: Uses type assertions because plugin_events table may not exist

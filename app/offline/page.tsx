@@ -71,7 +71,7 @@ export default function OfflinePage() {
 
         {/* Tip */}
         <p className="text-xs text-muted-foreground mt-8">
-          Tip: Argus works best with an internet connection, but cached data
+          Tip: Skopaq works best with an internet connection, but cached data
           will be available when offline.
         </p>
       </div>

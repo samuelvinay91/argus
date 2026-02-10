@@ -359,7 +359,7 @@ describe('DashboardPage', () => {
 
       render(<DashboardPage />, { wrapper: AllProviders });
 
-      expect(screen.getByText('Welcome to Argus')).toBeInTheDocument();
+      expect(screen.getByText('Welcome to Skopaq')).toBeInTheDocument();
       expect(screen.getByText(/Get started by creating your first project/)).toBeInTheDocument();
     });
 

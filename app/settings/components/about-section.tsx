@@ -16,9 +16,9 @@ const TECH_STACK = [
 ];
 
 const LINKS = [
-  { label: 'Documentation', href: 'https://docs.heyargus.ai' },
-  { label: 'GitHub Repository', href: 'https://github.com/heyargus/argus' },
-  { label: 'Website', href: 'https://heyargus.ai' },
+  { label: 'Documentation', href: 'https://docs.skopaq.ai' },
+  { label: 'GitHub Repository', href: 'https://github.com/skopaq/skopaq' },
+  { label: 'Website', href: 'https://skopaq.ai' },
 ];
 
 export function AboutSection() {
@@ -29,7 +29,7 @@ export function AboutSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Info className="h-5 w-5" />
-          About Argus
+          About Skopaq
         </CardTitle>
         <CardDescription>
           Application information and version details
@@ -38,7 +38,7 @@ export function AboutSection() {
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
           <div>
-            <div className="text-2xl font-bold">Argus</div>
+            <div className="text-2xl font-bold">Skopaq</div>
             <div className="text-sm text-muted-foreground">
               Agentic AI Quality Intelligence
             </div>
@@ -91,7 +91,7 @@ export function AboutSection() {
         </div>
 
         <div className="pt-4 border-t text-center text-sm text-muted-foreground">
-          <p suppressHydrationWarning>2024-{currentYear} Argus. All rights reserved.</p>
+          <p suppressHydrationWarning>2024-{currentYear} Skopaq. All rights reserved.</p>
           <p className="mt-1">Built with care for better testing</p>
         </div>
       </CardContent>

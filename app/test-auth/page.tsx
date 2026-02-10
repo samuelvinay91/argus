@@ -37,7 +37,7 @@ export default function TestAuthPage() {
       const token = await getToken();
       setTokenInfo(token ? `${token.substring(0, 30)}...` : 'No token');
 
-      const backendUrl = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL || 'https://argus-brain-production.up.railway.app';
+      const backendUrl = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL || 'https://skopaq-brain-production.up.railway.app';
 
       // Test health (no auth)
       const healthRes = await fetch(`${backendUrl}/health`);

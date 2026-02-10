@@ -32,7 +32,7 @@ export default function GDPRPage() {
             </p>
             <div className="flex gap-4">
               <Button asChild>
-                <a href="mailto:legal@heyargus.ai?subject=DPA Request">
+                <a href="mailto:legal@skopaq.ai?subject=DPA Request">
                   <FileText className="mr-2 h-4 w-4" />
                   Request DPA
                 </a>
@@ -48,8 +48,8 @@ export default function GDPRPage() {
             <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
             <p className="text-muted-foreground leading-relaxed">
               This Data Processing Agreement (&quot;DPA&quot;) forms part of the Terms of Service (&quot;Agreement&quot;)
-              between Argus Technologies (&quot;Processor&quot;) and you (&quot;Controller&quot;) for the use of the
-              Argus platform (&quot;Service&quot;).
+              between Skopaq Technologies (&quot;Processor&quot;) and you (&quot;Controller&quot;) for the use of the
+              Skopaq platform (&quot;Service&quot;).
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
               This DPA reflects the parties&apos; agreement with respect to the processing of Personal Data
@@ -254,7 +254,7 @@ export default function GDPRPage() {
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-4">
               The SCCs are incorporated into this DPA by reference. A copy of the signed SCCs
-              can be requested from legal@heyargus.ai.
+              can be requested from legal@skopaq.ai.
             </p>
           </section>
 
@@ -329,9 +329,9 @@ export default function GDPRPage() {
               For questions about this DPA or to request a signed copy:
             </p>
             <div className="mt-4 p-4 rounded-lg bg-muted/30 border">
-              <p className="font-medium">Argus Technologies - Data Protection</p>
-              <p className="text-muted-foreground">Email: dpa@heyargus.ai</p>
-              <p className="text-muted-foreground">Legal: legal@heyargus.ai</p>
+              <p className="font-medium">Skopaq Technologies - Data Protection</p>
+              <p className="text-muted-foreground">Email: dpa@skopaq.ai</p>
+              <p className="text-muted-foreground">Legal: legal@skopaq.ai</p>
             </div>
           </section>
         </div>

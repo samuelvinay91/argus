@@ -77,7 +77,7 @@ Edit the `prompt` in `scripts/generate-og-image.js` to customize your image:
 ### Current Prompt Structure
 
 ```javascript
-prompt: `A professional Open Graph social media image for "Argus" - an AI-powered E2E testing platform.
+prompt: `A professional Open Graph social media image for "Skopaq" - an AI-powered E2E testing platform.
 
 Design specifications:
 - Dimensions: 1200x630 pixels
@@ -97,7 +97,7 @@ Style: Modern, minimal, tech-forward, professional
 
 #### Variation 1: More Futuristic
 ```javascript
-prompt: `Ultra-modern futuristic Open Graph image for Argus AI testing platform.
+prompt: `Ultra-modern futuristic Open Graph image for Skopaq AI testing platform.
 Cyberpunk aesthetic, neon teal (#14b8a6) accents, holographic effects,
 3D geometric shapes, glowing circuit patterns, "AI-Powered E2E Testing" in bold neon text.
 Dark background with depth, sci-fi tech vibe, 1200x630px.`,
@@ -105,7 +105,7 @@ Dark background with depth, sci-fi tech vibe, 1200x630px.`,
 
 #### Variation 2: Minimalist Clean
 ```javascript
-prompt: `Extremely minimal and clean Open Graph image for Argus testing platform.
+prompt: `Extremely minimal and clean Open Graph image for Skopaq testing platform.
 Pure white background, single teal (#14b8a6) accent color, simple geometric logo,
 "AI-Powered E2E Testing" in clean sans-serif, lots of whitespace,
 Apple/Stripe aesthetic, sophisticated and professional, 1200x630px.`,
@@ -113,7 +113,7 @@ Apple/Stripe aesthetic, sophisticated and professional, 1200x630px.`,
 
 #### Variation 3: Code-Focused
 ```javascript
-prompt: `Developer-focused Open Graph image for Argus E2E testing.
+prompt: `Developer-focused Open Graph image for Skopaq E2E testing.
 Dark VS Code-style background, subtle code snippets in background,
 terminal window aesthetic, "AI-Powered E2E Testing" in monospace font,
 green/teal (#14b8a6) syntax highlighting, hacker aesthetic but professional,
@@ -212,7 +212,7 @@ Should show:
 
 **After deploying:**
 1. Go to https://www.opengraph.xyz/
-2. Enter: `https://heyargus.ai`
+2. Enter: `https://skopaq.ai`
 3. See your image preview
 
 **Alternative test sites:**
@@ -297,28 +297,28 @@ Don't want to use the script? Generate manually:
 
 ### Tech Startup (Vercel/Linear style)
 ```
-Clean, minimal tech startup OG image for Argus. Simple gradient background
+Clean, minimal tech startup OG image for Skopaq. Simple gradient background
 (#0a0a0a to #14b8a6), large bold text "AI-Powered E2E Testing", subtle
 geometric shapes, lots of whitespace, professional, 1200x630px.
 ```
 
 ### Bold & Vibrant
 ```
-Bold, eye-catching OG image for Argus testing platform. Vibrant teal (#14b8a6)
+Bold, eye-catching OG image for Skopaq testing platform. Vibrant teal (#14b8a6)
 and purple gradients, 3D floating elements, dynamic composition, "AI-Powered
 E2E Testing" in huge bold letters, energetic but professional, 1200x630px.
 ```
 
 ### Developer-Focused
 ```
-Dark mode developer OG image for Argus. Code editor aesthetic, dark background,
+Dark mode developer OG image for Skopaq. Code editor aesthetic, dark background,
 syntax highlighting in teal, terminal window showing test results, "AI-Powered
 E2E Testing" in monospace font, technical but clean, 1200x630px.
 ```
 
 ### Enterprise/Professional
 ```
-Professional enterprise OG image for Argus platform. Navy blue and white,
+Professional enterprise OG image for Skopaq platform. Navy blue and white,
 minimal and trustworthy, geometric patterns, "AI-Powered E2E Testing" in
 clean sans-serif, Fortune 500 aesthetic, sophisticated, 1200x630px.
 ```

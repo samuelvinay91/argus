@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://heyargus.ai';
+  const baseUrl = 'https://skopaq.ai';
 
   return {
     rules: [
@@ -11,6 +11,14 @@ export default function robots(): MetadataRoute.Robots {
           '/',
           '/sign-in',
           '/sign-up',
+          '/legal',
+          '/legal/terms',
+          '/legal/privacy',
+          '/legal/security',
+          '/legal/gdpr',
+          '/legal/licenses',
+          '/accessibility',
+          '/api-docs',
         ],
         disallow: [
           '/api/',
@@ -29,6 +37,25 @@ export default function robots(): MetadataRoute.Robots {
           '/discovery/',
           '/parameterized/',
           '/api-keys/',
+          '/profile/',
+          '/team/',
+          '/notifications/',
+          '/onboarding/',
+          '/schedules/',
+          '/cicd/',
+          '/integrations/',
+          '/healing/',
+          '/reports/',
+          '/correlations/',
+          '/performance/',
+          '/security/',
+          '/visual/',
+          '/audit/',
+          '/database/',
+          '/orchestrator/',
+          '/mcp-sessions/',
+          '/live-dashboard/',
+          '/invitations/',
         ],
       },
       {

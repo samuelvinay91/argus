@@ -1,5 +1,5 @@
 /**
- * Chat Workspace - Redesigned Chat Interface for Argus
+ * Chat Workspace - Redesigned Chat Interface for Skopaq
  *
  * A modern, adaptive chat interface with:
  * - Glassmorphic design system

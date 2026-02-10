@@ -158,9 +158,9 @@ export function PWAInstallPrompt() {
               <Smartphone className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-medium">Install Argus App</h3>
+              <h3 className="font-medium">Install Skopaq App</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Add Argus to your home screen for quick access and offline support.
+                Add Skopaq to your home screen for quick access and offline support.
               </p>
               <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
                 <span>Tap</span>
@@ -195,7 +195,7 @@ export function PWAInstallPrompt() {
               <Download className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-medium">Install Argus App</h3>
+              <h3 className="font-medium">Install Skopaq App</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Install the app for faster access, offline support, and push notifications.
               </p>
@@ -290,7 +290,7 @@ export function PWAUpdatePrompt() {
           <div className="flex-1">
             <h3 className="font-medium">Update Available</h3>
             <p className="text-sm text-muted-foreground">
-              A new version of Argus is ready.
+              A new version of Skopaq is ready.
             </p>
           </div>
           <Button

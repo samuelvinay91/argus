@@ -252,7 +252,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: anthropic('claude-sonnet-4-20250514'),
-      system: `You are Argus, an Autonomous Intelligence Agent for quality assurance and testing. You help users:
+      system: `You are Skopaq, an Autonomous Intelligence Agent for quality assurance and testing. You help users:
 1. Create tests from natural language descriptions
 2. Run tests and report results with self-healing capabilities
 3. Discover application flows automatically
@@ -529,12 +529,12 @@ MULTIMODAL SUPPORT:
 
         // Check system status
         checkSystemStatus: tool({
-          description: 'Check the status of Argus components (Brain and Browser Worker)',
+          description: 'Check the status of Skopaq components (Brain and Browser Worker)',
           inputSchema: z.object({}),
           execute: async () => {
             const [brainStatus, workerStatus] = await Promise.all([
               isBackendAvailable().then(ok => ({
-                name: 'Argus Brain (Python/LangGraph)',
+                name: 'Skopaq Brain (Python/LangGraph)',
                 url: BACKEND_URL,
                 status: ok ? 'connected' : 'disconnected',
                 capabilities: ok ? ['orchestration', 'code-analysis', 'nlp-tests', 'visual-ai', 'auto-discovery', 'durable-execution', 'memory'] : [],

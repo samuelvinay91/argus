@@ -1,4 +1,4 @@
-# 🎨 Midjourney Prompts for Argus Dashboard
+# 🎨 Midjourney Prompts for Skopaq Dashboard
 
 Complete collection of Midjourney prompts for creating stunning visuals for your landing page and marketing materials.
 
@@ -113,7 +113,7 @@ dark background, professional tech illustration, clean geometric --ar 1:1 --v 6
 
 ### Step 1: Connect Your App
 ```
-Minimalist 3D illustration of a web application connecting to Argus platform, flowing 
+Minimalist 3D illustration of a web application connecting to Skopaq platform, flowing 
 connection lines, simple geometric shapes, teal (#14b8a6) glow, isometric perspective, 
 dark background, professional tech illustration, clean and modern --ar 4:3 --v 6
 ```
@@ -276,7 +276,7 @@ Enable with `/settings` → Remix mode
 - Add/remove elements
 
 ### 4. Style Reference
-Use existing Argus branding:
+Use existing Skopaq branding:
 ```
 [your prompt] --sref [URL to your brand image]
 ```
@@ -375,7 +375,7 @@ Animations:
 ## 🎨 Example Complete Prompt (Copy-Paste Ready)
 
 ```
-A professional Open Graph social media banner for Argus AI testing platform, 
+A professional Open Graph social media banner for Skopaq AI testing platform, 
 1200x630 pixels landscape, modern minimal tech aesthetic similar to Vercel or Stripe, 
 dark gradient background from deep navy #0a0a0a to vibrant teal #14b8a6, 
 bold white sans-serif text "AI-Powered E2E Testing" prominently centered, 

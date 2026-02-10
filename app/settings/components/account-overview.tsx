@@ -329,7 +329,7 @@ export function AccountOverview({
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => window.open('https://accounts.heyargus.ai/user/organization-membership', '_blank')}
+              onClick={() => window.open('https://accounts.skopaq.ai/user/organization-membership', '_blank')}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Manage Organizations in Clerk

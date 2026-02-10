@@ -33,9 +33,9 @@ describe('Footer Component', () => {
       expect(document.querySelector('footer')).toBeInTheDocument();
     });
 
-    it('renders the Argus brand name', () => {
+    it('renders the Skopaq brand name', () => {
       render(<Footer />);
-      expect(screen.getByText('Argus')).toBeInTheDocument();
+      expect(screen.getByText('Skopaq')).toBeInTheDocument();
     });
 
     it('renders brand description', () => {
@@ -164,7 +164,7 @@ describe('Footer Component', () => {
     it('renders Status link as external', () => {
       render(<Footer />);
       const link = screen.getByRole('link', { name: 'Status' });
-      expect(link).toHaveAttribute('href', 'https://status.heyargus.ai');
+      expect(link).toHaveAttribute('href', 'https://status.skopaq.ai');
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     });
@@ -178,14 +178,14 @@ describe('Footer Component', () => {
     it('renders Contact Us link as mailto', () => {
       render(<Footer />);
       const link = screen.getByRole('link', { name: 'Contact Us' });
-      expect(link).toHaveAttribute('href', 'mailto:hello@heyargus.com');
+      expect(link).toHaveAttribute('href', 'mailto:hello@skopaq.ai');
     });
   });
 
   describe('Bottom Section', () => {
     it('renders copyright notice with current year', () => {
       render(<Footer />);
-      expect(screen.getByText(/© 2024 Argus Technologies\. All rights reserved\./)).toBeInTheDocument();
+      expect(screen.getByText(/© 2024 Skopaq Technologies\. All rights reserved\./)).toBeInTheDocument();
     });
 
     it('renders bottom Terms link', () => {
@@ -204,7 +204,7 @@ describe('Footer Component', () => {
   describe('Brand Section', () => {
     it('brand logo links to home', () => {
       render(<Footer />);
-      const brandLink = screen.getByRole('link', { name: /Argus/i });
+      const brandLink = screen.getByRole('link', { name: /Skopaq/i });
       expect(brandLink).toHaveAttribute('href', '/');
     });
 
@@ -254,7 +254,7 @@ describe('Footer Component', () => {
         link.getAttribute('href')?.startsWith('/')
       );
       productLinks.forEach(link => {
-        if (link.textContent !== 'Argus') {
+        if (link.textContent !== 'Skopaq') {
           expect(link).toHaveClass('transition-colors');
         }
       });

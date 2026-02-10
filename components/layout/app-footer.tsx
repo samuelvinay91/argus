@@ -21,10 +21,10 @@ export function AppFooter() {
               <div className="w-6 h-6 rounded gradient-primary flex items-center justify-center">
                 <Eye className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="text-sm font-semibold">Argus</span>
+              <span className="text-sm font-semibold">Skopaq</span>
             </div>
             <span className="text-xs text-muted-foreground" suppressHydrationWarning>
-              © {year ?? new Date().getFullYear()} Argus. All rights reserved.
+              © {year ?? new Date().getFullYear()} Skopaq. All rights reserved.
             </span>
           </div>
 
@@ -43,7 +43,7 @@ export function AppFooter() {
               Security
             </Link>
             <a
-              href="https://docs.heyargus.ai"
+              href="https://docs.skopaq.ai"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
@@ -52,7 +52,7 @@ export function AppFooter() {
               <ExternalLink className="w-3 h-3" />
             </a>
             <a
-              href="mailto:support@heyargus.com"
+              href="mailto:support@skopaq.ai"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Support
@@ -62,7 +62,7 @@ export function AppFooter() {
           {/* Right - Social */}
           <div className="flex items-center gap-3">
             <a
-              href="https://github.com/heyargus"
+              href="https://github.com/skopaq"
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
@@ -70,7 +70,7 @@ export function AppFooter() {
               <Github className="w-4 h-4" />
             </a>
             <a
-              href="https://twitter.com/heyargus"
+              href="https://twitter.com/skopaq"
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
@@ -78,7 +78,7 @@ export function AppFooter() {
               <Twitter className="w-4 h-4" />
             </a>
             <a
-              href="https://linkedin.com/company/heyargus"
+              href="https://linkedin.com/company/skopaq"
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"

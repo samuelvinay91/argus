@@ -59,7 +59,7 @@ export default function Error({
           <p className="text-sm text-muted-foreground mb-4">Still having issues?</p>
           <div className="flex flex-wrap justify-center gap-4 text-sm">
             <a
-              href="https://status.heyargus.ai"
+              href="https://status.skopaq.ai"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
@@ -68,7 +68,7 @@ export default function Error({
               Check Status
             </a>
             <a
-              href="mailto:support@heyargus.com"
+              href="mailto:support@skopaq.ai"
               className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
             >
               <Mail className="w-4 h-4" />

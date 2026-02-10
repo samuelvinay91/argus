@@ -1,11 +1,11 @@
-# Argus Dashboard
+# Skopaq Dashboard
 
 <div align="center">
-  <img src="public/argus-logo.png" alt="Argus Logo" width="120" />
+  <img src="public/argus-logo.png" alt="Skopaq Logo" width="120" />
   <h3>Autonomous Intelligence Agent for Quality</h3>
   <p>AI-powered quality intelligence platform with Claude AI integration</p>
 
-  [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/RaphaEnterprises-AI/argus/releases)
+  [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/skopaq/skopaq/releases)
   [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
   [![React](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
@@ -16,7 +16,7 @@
 
 ## Overview
 
-Argus is a comprehensive AI-powered end-to-end testing platform that leverages Claude's intelligence to autonomously test, analyze, and validate web applications. This repository contains the frontend dashboard built with Next.js 15, React 19, and Supabase.
+Skopaq is a comprehensive AI-powered end-to-end testing platform that leverages Claude's intelligence to autonomously test, analyze, and validate web applications. This repository contains the frontend dashboard built with Next.js 15, React 19, and Supabase.
 
 ### Key Features
 
@@ -42,7 +42,7 @@ Argus is a comprehensive AI-powered end-to-end testing platform that leverages C
         ┌───────────────────────────┼───────────────────────────┐
         ▼                           ▼                           ▼
 ┌───────────────┐           ┌───────────────┐           ┌───────────────┐
-│    Clerk      │           │   Supabase    │           │  Argus Core   │
+│    Clerk      │           │   Supabase    │           │  Skopaq Core   │
 │ Authentication│           │   Database    │           │   (Backend)   │
 └───────────────┘           └───────────────┘           └───────────────┘
                                                                 │
@@ -85,8 +85,8 @@ Argus is a comprehensive AI-powered end-to-end testing platform that leverages C
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/samuelvinay91/argus.git
-cd argus
+git clone https://github.com/skopaq/skopaq.git
+cd skopaq
 ```
 
 2. **Install dependencies**
@@ -144,7 +144,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 ## Project Structure
 
 ```
-argus/
+skopaq/
 ├── app/                    # Next.js App Router pages
 │   ├── (auth)/            # Authentication routes
 │   ├── api/               # API routes
@@ -219,7 +219,7 @@ The application uses Supabase with the following main tables:
 2. Configure environment variables in Vercel dashboard
 3. Deploy automatically on push to `main`
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/samuelvinay91/argus)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/skopaq/skopaq)
 
 ### Manual Deployment
 
@@ -235,7 +235,7 @@ npm run start
 
 | Repository | Description |
 |------------|-------------|
-| [argus-core](https://github.com/samuelvinay91/argus-core) | Python backend with LangGraph orchestrator and AI agents |
+| [skopaq-core](https://github.com/skopaq/skopaq-core) | Python backend with LangGraph orchestrator and AI agents |
 | [e2e-testing-agent](https://github.com/samuelvinay91/e2e-testing-agent) | Cloudflare Worker for browser automation |
 
 ## Contributing
@@ -254,17 +254,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- **Documentation**: [docs.heyargus.ai](https://docs.heyargus.ai)
-- **Issues**: [GitHub Issues](https://github.com/samuelvinay91/argus/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/samuelvinay91/argus/discussions)
+- **Documentation**: [docs.skopaq.ai](https://docs.skopaq.ai)
+- **Issues**: [GitHub Issues](https://github.com/skopaq/skopaq/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/skopaq/skopaq/discussions)
 
 ---
 
 <div align="center">
-  <p>Built with AI by the Argus Team</p>
+  <p>Built with AI by the Skopaq Team</p>
   <p>
-    <a href="https://heyargus.ai">Website</a> •
-    <a href="https://docs.heyargus.ai">Docs</a> •
-    <a href="https://twitter.com/heyargus">Twitter</a>
+    <a href="https://skopaq.ai">Website</a> •
+    <a href="https://docs.skopaq.ai">Docs</a> •
+    <a href="https://twitter.com/skopaq">Twitter</a>
   </p>
 </div>

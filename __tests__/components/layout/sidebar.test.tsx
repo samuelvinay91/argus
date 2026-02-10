@@ -76,9 +76,9 @@ describe('Sidebar Component', () => {
       expect(document.querySelector('aside')).toBeInTheDocument();
     });
 
-    it('renders the Argus logo', () => {
+    it('renders the Skopaq logo', () => {
       render(<Sidebar />);
-      expect(screen.getByText('Argus')).toBeInTheDocument();
+      expect(screen.getByText('Skopaq')).toBeInTheDocument();
     });
 
     it('renders AI Quality Intelligence subtitle', () => {
@@ -178,21 +178,21 @@ describe('Sidebar Component', () => {
     it('renders Documentation link', () => {
       render(<Sidebar />);
       const docsLink = screen.getByTitle('Documentation');
-      expect(docsLink).toHaveAttribute('href', 'https://docs.heyargus.ai');
+      expect(docsLink).toHaveAttribute('href', 'https://docs.skopaq.ai');
       expect(docsLink).toHaveAttribute('target', '_blank');
     });
 
     it('renders GitHub link', () => {
       render(<Sidebar />);
       const githubLink = screen.getByTitle('GitHub');
-      expect(githubLink).toHaveAttribute('href', 'https://github.com/heyargus');
+      expect(githubLink).toHaveAttribute('href', 'https://github.com/skopaq');
       expect(githubLink).toHaveAttribute('target', '_blank');
     });
 
     it('renders Help & Support link', () => {
       render(<Sidebar />);
       const helpLink = screen.getByTitle('Help & Support');
-      expect(helpLink).toHaveAttribute('href', 'https://heyargus.ai/help');
+      expect(helpLink).toHaveAttribute('href', 'https://skopaq.ai/help');
       expect(helpLink).toHaveAttribute('target', '_blank');
     });
   });
@@ -415,7 +415,7 @@ describe('MobileHeader', () => {
         <MobileHeader />
       </SidebarProvider>
     );
-    expect(screen.getByText('Argus')).toBeInTheDocument();
+    expect(screen.getByText('Skopaq')).toBeInTheDocument();
   });
 
   it('renders menu button', () => {

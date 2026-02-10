@@ -299,7 +299,7 @@ export const ChatSettingsPanel = memo(function ChatSettingsPanel({
 
                 <PreferenceToggle
                   label="Platform key fallback"
-                  description="Use Argus keys if your key fails"
+                  description="Use Skopaq keys if your key fails"
                   icon={<Sparkles className="w-4 h-4" />}
                   checked={preferences?.usePlatformKeyFallback ?? true}
                   onToggle={() => handleToggle('usePlatformKeyFallback')}

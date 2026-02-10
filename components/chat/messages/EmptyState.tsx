@@ -130,7 +130,7 @@ const SuggestionCard = memo(function SuggestionCard({
 // =============================================================================
 
 export const EmptyState = memo(function EmptyState({
-  title = "Hey Argus",
+  title = "Hey Skopaq",
   description = "Your autonomous quality companion. Describe what you want to test in plain English.",
   className,
 }: EmptyStateProps) {

@@ -415,7 +415,7 @@ export default function ActivityPage() {
                   <p className="text-sm text-muted-foreground text-center max-w-md">
                     {searchQuery || filter !== 'all'
                       ? 'Try adjusting your filters to see more results.'
-                      : 'Activity will appear here as you use Argus.'}
+                      : 'Activity will appear here as you use Skopaq.'}
                   </p>
                 </div>
               ) : (

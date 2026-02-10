@@ -1,6 +1,6 @@
 {
-  "name": "Argus - AI Quality Intelligence",
-  "short_name": "Argus",
+  "name": "Skopaq - AI Quality Intelligence",
+  "short_name": "Skopaq",
   "description": "Agentic AI quality intelligence - autonomous agents that understand, test, heal, and report",
   "id": "/",
   "start_url": "/dashboard",
@@ -79,7 +79,7 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Argus Dashboard - Quality overview at a glance"
+      "label": "Skopaq Dashboard - Quality overview at a glance"
     },
     {
       "src": "/screenshots/tests-wide.png",
@@ -144,7 +144,7 @@
   "prefer_related_applications": false,
   "protocol_handlers": [
     {
-      "protocol": "web+argus",
+      "protocol": "web+skopaq",
       "url": "/%s"
     }
   ],

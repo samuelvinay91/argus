@@ -1,5 +1,5 @@
 /**
- * Organization-Scoped API Client for Argus Backend
+ * Organization-Scoped API Client for Skopaq Backend
  *
  * This module extends the authenticated API client to include
  * organization context in all API requests via the X-Organization-ID header.
@@ -105,7 +105,7 @@ export interface OrganizationScopedFetchOptions extends AuthenticatedFetchOption
 }
 
 /**
- * Make an organization-scoped authenticated request to the Argus backend
+ * Make an organization-scoped authenticated request to the Skopaq backend
  *
  * Automatically includes X-Organization-ID header from:
  * 1. Explicitly provided organizationId option

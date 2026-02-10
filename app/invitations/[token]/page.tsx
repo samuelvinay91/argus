@@ -146,7 +146,7 @@ export default function InvitationAcceptPage() {
         </div>
         <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-background" />
       </div>
-      <span className="text-2xl font-bold tracking-tight">Argus</span>
+      <span className="text-2xl font-bold tracking-tight">Skopaq</span>
     </Link>
   );
 
@@ -342,7 +342,7 @@ export default function InvitationAcceptPage() {
             </div>
             <CardTitle className="text-xl">You&apos;re Invited!</CardTitle>
             <CardDescription>
-              You&apos;ve been invited to join an organization on Argus
+              You&apos;ve been invited to join an organization on Skopaq
             </CardDescription>
           </CardHeader>
 
@@ -444,7 +444,7 @@ export default function InvitationAcceptPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground mt-6">
-          By accepting this invitation, you agree to Argus&apos;s{' '}
+          By accepting this invitation, you agree to Skopaq&apos;s{' '}
           <Link href="/legal/terms" className="text-primary hover:underline">
             Terms of Service
           </Link>{' '}

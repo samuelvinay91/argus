@@ -100,7 +100,7 @@ interface ArtifactRef {
  * - Short/invalid references -> returns placeholder
  */
 // Worker URL for public screenshot access (no auth required)
-const WORKER_SCREENSHOT_URL = 'https://argus-api.samuelvinay-kumar.workers.dev/screenshots';
+const WORKER_SCREENSHOT_URL = 'https://skopaq-api.samuelvinay-kumar.workers.dev/screenshots';
 
 function resolveScreenshotUrl(
   screenshot: string,
@@ -119,7 +119,7 @@ function resolveScreenshotUrl(
   if (screenshot.startsWith('http://') || screenshot.startsWith('https://')) {
     // Fix broken R2 URLs by routing through Worker proxy
     // Old format: https://argus-artifacts.r2.cloudflarestorage.com/screenshots/screenshot_xxx.png
-    // New format: https://argus-api.samuelvinay-kumar.workers.dev/screenshots/screenshot_xxx
+    // New format: https://skopaq-api.samuelvinay-kumar.workers.dev/screenshots/screenshot_xxx
     if (screenshot.includes('r2.cloudflarestorage.com')) {
       const match = screenshot.match(/screenshots\/([^.]+)(?:\.png)?$/);
       if (match) {
@@ -2233,7 +2233,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
               <div className="flex justify-center">
                 <AIAvatar status="ready" size="lg" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold">Hey Argus</h2>
+              <h2 className="text-xl sm:text-2xl font-bold">Hey Skopaq</h2>
               <p className="text-sm sm:text-base text-muted-foreground max-w-md">
                 Your autonomous quality companion. Describe what you want to test in plain English.
               </p>

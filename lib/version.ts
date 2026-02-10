@@ -1,4 +1,4 @@
-// Version configuration for Argus Dashboard
+// Version configuration for Skopaq Dashboard
 // This file exports version info that can be used throughout the app
 
 import packageJson from '../package.json';
@@ -22,4 +22,4 @@ export function getVersionInfo(): VersionInfo {
 }
 
 export const APP_VERSION = packageJson.version;
-export const APP_NAME = 'Argus';
+export const APP_NAME = 'Skopaq';

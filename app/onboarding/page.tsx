@@ -40,7 +40,7 @@ interface OnboardingStep {
 const steps: OnboardingStep[] = [
   {
     id: 'welcome',
-    title: 'Welcome to Argus',
+    title: 'Welcome to Skopaq',
     description: 'Let\'s get you set up',
     icon: Sparkles,
   },
@@ -278,7 +278,7 @@ export default function OnboardingPage() {
               <Eye className="h-5 w-5 text-white" />
             </div>
           </div>
-          <span className="font-bold text-lg tracking-tight">Argus</span>
+          <span className="font-bold text-lg tracking-tight">Skopaq</span>
         </div>
         <Button
           variant="ghost"
@@ -350,7 +350,7 @@ export default function OnboardingPage() {
                 <div className="mx-auto mb-4 p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20">
                   <Sparkles className="h-12 w-12 text-primary" />
                 </div>
-                <CardTitle className="text-3xl">Welcome to Argus!</CardTitle>
+                <CardTitle className="text-3xl">Welcome to Skopaq!</CardTitle>
                 <CardDescription className="text-lg">
                   Your Autonomous Intelligence Agent for Quality
                 </CardDescription>
@@ -540,7 +540,7 @@ export default function OnboardingPage() {
                 </div>
                 <CardTitle className="text-2xl">Quick Feature Overview</CardTitle>
                 <CardDescription>
-                  Here's what you can do with Argus
+                  Here's what you can do with Skopaq
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
@@ -606,7 +606,7 @@ export default function OnboardingPage() {
 
       {/* Footer */}
       <footer className="px-6 py-4 border-t text-center text-sm text-muted-foreground">
-        <p>Need help? Check out our <a href="https://docs.heyargus.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">documentation</a> or <a href="mailto:support@heyargus.ai" className="text-primary hover:underline">contact support</a>.</p>
+        <p>Need help? Check out our <a href="https://docs.skopaq.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">documentation</a> or <a href="mailto:support@skopaq.ai" className="text-primary hover:underline">contact support</a>.</p>
       </footer>
     </div>
   );

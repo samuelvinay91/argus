@@ -1,5 +1,5 @@
 /**
- * Test Clerk JWT Authentication against Argus Backend
+ * Test Clerk JWT Authentication against Skopaq Backend
  *
  * This endpoint tests that Clerk JWTs are properly verified by the Python backend.
  */
@@ -7,7 +7,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.ARGUS_BACKEND_URL || 'https://argus-brain-production.up.railway.app';
+const BACKEND_URL = process.env.ARGUS_BACKEND_URL || 'https://skopaq-brain-production.up.railway.app';
 
 export async function GET() {
   try {

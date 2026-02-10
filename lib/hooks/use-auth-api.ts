@@ -4,7 +4,7 @@
  * React Hook for Authenticated API Calls
  *
  * Uses Clerk's authentication to automatically include JWT tokens
- * in all requests to the Argus Python backend.
+ * in all requests to the Skopaq Python backend.
  *
  * MULTI-TENANT: All requests include X-Organization-ID header with
  * the current organization's backend UUID (not Clerk org_xxx format).
@@ -29,7 +29,7 @@ const getBackendUrl = () => {
   }
   // Production: use direct URL (Vercel rewrites may strip Authorization headers)
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-    return 'https://argus-brain-production.up.railway.app';
+    return 'https://skopaq-brain-production.up.railway.app';
   }
   // Local development: use relative URLs so Next.js proxy works
   // The proxy is configured in next.config.ts to forward /api/v1/* to production
@@ -54,7 +54,7 @@ export interface FetchJsonOptions extends Omit<RequestInit, 'signal'> {
 const DEFAULT_TIMEOUT_MS = 30000;
 
 /**
- * Hook for making authenticated API calls to Argus backend
+ * Hook for making authenticated API calls to Skopaq backend
  *
  * @example
  * ```tsx

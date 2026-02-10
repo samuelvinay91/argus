@@ -477,7 +477,7 @@ describe('SettingsPage', () => {
       fireEvent.click(aboutButton);
 
       await waitFor(() => {
-        expect(screen.getByText('About Argus')).toBeInTheDocument();
+        expect(screen.getByText('About Skopaq')).toBeInTheDocument();
       });
     });
 
@@ -878,7 +878,7 @@ describe('SettingsPage', () => {
       fireEvent.click(aboutButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Argus')).toBeInTheDocument();
+        expect(screen.getByText('Skopaq')).toBeInTheDocument();
       });
     });
 

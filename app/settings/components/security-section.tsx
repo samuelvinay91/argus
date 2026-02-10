@@ -45,7 +45,7 @@ export function SecuritySection() {
 
         <Button
           variant="outline"
-          onClick={() => window.open('https://accounts.heyargus.ai/user', '_blank')}
+          onClick={() => window.open('https://accounts.skopaq.ai/user', '_blank')}
         >
           <ExternalLink className="h-4 w-4 mr-2" />
           Manage Security in Clerk

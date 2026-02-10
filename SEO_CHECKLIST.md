@@ -1,4 +1,4 @@
-# SEO Checklist for Argus Dashboard
+# SEO Checklist for Skopaq Dashboard
 
 ## ✅ Implemented
 
@@ -35,7 +35,7 @@
 ```bash
 # Create a 1200x630px image at dashboard/public/og-image.png
 # Should include:
-# - Argus logo
+# - Skopaq logo
 # - Tagline: "AI-Powered E2E Testing"
 # - Key features (test generation, self-healing, bug prediction)
 # - Brand colors (#14b8a6 teal)
@@ -47,7 +47,7 @@
 - [ ] Add Google Search Console verification
   - Get verification code from https://search.google.com/search-console
   - Add to `metadata.verification.google` in `layout.tsx`
-  - Submit sitemap: `https://heyargus.ai/sitemap.xml`
+  - Submit sitemap: `https://skopaq.ai/sitemap.xml`
 
 - [ ] Add Bing Webmaster Tools verification
   - Get code from https://www.bing.com/webmasters
@@ -72,7 +72,7 @@ export const metadata = {
   title: 'Test Library',
   description: 'Browse and manage your AI-generated E2E tests',
   openGraph: {
-    title: 'Test Library | Argus',
+    title: 'Test Library | Skopaq',
     description: 'Browse and manage your AI-generated E2E tests',
   },
 };
@@ -123,7 +123,7 @@ File: `dashboard/components/landing/landing-page.tsx`
 ```typescript
 // In layout.tsx <head>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="dns-prefetch" href="https://api.heyargus.ai" />
+<link rel="dns-prefetch" href="https://api.skopaq.ai" />
 ```
 
 #### Update sitemap with blog/docs
@@ -190,7 +190,7 @@ If expanding to non-English markets:
 | Month | Goal |
 |-------|------|
 | 1 | Site indexed, sitemap submitted, 0 impressions → 100 impressions/day |
-| 2 | Core pages ranking for brand keywords ("Argus testing") |
+| 2 | Core pages ranking for brand keywords ("Skopaq testing") |
 | 3 | Ranking for long-tail keywords ("how to generate tests from errors") |
 | 6 | Page 2-3 for competitive keywords ("e2e testing platform") |
 | 12 | Page 1 for 2-3 competitive keywords |

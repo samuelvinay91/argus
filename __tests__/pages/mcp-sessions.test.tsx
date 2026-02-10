@@ -102,7 +102,7 @@ const mockSessions = [
     id: 'session-3',
     org_id: 'org-123',
     client_type: 'cli',
-    client_name: 'Argus CLI',
+    client_name: 'Skopaq CLI',
     device_name: null,
     status: 'disconnected',
     is_active: false,
@@ -293,7 +293,7 @@ describe('MCP Sessions Page', () => {
 
       expect(screen.getByText('VS Code Extension')).toBeInTheDocument();
       expect(screen.getByText('Cursor IDE')).toBeInTheDocument();
-      expect(screen.getByText('Argus CLI')).toBeInTheDocument();
+      expect(screen.getByText('Skopaq CLI')).toBeInTheDocument();
     });
 
     it('should display device names for sessions', () => {
@@ -486,7 +486,7 @@ describe('MCP Sessions Page', () => {
       render(<MCPSessionsPage />, { wrapper: createWrapper() });
 
       expect(screen.getByText('No MCP sessions found')).toBeInTheDocument();
-      expect(screen.getByText('Connect an IDE with the Argus MCP server to see sessions here')).toBeInTheDocument();
+      expect(screen.getByText('Connect an IDE with the Skopaq MCP server to see sessions here')).toBeInTheDocument();
     });
   });
 

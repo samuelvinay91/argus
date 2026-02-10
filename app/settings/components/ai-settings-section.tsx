@@ -459,7 +459,7 @@ export function AISettingsSection({
               />
               <ToggleRow
                 label="Use platform fallback"
-                description="Fall back to Argus's API keys if your key is not configured"
+                description="Fall back to Skopaq's API keys if your key is not configured"
                 checked={preferences?.usePlatformKeyFallback ?? true}
                 onChange={(checked) => handleUpdatePrefs('usePlatformKeyFallback', checked)}
               />

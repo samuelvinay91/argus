@@ -643,7 +643,7 @@ export function IntegrationCard({
                 <DialogTitle>Connect {integration.name}</DialogTitle>
                 <DialogDescription>
                   {integration.auth_type === 'oauth'
-                    ? `Authorize Argus to access your ${integration.name} account.`
+                    ? `Authorize Skopaq to access your ${integration.name} account.`
                     : `Enter your ${integration.name} credentials to connect.`}
                 </DialogDescription>
               </DialogHeader>

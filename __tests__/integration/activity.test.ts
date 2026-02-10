@@ -203,7 +203,7 @@ describe('Activity Feed Integration Tests', () => {
           old_selector: '#submit-btn',
           new_selector: '[data-testid="submit"]',
           confidence: 0.95,
-          user_name: 'Argus AI',
+          user_name: 'Skopaq AI',
         },
       };
 
@@ -647,7 +647,7 @@ describe('Activity Feed Integration Tests', () => {
         confidence_score: 0.95,
         similar_fixes: 3,
         applied_automatically: true,
-        user_name: 'Argus AI',
+        user_name: 'Skopaq AI',
       };
 
       const { data, error } = await supabase

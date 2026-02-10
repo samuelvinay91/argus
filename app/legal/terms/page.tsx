@@ -22,12 +22,12 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Agreement to Terms</h2>
             <p className="text-muted-foreground leading-relaxed">
-              By accessing or using Argus (&quot;Service&quot;), operated by Argus Technologies (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;),
+              By accessing or using Skopaq (&quot;Service&quot;), operated by Skopaq Technologies (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;),
               you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you disagree with any part of the terms,
               you may not access the Service.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
-              The Service is available at heyargus.ai and related domains. These Terms apply to all visitors,
+              The Service is available at skopaq.ai and related domains. These Terms apply to all visitors,
               users, and others who access or use the Service.
             </p>
           </section>
@@ -35,7 +35,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Argus is an agentic AI quality intelligence platform that provides:
+              Skopaq is an agentic AI quality intelligence platform that provides:
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-2 text-muted-foreground">
               <li>Autonomous browser automation and testing</li>
@@ -81,7 +81,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">5. API Usage and Rate Limits</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Access to the Argus API is subject to the following terms:
+              Access to the Skopaq API is subject to the following terms:
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-2 text-muted-foreground">
               <li>API keys are confidential and must not be shared or exposed publicly</li>
@@ -108,7 +108,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">7. Intellectual Property</h2>
             <p className="text-muted-foreground leading-relaxed">
-              The Service and its original content, features, and functionality are owned by Argus Technologies
+              The Service and its original content, features, and functionality are owned by Skopaq Technologies
               and are protected by international copyright, trademark, and other intellectual property laws.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
@@ -176,7 +176,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">12. Indemnification</h2>
             <p className="text-muted-foreground leading-relaxed">
-              You agree to defend, indemnify, and hold harmless Argus Technologies from any claims,
+              You agree to defend, indemnify, and hold harmless Skopaq Technologies from any claims,
               damages, or expenses arising from your use of the Service or violation of these Terms.
             </p>
           </section>
@@ -218,9 +218,9 @@ export default function TermsOfServicePage() {
               For questions about these Terms, please contact us at:
             </p>
             <div className="mt-4 p-4 rounded-lg bg-muted/30 border">
-              <p className="font-medium">Argus Technologies</p>
-              <p className="text-muted-foreground">Email: legal@heyargus.ai</p>
-              <p className="text-muted-foreground">Website: https://heyargus.ai</p>
+              <p className="font-medium">Skopaq Technologies</p>
+              <p className="text-muted-foreground">Email: legal@skopaq.ai</p>
+              <p className="text-muted-foreground">Website: https://skopaq.ai</p>
             </div>
           </section>
         </div>

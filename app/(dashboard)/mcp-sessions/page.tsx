@@ -194,7 +194,7 @@ export default function MCPSessionsPage() {
                   <>
                     <p className="font-medium">No MCP sessions found</p>
                     <p className="text-sm mt-1">
-                      Connect an IDE with the Argus MCP server to see sessions here
+                      Connect an IDE with the Skopaq MCP server to see sessions here
                     </p>
                   </>
                 )}

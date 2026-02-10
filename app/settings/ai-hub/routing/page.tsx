@@ -701,7 +701,7 @@ function FallbackChain({
       <div className="p-4 rounded-lg bg-muted/50 border">
         <ToggleRow
           label="Platform keys fallback"
-          description="If all your API keys fail, use Argus platform keys as a last resort"
+          description="If all your API keys fail, use Skopaq platform keys as a last resort"
           checked={usePlatformKeysFallback}
           onChange={onTogglePlatformKeys}
         />

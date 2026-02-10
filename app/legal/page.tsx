@@ -6,7 +6,7 @@ import { ArrowLeft, FileText, Shield, Lock, Code, Globe, ArrowRight } from 'luci
 const legalPages = [
   {
     title: 'Terms of Service',
-    description: 'The legal agreement governing your use of Argus',
+    description: 'The legal agreement governing your use of Skopaq',
     href: '/legal/terms',
     icon: FileText,
     lastUpdated: 'December 30, 2024',
@@ -34,7 +34,7 @@ const legalPages = [
   },
   {
     title: 'Open Source Licenses',
-    description: 'Acknowledgment of open source software used in Argus',
+    description: 'Acknowledgment of open source software used in Skopaq',
     href: '/legal/licenses',
     icon: Code,
     lastUpdated: 'December 30, 2024',
@@ -55,7 +55,7 @@ export default function LegalIndexPage() {
 
         <h1 className="text-4xl font-bold mb-2">Legal</h1>
         <p className="text-muted-foreground mb-8">
-          Legal documents, policies, and compliance information for Argus
+          Legal documents, policies, and compliance information for Skopaq
         </p>
 
         <div className="grid gap-4">
@@ -88,8 +88,8 @@ export default function LegalIndexPage() {
           <h2 className="text-lg font-semibold mb-2">Questions?</h2>
           <p className="text-muted-foreground">
             If you have any questions about our legal documents or policies, please contact us at{' '}
-            <a href="mailto:legal@heyargus.ai" className="text-primary hover:underline">
-              legal@heyargus.ai
+            <a href="mailto:legal@skopaq.ai" className="text-primary hover:underline">
+              legal@skopaq.ai
             </a>
           </p>
         </div>

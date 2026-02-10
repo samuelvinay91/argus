@@ -33,9 +33,9 @@ describe('AppFooter Component', () => {
       expect(document.querySelector('footer')).toBeInTheDocument();
     });
 
-    it('renders the Argus brand name', () => {
+    it('renders the Skopaq brand name', () => {
       render(<AppFooter />);
-      expect(screen.getByText('Argus')).toBeInTheDocument();
+      expect(screen.getByText('Skopaq')).toBeInTheDocument();
     });
 
     it('renders the Eye icon', () => {
@@ -45,7 +45,7 @@ describe('AppFooter Component', () => {
 
     it('renders copyright text with current year', () => {
       render(<AppFooter />);
-      expect(screen.getByText(/© 2024 Argus\. All rights reserved\./)).toBeInTheDocument();
+      expect(screen.getByText(/© 2024 Skopaq\. All rights reserved\./)).toBeInTheDocument();
     });
   });
 
@@ -84,7 +84,7 @@ describe('AppFooter Component', () => {
       render(<AppFooter />);
       const docsLink = screen.getByRole('link', { name: /Docs/ });
       expect(docsLink).toBeInTheDocument();
-      expect(docsLink).toHaveAttribute('href', 'https://docs.heyargus.ai');
+      expect(docsLink).toHaveAttribute('href', 'https://docs.skopaq.ai');
       expect(docsLink).toHaveAttribute('target', '_blank');
       expect(docsLink).toHaveAttribute('rel', 'noopener noreferrer');
     });
@@ -93,7 +93,7 @@ describe('AppFooter Component', () => {
       render(<AppFooter />);
       const supportLink = screen.getByRole('link', { name: 'Support' });
       expect(supportLink).toBeInTheDocument();
-      expect(supportLink).toHaveAttribute('href', 'mailto:support@heyargus.com');
+      expect(supportLink).toHaveAttribute('href', 'mailto:support@skopaq.ai');
     });
   });
 
@@ -102,7 +102,7 @@ describe('AppFooter Component', () => {
       render(<AppFooter />);
       const links = screen.getAllByRole('link');
       const githubLinks = links.filter(link =>
-        link.getAttribute('href')?.includes('github.com/heyargus')
+        link.getAttribute('href')?.includes('github.com/skopaq')
       );
       expect(githubLinks.length).toBeGreaterThan(0);
       expect(githubLinks[0]).toHaveAttribute('target', '_blank');
@@ -113,7 +113,7 @@ describe('AppFooter Component', () => {
       render(<AppFooter />);
       const links = screen.getAllByRole('link');
       const twitterLinks = links.filter(link =>
-        link.getAttribute('href')?.includes('twitter.com/heyargus')
+        link.getAttribute('href')?.includes('twitter.com/skopaq')
       );
       expect(twitterLinks.length).toBeGreaterThan(0);
       expect(twitterLinks[0]).toHaveAttribute('target', '_blank');
@@ -123,7 +123,7 @@ describe('AppFooter Component', () => {
       render(<AppFooter />);
       const links = screen.getAllByRole('link');
       const linkedinLinks = links.filter(link =>
-        link.getAttribute('href')?.includes('linkedin.com/company/heyargus')
+        link.getAttribute('href')?.includes('linkedin.com/company/skopaq')
       );
       expect(linkedinLinks.length).toBeGreaterThan(0);
       expect(linkedinLinks[0]).toHaveAttribute('target', '_blank');

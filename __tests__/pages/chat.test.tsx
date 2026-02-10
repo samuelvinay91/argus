@@ -329,7 +329,7 @@ describe('Chat Page', () => {
     it('should display chat header with title', () => {
       render(<ChatPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Hey Argus')).toBeInTheDocument();
+      expect(screen.getByText('Hey Skopaq')).toBeInTheDocument();
     });
 
     it('should display chat interface with conversation ID', () => {

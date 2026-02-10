@@ -11,7 +11,7 @@
 Type `/imagine` in Discord and paste:
 
 ```
-A professional Open Graph social media banner for Argus AI testing platform, 1200x630 pixels landscape, modern minimal tech aesthetic similar to Vercel or Stripe, dark gradient background from deep navy #0a0a0a to vibrant teal #14b8a6, bold white sans-serif text "AI-Powered E2E Testing" prominently centered, subtle geometric shapes, floating 3D abstract elements representing automation, neural network patterns in background at low opacity, high contrast, clean spacious layout, professional SaaS product marketing style, ultra sharp and detailed, behance quality --ar 1200:630 --style raw --v 6 --q 2 --no people, faces, photos, cluttered, text, watermark, signature
+A professional Open Graph social media banner for Skopaq AI testing platform, 1200x630 pixels landscape, modern minimal tech aesthetic similar to Vercel or Stripe, dark gradient background from deep navy #0a0a0a to vibrant teal #14b8a6, bold white sans-serif text "AI-Powered E2E Testing" prominently centered, subtle geometric shapes, floating 3D abstract elements representing automation, neural network patterns in background at low opacity, high contrast, clean spacious layout, professional SaaS product marketing style, ultra sharp and detailed, behance quality --ar 1200:630 --style raw --v 6 --q 2 --no people, faces, photos, cluttered, text, watermark, signature
 ```
 
 **Wait ~60 seconds** for 4 variations to appear.
@@ -157,7 +157,7 @@ If you don't want to use Midjourney:
 
 1. Go to https://www.canva.com
 2. Search "Tech startup banner"
-3. Customize with Argus branding
+3. Customize with Skopaq branding
 4. Use teal (#14b8a6) color
 5. Download as PNG
 

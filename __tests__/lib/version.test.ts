@@ -58,7 +58,7 @@ describe('version', () => {
 
       const versionInfo = getVersionInfo();
 
-      expect(versionInfo.description).toBe('Argus - Agentic AI Quality Intelligence');
+      expect(versionInfo.description).toBe('Skopaq - Agentic AI Quality Intelligence');
     });
 
     it('should return a valid ISO date string for buildDate', async () => {
@@ -170,10 +170,10 @@ describe('version', () => {
       expect(APP_NAME).toBeDefined();
     });
 
-    it('should be Argus', async () => {
+    it('should be Skopaq', async () => {
       const { APP_NAME } = await import('@/lib/version');
 
-      expect(APP_NAME).toBe('Argus');
+      expect(APP_NAME).toBe('Skopaq');
     });
 
     it('should be a string', async () => {

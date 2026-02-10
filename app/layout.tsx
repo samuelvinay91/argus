@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ClerkProvider, SignedIn } from '@clerk/nextjs';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
 import { Providers } from '@/lib/providers';
 import { SidebarProvider, MobileSidebar, MobileHeader } from '@/components/layout/sidebar';
 import { MobileBottomNav } from '@/components/layout';
@@ -13,10 +14,10 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://heyargus.ai'),
+  metadataBase: new URL('https://skopaq.ai'),
   title: {
-    default: 'Argus | Agentic AI Quality Intelligence',
-    template: '%s | Argus',
+    default: 'Skopaq | Agentic AI Quality Intelligence',
+    template: '%s | Skopaq',
   },
   description: 'Autonomous AI agents that understand, test, heal, and report - without human intervention. Generate tests from production errors, predict bugs before they ship, and ship quality software faster.',
   icons: {
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
     'ai testing',
     'automated testing',
     'qa automation',
-    'argus',
+    'skopaq',
     'test generation',
     'self-healing tests',
     'end-to-end testing',
@@ -53,9 +54,9 @@ export const metadata: Metadata = {
     'test orchestration',
     'autonomous testing',
   ],
-  authors: [{ name: 'Argus Team', url: 'https://heyargus.ai' }],
-  creator: 'Argus',
-  publisher: 'Argus',
+  authors: [{ name: 'Skopaq Team', url: 'https://skopaq.ai' }],
+  creator: 'Skopaq',
+  publisher: 'Skopaq',
   formatDetection: {
     telephone: false,
     email: false,
@@ -65,19 +66,19 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Argus',
+    title: 'Skopaq',
   },
   openGraph: {
-    title: 'Argus | Agentic AI Quality Intelligence',
+    title: 'Skopaq | Agentic AI Quality Intelligence',
     description: 'Autonomous AI agents that understand, test, heal, and report. Generate tests from production errors. Predict bugs before they ship. Self-healing tests powered by Claude AI.',
-    url: 'https://heyargus.ai',
-    siteName: 'Argus',
+    url: 'https://skopaq.ai',
+    siteName: 'Skopaq',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Argus - Agentic AI Quality Intelligence',
+        alt: 'Skopaq - Agentic AI Quality Intelligence',
       },
     ],
     locale: 'en_US',
@@ -85,10 +86,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Argus | Agentic AI Quality Intelligence',
+    title: 'Skopaq | Agentic AI Quality Intelligence',
     description: 'Autonomous AI agents that understand, test, heal, and report. Self-healing tests powered by Claude AI.',
-    creator: '@heyargus',
-    site: '@heyargus',
+    creator: '@skopaq',
+    site: '@skopaq',
     images: ['/og-image.png'],
   },
   robots: {
@@ -103,12 +104,11 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: 'https://heyargus.ai',
+    canonical: 'https://skopaq.ai',
   },
   category: 'Technology',
   verification: {
-    // Add when you have these
-    // google: 'your-google-site-verification',
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
     // yandex: 'your-yandex-verification',
     // bing: 'your-bing-verification',
   },
@@ -117,8 +117,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   themeColor: '#f8fafc',
 };
 
@@ -126,7 +126,7 @@ export const viewport: Viewport = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'Argus',
+  name: 'Skopaq',
   applicationCategory: 'DeveloperApplication',
   applicationSubCategory: 'Testing Tools',
   operatingSystem: 'Web',
@@ -142,19 +142,19 @@ const jsonLd = {
   },
   description:
     'Autonomous AI agents that understand, test, heal, and report - without human intervention. Self-healing tests that generate from production errors.',
-  url: 'https://heyargus.ai',
-  screenshot: 'https://heyargus.ai/og-image.png',
+  url: 'https://skopaq.ai',
+  screenshot: 'https://skopaq.ai/og-image.png',
   author: {
     '@type': 'Organization',
-    name: 'Argus',
-    url: 'https://heyargus.ai',
+    name: 'Skopaq',
+    url: 'https://skopaq.ai',
   },
   publisher: {
     '@type': 'Organization',
-    name: 'Argus',
+    name: 'Skopaq',
     logo: {
       '@type': 'ImageObject',
-      url: 'https://heyargus.ai/argus-logo.png',
+      url: 'https://skopaq.ai/argus-logo.png',
     },
   },
   featureList: [
@@ -173,19 +173,19 @@ const jsonLd = {
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Argus',
-  url: 'https://heyargus.ai',
-  logo: 'https://heyargus.ai/argus-logo.png',
+  name: 'Skopaq',
+  url: 'https://skopaq.ai',
+  logo: 'https://skopaq.ai/argus-logo.png',
   description:
     'Agentic AI quality intelligence for modern development teams',
   sameAs: [
-    'https://twitter.com/heyargus',
-    'https://github.com/argus-labs',
+    'https://twitter.com/skopaq',
+    'https://github.com/skopaq',
   ],
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'Customer Support',
-    email: 'team@heyargus.com',
+    email: 'team@skopaq.ai',
   },
 };
 
@@ -293,6 +293,7 @@ export default function RootLayout({
             </SidebarProvider>
           </Providers>
           <SpeedInsights />
+          <GoogleAnalytics GA_MEASUREMENT_ID={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
         </body>
       </html>
     </ClerkProvider>

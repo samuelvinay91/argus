@@ -325,7 +325,7 @@ function PluginMonitorContent() {
                           <Puzzle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                           <p>No plugin activity yet</p>
                           <p className="text-sm mt-1">
-                            Install the Argus Claude Code plugin to get started
+                            Install the Skopaq Claude Code plugin to get started
                           </p>
                         </div>
                       ) : (
@@ -425,10 +425,10 @@ function PluginMonitorContent() {
                     <Puzzle className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
                     <h3 className="text-lg font-medium mb-2">No Plugin Data Yet</h3>
                     <p className="text-muted-foreground max-w-md mx-auto">
-                      Install the Argus Claude Code plugin to start monitoring your AI-assisted testing workflow.
+                      Install the Skopaq Claude Code plugin to start monitoring your AI-assisted testing workflow.
                     </p>
                     <Button className="mt-6" asChild>
-                      <a href="https://github.com/samuelvinay91/argus-plugin" target="_blank" rel="noopener noreferrer">
+                      <a href="https://github.com/skopaq/skopaq-plugin" target="_blank" rel="noopener noreferrer">
                         View Plugin Installation
                       </a>
                     </Button>

@@ -102,7 +102,7 @@ export function ApiKeysSection({
           API Keys
         </CardTitle>
         <CardDescription>
-          Manage API keys for programmatic access to Argus
+          Manage API keys for programmatic access to Skopaq
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -227,7 +227,7 @@ export function ApiKeysSection({
             <Key className="h-10 w-10 mx-auto mb-3 opacity-50" />
             <p>No API keys created yet</p>
             <p className="text-sm">
-              Create an API key to access Argus programmatically
+              Create an API key to access Skopaq programmatically
             </p>
           </div>
         )}

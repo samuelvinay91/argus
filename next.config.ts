@@ -18,14 +18,14 @@ const isDev = process.env.NODE_ENV === 'development';
 
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} https://*.clerk.accounts.dev https://clerk.heyargus.ai https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://*.sentry.io https://va.vercel-scripts.com https://vercel.live https://*.spline.design https://*.splinecdn.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://ddwl4m2hdecbv.cloudfront.net https://assets.apollo.io;
+  script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} https://*.clerk.accounts.dev https://clerk.skopaq.ai https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://*.sentry.io https://va.vercel-scripts.com https://vercel.live https://*.spline.design https://*.splinecdn.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://ddwl4m2hdecbv.cloudfront.net https://assets.apollo.io;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' data: blob: https: http://localhost:*;
   font-src 'self' data: https://fonts.gstatic.com;
   worker-src 'self' blob: https://*.spline.design https://*.splinecdn.com;
   media-src 'self' blob: https://argus-api.samuelvinay-kumar.workers.dev;
-  connect-src 'self' https://*.clerk.accounts.dev https://clerk.heyargus.ai https://clerk-telemetry.com https://img.clerk.com https://*.supabase.co wss://*.supabase.co https://argus-brain-production.up.railway.app https://argus-api.samuelvinay-kumar.workers.dev https://*.sentry.io https://www.google-analytics.com https://www.clarity.ms https://vitals.vercel-insights.com https://vercel.live https://prod.spline.design https://*.spline.design https://*.splinecdn.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.simpleicons.org https://models.dev https://ddwl4m2hdecbv.cloudfront.net https://assets.apollo.io https://aplo-evnt.com https://pro.ip-api.com ${isDev ? 'http://localhost:* ws://localhost:*' : ''};
-  frame-src 'self' https://*.clerk.accounts.dev https://clerk.heyargus.ai https://challenges.cloudflare.com https://vercel.live;
+  connect-src 'self' https://*.clerk.accounts.dev https://clerk.skopaq.ai https://clerk-telemetry.com https://img.clerk.com https://*.supabase.co wss://*.supabase.co https://skopaq-brain-production.up.railway.app https://argus-api.samuelvinay-kumar.workers.dev https://*.sentry.io https://www.google-analytics.com https://www.clarity.ms https://vitals.vercel-insights.com https://vercel.live https://prod.spline.design https://*.spline.design https://*.splinecdn.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.simpleicons.org https://models.dev https://ddwl4m2hdecbv.cloudfront.net https://assets.apollo.io https://aplo-evnt.com https://pro.ip-api.com ${isDev ? 'http://localhost:* ws://localhost:*' : ''};
+  frame-src 'self' https://*.clerk.accounts.dev https://clerk.skopaq.ai https://challenges.cloudflare.com https://vercel.live;
   frame-ancestors 'none';
   form-action 'self';
   base-uri 'self';
@@ -78,7 +78,7 @@ const nextConfig: NextConfig = {
   },
   // Proxy API calls to the Railway backend
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://argus-brain-production.up.railway.app';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://skopaq-brain-production.up.railway.app';
     return [
       {
         source: '/api/v1/:path*',

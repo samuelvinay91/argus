@@ -77,7 +77,7 @@ test.describe('Authentication Flow', () => {
 
       // Verify the page loads and contains expected content
       // The dashboard should render something (either landing page or auth redirect)
-      await expect(page).toHaveTitle(/Argus/i);
+      await expect(page).toHaveTitle(/Skopaq/i);
     });
   });
 

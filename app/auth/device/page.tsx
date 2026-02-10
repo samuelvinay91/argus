@@ -48,7 +48,7 @@ function DeviceAuthContent() {
 
     try {
       const token = await getToken();
-      const backendUrl = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL || 'https://argus-brain-production.up.railway.app';
+      const backendUrl = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL || 'https://skopaq-brain-production.up.railway.app';
       
       const response = await fetch(`${backendUrl}/api/v1/auth/device/approve`, {
         method: 'POST',
@@ -89,7 +89,7 @@ function DeviceAuthContent() {
     
     try {
       const token = await getToken();
-      const backendUrl = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL || 'https://argus-brain-production.up.railway.app';
+      const backendUrl = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL || 'https://skopaq-brain-production.up.railway.app';
       
       await fetch(`${backendUrl}/api/v1/auth/device/approve`, {
         method: 'POST',
@@ -140,7 +140,7 @@ function DeviceAuthContent() {
           </div>
           <CardTitle className="text-2xl">Device Authorization</CardTitle>
           <CardDescription>
-            A CLI tool or MCP server is requesting access to your Argus account
+            A CLI tool or MCP server is requesting access to your Skopaq account
           </CardDescription>
         </CardHeader>
 

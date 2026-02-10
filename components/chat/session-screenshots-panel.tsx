@@ -109,13 +109,13 @@ function formatScreenshotSrc(src: string): string {
 
   // Fix broken R2 URLs by routing through Worker proxy
   // Old format: https://argus-artifacts.r2.cloudflarestorage.com/screenshots/screenshot_xxx.png
-  // New format: https://argus-api.samuelvinay-kumar.workers.dev/screenshots/screenshot_xxx
+  // New format: https://skopaq-api.samuelvinay-kumar.workers.dev/screenshots/screenshot_xxx
   if (src.includes('r2.cloudflarestorage.com')) {
     // Extract artifact ID from the URL
     const match = src.match(/screenshots\/([^.]+)(?:\.png)?$/);
     if (match) {
       const artifactId = match[1];
-      return `https://argus-api.samuelvinay-kumar.workers.dev/screenshots/${artifactId}`;
+      return `https://skopaq-api.samuelvinay-kumar.workers.dev/screenshots/${artifactId}`;
     }
   }
 
@@ -125,7 +125,7 @@ function formatScreenshotSrc(src: string): string {
 
   // Check if it's an artifact ID (screenshot_xxx format)
   if (src.startsWith('screenshot_')) {
-    return `https://argus-api.samuelvinay-kumar.workers.dev/screenshots/${src}`;
+    return `https://skopaq-api.samuelvinay-kumar.workers.dev/screenshots/${src}`;
   }
 
   // Assume it's raw base64

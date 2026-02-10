@@ -83,7 +83,7 @@ describe('Notifications Integration Tests', () => {
         config: {
           webhook_url: 'https://hooks.slack.com/services/QA/WEBHOOK/URL',
           channel: '#qa-alerts',
-          username: 'Argus Bot',
+          username: 'Skopaq Bot',
           icon_emoji: ':robot_face:',
         },
       });
@@ -105,7 +105,7 @@ describe('Notifications Integration Tests', () => {
       expect(error).toBeNull();
       expect(data).toBeDefined();
       expect((data?.config as Record<string, unknown>)?.channel).toBe('#qa-alerts');
-      expect((data?.config as Record<string, unknown>)?.username).toBe('Argus Bot');
+      expect((data?.config as Record<string, unknown>)?.username).toBe('Skopaq Bot');
     });
 
     it('should create a disabled Slack channel', async () => {

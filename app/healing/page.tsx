@@ -134,7 +134,7 @@ export default function HealingPage() {
               Self-Healing Configuration
             </h1>
             <p className="text-sm text-muted-foreground">
-              Configure how Argus automatically fixes broken selectors and tests
+              Configure how Skopaq automatically fixes broken selectors and tests
             </p>
           </div>
           <Button onClick={handleSave} disabled={updateConfig.isPending}>

@@ -590,7 +590,7 @@ export default function ProfilePage() {
                         <div>
                           <div className="font-medium">In-App Notifications</div>
                           <div className="text-sm text-muted-foreground">
-                            Show notifications within the Argus dashboard
+                            Show notifications within the Skopaq dashboard
                           </div>
                         </div>
                       </div>

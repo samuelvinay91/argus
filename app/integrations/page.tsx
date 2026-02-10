@@ -373,7 +373,7 @@ const integrations: IntegrationMeta[] = [
   {
     id: 'github_actions',
     name: 'GitHub Actions',
-    description: 'Run Argus tests in GitHub Actions workflows',
+    description: 'Run Skopaq tests in GitHub Actions workflows',
     icon: Github,
     color: 'gray',
     categories: ['cicd'],
@@ -383,7 +383,7 @@ const integrations: IntegrationMeta[] = [
   {
     id: 'gitlab_ci',
     name: 'GitLab CI',
-    description: 'Integrate Argus with GitLab CI/CD pipelines',
+    description: 'Integrate Skopaq with GitLab CI/CD pipelines',
     icon: GitLabIcon,
     color: 'orange',
     categories: ['cicd'],
@@ -393,7 +393,7 @@ const integrations: IntegrationMeta[] = [
   {
     id: 'jenkins',
     name: 'Jenkins',
-    description: 'Run Argus tests in Jenkins pipelines',
+    description: 'Run Skopaq tests in Jenkins pipelines',
     icon: Server,
     color: 'red',
     categories: ['cicd'],
@@ -403,7 +403,7 @@ const integrations: IntegrationMeta[] = [
   {
     id: 'circleci',
     name: 'CircleCI',
-    description: 'Integrate Argus with CircleCI workflows',
+    description: 'Integrate Skopaq with CircleCI workflows',
     icon: Circle,
     color: 'green',
     categories: ['cicd'],
@@ -433,7 +433,7 @@ const integrations: IntegrationMeta[] = [
   {
     id: 'teamcity',
     name: 'TeamCity',
-    description: 'Run Argus tests in TeamCity builds',
+    description: 'Run Skopaq tests in TeamCity builds',
     icon: Server,
     color: 'cyan',
     categories: ['cicd'],
@@ -847,12 +847,12 @@ const integrations: IntegrationMeta[] = [
     color: 'gray',
     categories: ['webhooks'],
     authType: 'webhook',
-    docsUrl: 'https://docs.heyargus.ai/webhooks',
+    docsUrl: 'https://docs.skopaq.ai/webhooks',
   },
   {
     id: 'zapier',
     name: 'Zapier',
-    description: 'Connect Argus with 5000+ apps via Zapier',
+    description: 'Connect Skopaq with 5000+ apps via Zapier',
     icon: Zap,
     color: 'orange',
     categories: ['webhooks'],

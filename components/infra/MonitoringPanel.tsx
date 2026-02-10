@@ -273,7 +273,7 @@ export function MonitoringPanel() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open('https://grafana-internal.heyargus.ai', '_blank')}
+                onClick={() => window.open('https://grafana-internal.skopaq.ai', '_blank')}
               >
                 <ExternalLink className="h-3 w-3 mr-1" />
                 Open Grafana
@@ -347,7 +347,7 @@ export function MonitoringPanel() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open('https://prometheus-internal.heyargus.ai', '_blank')}
+                onClick={() => window.open('https://prometheus-internal.skopaq.ai', '_blank')}
               >
                 <ExternalLink className="h-3 w-3 mr-1" />
                 Open Prometheus
@@ -394,7 +394,7 @@ export function MonitoringPanel() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open('https://alertmanager-internal.heyargus.ai', '_blank')}
+                onClick={() => window.open('https://alertmanager-internal.skopaq.ai', '_blank')}
               >
                 <ExternalLink className="h-3 w-3 mr-1" />
                 Open AlertManager
