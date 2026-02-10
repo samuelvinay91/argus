@@ -151,7 +151,7 @@ function StatCard({
   loading,
   className,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   value: number | string;
   label: string;
   trend?: 'up' | 'down' | 'stable';

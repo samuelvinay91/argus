@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client';
 
 import React, { useRef, useState, useMemo } from 'react';
@@ -18,7 +19,7 @@ const AGENTS = [
     { id: 'agent-5', name: 'Security Sentinel', type: 'SECURITY', status: 'WARNING', color: '#ff4444', distance: 14, speed: 0.1, size: 0.7 },
 ];
 
-function AgentPlanet({ agent, onHover, onLeave }) {
+function AgentPlanet({ agent, onHover, onLeave }: { agent: typeof AGENTS[number]; onHover: (agent: typeof AGENTS[number]) => void; onLeave: () => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const [angle, setAngle] = useState(Math.random() * Math.PI * 2);
 

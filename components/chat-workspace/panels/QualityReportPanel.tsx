@@ -137,7 +137,7 @@ const MetricBar = memo(function MetricBar({
 }: {
   label: string;
   value: number;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   color: 'emerald' | 'amber' | 'red' | 'blue';
   inverted?: boolean; // For metrics where lower is better (like flaky rate)
 }) {

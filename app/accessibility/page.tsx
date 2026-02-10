@@ -132,7 +132,7 @@ function ImpactCard({
 }: {
   label: string;
   count: number;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   color: string;
 }) {
   return (

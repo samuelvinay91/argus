@@ -83,7 +83,7 @@ function StatCard({
   value,
   description,
 }: {
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   label: string;
   value: string | number;
   description?: string;

@@ -30,7 +30,7 @@ export type SettingsSection =
 interface SectionConfig {
   id: SettingsSection;
   name: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
 }
 
 const sections: SectionConfig[] = [

@@ -44,7 +44,7 @@ interface ExecutionPreviewProps {
 }
 
 // Iteration mode configs
-const IterationModes: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
+const IterationModes: Record<string, { icon: React.ComponentType<{ className?: string; size?: number }>; label: string }> = {
   sequential: { icon: ArrowRight, label: 'Sequential' },
   parallel: { icon: Layers, label: 'Parallel' },
   random: { icon: Shuffle, label: 'Random' },

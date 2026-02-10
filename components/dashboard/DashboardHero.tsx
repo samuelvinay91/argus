@@ -138,7 +138,7 @@ function StatCard({
   suffix = '',
   delay = 0,
 }: {
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   label: string;
   value: number | string;
   suffix?: string;

@@ -37,7 +37,7 @@ import { NoProjectsEmptyState } from '@/components/ui/empty-state';
 interface BrowserOption {
   id: string;
   name: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   versions: string[];
 }
 
@@ -45,7 +45,7 @@ interface BrowserOption {
 interface DeviceOption {
   id: string;
   name: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   viewport: string;
 }
 

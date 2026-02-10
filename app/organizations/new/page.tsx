@@ -26,7 +26,7 @@ interface PlanOption {
   description: string;
   price: string;
   priceLabel: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   features: string[];
   recommended?: boolean;
   available: boolean;

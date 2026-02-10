@@ -27,7 +27,7 @@ type TestStatus = 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
 type SortField = 'name' | 'status' | 'duration_ms' | 'steps' | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
-const statusConfig: Record<TestStatus, { icon: React.ComponentType<{ className?: string }>; color: string; label: string; order: number }> = {
+const statusConfig: Record<TestStatus, { icon: React.ComponentType<{ className?: string; size?: number }>; color: string; label: string; order: number }> = {
   failed: {
     icon: XCircle,
     color: 'text-red-500',

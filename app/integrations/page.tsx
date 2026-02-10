@@ -88,7 +88,7 @@ export type IntegrationCategory =
   | 'ai_agents'
   | 'database';
 
-const categories: { value: IntegrationCategory; label: string; icon: React.ElementType }[] = [
+const categories: { value: IntegrationCategory; label: string; icon: React.ComponentType<{ className?: string; size?: number }> }[] = [
   { value: 'all', label: 'All Categories', icon: Layers },
   { value: 'source_code', label: 'Source Code Management', icon: GitBranch },
   { value: 'issue_tracking', label: 'Issue Tracking', icon: Bug },
@@ -114,7 +114,7 @@ interface IntegrationMeta {
   id: IntegrationPlatform;
   name: string;
   description: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   color: string;
   categories: IntegrationCategory[];
   authType: 'oauth' | 'api_key' | 'webhook';

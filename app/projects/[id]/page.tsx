@@ -39,7 +39,7 @@ import { cn } from '@/lib/utils';
 
 type TabId = 'overview' | 'tests' | 'discovery' | 'visual' | 'quality' | 'activity' | 'settings';
 
-const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
+const tabs: { id: TabId; label: string; icon: React.ComponentType<{ className?: string; size?: number }> }[] = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
   { id: 'tests', label: 'Tests', icon: TestTube },
   { id: 'discovery', label: 'Discovery', icon: Compass },
@@ -298,7 +298,7 @@ function StatCard({
   value,
   trend,
 }: {
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   label: string;
   value: string;
   trend: 'up' | 'down' | 'neutral' | null;

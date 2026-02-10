@@ -45,7 +45,7 @@ type StatusFilter = VisualChange['status'] | 'all';
 type SortField = 'severity' | 'category' | 'confidence' | 'location';
 type SortDirection = 'asc' | 'desc';
 
-const categoryOptions: { value: CategoryFilter; label: string; icon: React.ElementType }[] = [
+const categoryOptions: { value: CategoryFilter; label: string; icon: React.ComponentType<{ className?: string; size?: number }> }[] = [
   { value: 'all', label: 'All Categories', icon: Filter },
   { value: 'layout', label: 'Layout', icon: Layout },
   { value: 'content', label: 'Content', icon: Type },
@@ -55,7 +55,7 @@ const categoryOptions: { value: CategoryFilter; label: string; icon: React.Eleme
   { value: 'accessibility', label: 'Accessibility', icon: Accessibility },
 ];
 
-const severityOptions: { value: SeverityFilter; label: string; icon: React.ElementType; variant: 'error' | 'warning' | 'info' | 'success' | 'default' }[] = [
+const severityOptions: { value: SeverityFilter; label: string; icon: React.ComponentType<{ className?: string; size?: number }>; variant: 'error' | 'warning' | 'info' | 'success' | 'default' }[] = [
   { value: 'all', label: 'All Severities', icon: Filter, variant: 'default' },
   { value: 'critical', label: 'Critical', icon: AlertCircle, variant: 'error' },
   { value: 'major', label: 'Major', icon: AlertTriangle, variant: 'warning' },
@@ -64,7 +64,7 @@ const severityOptions: { value: SeverityFilter; label: string; icon: React.Eleme
   { value: 'safe', label: 'Safe', icon: Shield, variant: 'success' },
 ];
 
-const statusOptions: { value: StatusFilter; label: string; icon: React.ElementType }[] = [
+const statusOptions: { value: StatusFilter; label: string; icon: React.ComponentType<{ className?: string; size?: number }> }[] = [
   { value: 'all', label: 'All Statuses', icon: Filter },
   { value: 'pending', label: 'Pending', icon: Clock },
   { value: 'approved', label: 'Approved', icon: Check },

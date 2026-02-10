@@ -174,7 +174,7 @@ export function TestRunHeader({
 // Status Badge Component
 function StatusBadge({ status }: { status: TestRun['status'] }) {
   const config: Record<TestRun['status'], {
-    icon: React.ElementType;
+    icon: React.ComponentType<{ className?: string; size?: number }>;
     label: string;
     className: string;
     iconClassName?: string;
@@ -272,7 +272,7 @@ function ConnectionIndicator({
   onReconnect?: () => void;
 }) {
   const config: Record<ConnectionStatus, {
-    icon: React.ElementType;
+    icon: React.ComponentType<{ className?: string; size?: number }>;
     label: string;
     className: string;
     iconClassName?: string;

@@ -15,7 +15,7 @@ export interface ViewModeToggleProps {
   className?: string;
 }
 
-const viewModes: { mode: ViewMode; icon: React.ComponentType<{ className?: string }>; label: string }[] = [
+const viewModes: { mode: ViewMode; icon: React.ComponentType<{ className?: string; size?: number }>; label: string }[] = [
   { mode: 'timeline', icon: Clock, label: 'Timeline' },
   { mode: 'grid', icon: Grid3X3, label: 'Grid' },
   { mode: 'list', icon: LayoutList, label: 'List' },

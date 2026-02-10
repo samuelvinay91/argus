@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 export interface StatCardWithTrendProps {
   /** Icon component to display */
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   /** Label text for the stat */
   label: string;
   /** Current value to display (large number) */

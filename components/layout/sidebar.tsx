@@ -227,7 +227,7 @@ function ThemeToggle() {
 type NavItemType = {
   name: string;
   href: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   badge?: string;
 };
 
@@ -341,7 +341,7 @@ function CollapsibleSection({
   sidebarCollapsed = false,
 }: {
   title: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   children: React.ReactNode;
   defaultOpen?: boolean;
   sidebarCollapsed?: boolean;

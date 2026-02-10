@@ -64,7 +64,7 @@ const ModeButton = memo(function ModeButton({
 }: {
   mode: ViewMode;
   currentMode: ViewMode;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   label: string;
   onClick: () => void;
 }) {

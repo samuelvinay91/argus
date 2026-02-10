@@ -81,7 +81,7 @@ function formatDuration(seconds?: number): string {
   return `${mins}m ${secs}s`;
 }
 
-function getStageIcon(stageName: string): React.ElementType {
+function getStageIcon(stageName: string): React.ComponentType<{ className?: string; size?: number }> {
   const name = stageName.toLowerCase();
   if (name.includes('build')) return Package;
   if (name.includes('test')) return TestTube2;
@@ -96,7 +96,7 @@ function getStageIcon(stageName: string): React.ElementType {
 // =============================================================================
 
 const StatusBadge = memo(function StatusBadge({ status }: { status: StageStatus }) {
-  const config: Record<StageStatus, { icon: React.ElementType; color: string; label: string; animate?: boolean }> = {
+  const config: Record<StageStatus, { icon: React.ComponentType<{ className?: string; size?: number }>; color: string; label: string; animate?: boolean }> = {
     pending: { icon: Clock, color: 'text-white/50 bg-white/10', label: 'Pending' },
     running: { icon: Loader2, color: 'text-blue-400 bg-blue-500/20', label: 'Running', animate: true },
     success: { icon: CheckCircle2, color: 'text-emerald-400 bg-emerald-500/20', label: 'Success' },

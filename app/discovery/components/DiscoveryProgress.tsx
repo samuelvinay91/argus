@@ -71,7 +71,7 @@ function StatCard({
   label,
   animate = true,
 }: {
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   value: number;
   label: string;
   animate?: boolean;

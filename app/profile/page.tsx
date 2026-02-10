@@ -31,7 +31,7 @@ import { useProjects } from '@/lib/hooks/use-projects';
 interface SettingSection {
   id: string;
   name: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
 }
 
 const sections: SettingSection[] = [

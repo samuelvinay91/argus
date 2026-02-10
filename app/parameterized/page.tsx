@@ -43,7 +43,7 @@ import type { ParameterizedTest, ParameterizedResult } from '@/lib/hooks/use-par
 import { NoProjectsEmptyState } from '@/components/ui/empty-state';
 
 // Data source type icons
-const DataSourceIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+const DataSourceIcons: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
   inline: FileJson,
   csv: FileSpreadsheet,
   json: FileJson,
@@ -54,7 +54,7 @@ const DataSourceIcons: Record<string, React.ComponentType<{ className?: string }
 };
 
 // Iteration mode icons and labels
-const IterationModes: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string; color: string }> = {
+const IterationModes: Record<string, { icon: React.ComponentType<{ className?: string; size?: number }>; label: string; color: string }> = {
   sequential: { icon: ArrowRight, label: 'Sequential', color: 'text-blue-500' },
   parallel: { icon: Layers, label: 'Parallel', color: 'text-purple-500' },
   random: { icon: Shuffle, label: 'Random', color: 'text-orange-500' },

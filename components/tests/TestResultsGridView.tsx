@@ -15,7 +15,7 @@ export interface TestResultsGridViewProps {
 
 type TestStatus = 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
 
-const statusConfig: Record<TestStatus, { icon: React.ComponentType<{ className?: string }>; color: string; bgColor: string; borderColor: string }> = {
+const statusConfig: Record<TestStatus, { icon: React.ComponentType<{ className?: string; size?: number }>; color: string; bgColor: string; borderColor: string }> = {
   passed: {
     icon: CheckCircle2,
     color: 'text-green-500',

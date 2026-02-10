@@ -55,7 +55,7 @@ interface ChangeCardProps {
   onToggleExpand?: () => void;
 }
 
-const categoryConfig: Record<VisualChange['category'], { icon: React.ElementType; label: string; color: string }> = {
+const categoryConfig: Record<VisualChange['category'], { icon: React.ComponentType<{ className?: string; size?: number }>; label: string; color: string }> = {
   layout: { icon: Layout, label: 'Layout', color: 'text-blue-500' },
   content: { icon: Type, label: 'Content', color: 'text-purple-500' },
   style: { icon: Palette, label: 'Style', color: 'text-pink-500' },
@@ -64,7 +64,7 @@ const categoryConfig: Record<VisualChange['category'], { icon: React.ElementType
   accessibility: { icon: Accessibility, label: 'Accessibility', color: 'text-green-500' },
 };
 
-const severityConfig: Record<VisualChange['severity'], { icon: React.ElementType; label: string; variant: 'error' | 'warning' | 'info' | 'success' | 'default' }> = {
+const severityConfig: Record<VisualChange['severity'], { icon: React.ComponentType<{ className?: string; size?: number }>; label: string; variant: 'error' | 'warning' | 'info' | 'success' | 'default' }> = {
   critical: { icon: AlertCircle, label: 'Critical', variant: 'error' },
   major: { icon: AlertTriangle, label: 'Major', variant: 'warning' },
   minor: { icon: Info, label: 'Minor', variant: 'info' },
@@ -72,7 +72,7 @@ const severityConfig: Record<VisualChange['severity'], { icon: React.ElementType
   safe: { icon: Shield, label: 'Safe', variant: 'success' },
 };
 
-const statusConfig: Record<VisualChange['status'], { icon: React.ElementType; label: string; color: string }> = {
+const statusConfig: Record<VisualChange['status'], { icon: React.ComponentType<{ className?: string; size?: number }>; label: string; color: string }> = {
   pending: { icon: AlertCircle, label: 'Pending Review', color: 'text-warning' },
   approved: { icon: Check, label: 'Approved', color: 'text-success' },
   rejected: { icon: X, label: 'Rejected', color: 'text-error' },

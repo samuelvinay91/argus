@@ -63,7 +63,7 @@ function VitalGauge({
   unit: string;
   grade: 'good' | 'needs_work' | 'poor';
   thresholds: { good: string; needsWork: string };
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
 }) {
   const gradeColors = {
     good: 'text-success border-success bg-success/10',

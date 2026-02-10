@@ -75,7 +75,7 @@ type SortOption = 'name' | 'price_asc' | 'price_desc' | 'context_window';
 // Constants
 // ============================================================================
 
-const CAPABILITY_FILTERS: { value: CapabilityFilter; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const CAPABILITY_FILTERS: { value: CapabilityFilter; label: string; icon: React.ComponentType<{ className?: string; size?: number }> }[] = [
   { value: 'all', label: 'All', icon: Cpu },
   { value: 'vision', label: 'Vision', icon: Image },
   { value: 'tools', label: 'Tool Use', icon: Code },

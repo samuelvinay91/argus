@@ -45,7 +45,7 @@ import {
 import { cn } from '@/lib/utils';
 
 // Event type icons and colors
-const eventTypeConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
+const eventTypeConfig: Record<string, { icon: React.ComponentType<{ className?: string; size?: number }>; color: string; label: string }> = {
   command: { icon: Terminal, color: 'text-blue-500', label: 'Command' },
   skill: { icon: Sparkles, color: 'text-purple-500', label: 'Skill' },
   agent: { icon: Bot, color: 'text-green-500', label: 'Agent' },
@@ -58,7 +58,7 @@ const eventTypeConfig: Record<string, { icon: React.ElementType; color: string; 
 
 // Status badge component
 function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { icon: React.ElementType; className: string }> = {
+  const config: Record<string, { icon: React.ComponentType<{ className?: string; size?: number }>; className: string }> = {
     started: { icon: Loader2, className: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' },
     completed: { icon: CheckCircle, className: 'bg-green-500/10 text-green-600 border-green-500/30' },
     failed: { icon: XCircle, className: 'bg-red-500/10 text-red-600 border-red-500/30' },
@@ -85,7 +85,7 @@ function StatsCard({
 }: {
   title: string;
   value: string | number;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   description?: string;
   trend?: { value: number; positive: boolean };
 }) {

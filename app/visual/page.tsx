@@ -128,7 +128,7 @@ function StatCard({
 }: {
   title: string;
   value: string | number;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
   description?: string;
@@ -190,7 +190,7 @@ function TabButton({
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   badge?: number;
 }) {
   return (
