@@ -23,8 +23,8 @@ const ContentSecurityPolicy = `
   img-src 'self' data: blob: https: http://localhost:*;
   font-src 'self' data: https://fonts.gstatic.com;
   worker-src 'self' blob: https://*.spline.design https://*.splinecdn.com;
-  media-src 'self' blob: https://argus-api.samuelvinay-kumar.workers.dev;
-  connect-src 'self' https://*.clerk.accounts.dev https://clerk.skopaq.ai https://clerk-telemetry.com https://img.clerk.com https://*.supabase.co wss://*.supabase.co https://skopaq-brain-production.up.railway.app https://argus-api.samuelvinay-kumar.workers.dev https://*.sentry.io https://www.google-analytics.com https://www.clarity.ms https://vitals.vercel-insights.com https://vercel.live https://prod.spline.design https://*.spline.design https://*.splinecdn.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.simpleicons.org https://models.dev https://ddwl4m2hdecbv.cloudfront.net https://assets.apollo.io https://aplo-evnt.com https://pro.ip-api.com ${isDev ? 'http://localhost:* ws://localhost:*' : ''};
+  media-src 'self' blob: https://skopaq-api.samuelvinay-kumar.workers.dev;
+  connect-src 'self' https://*.clerk.accounts.dev https://clerk.skopaq.ai https://clerk-telemetry.com https://img.clerk.com https://*.supabase.co wss://*.supabase.co https://skopaq-brain-production.up.railway.app https://skopaq-api.samuelvinay-kumar.workers.dev https://*.sentry.io https://www.google-analytics.com https://www.clarity.ms https://vitals.vercel-insights.com https://vercel.live https://prod.spline.design https://*.spline.design https://*.splinecdn.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.simpleicons.org https://models.dev https://ddwl4m2hdecbv.cloudfront.net https://assets.apollo.io https://aplo-evnt.com https://pro.ip-api.com ${isDev ? 'http://localhost:* ws://localhost:*' : ''};
   frame-src 'self' https://*.clerk.accounts.dev https://clerk.skopaq.ai https://challenges.cloudflare.com https://vercel.live;
   frame-ancestors 'none';
   form-action 'self';
@@ -120,7 +120,7 @@ const nextConfig: NextConfig = {
   ],
   // Environment variables for client-side
   env: {
-    NEXT_PUBLIC_E2E_WORKER_URL: process.env.NEXT_PUBLIC_E2E_WORKER_URL || 'https://argus-api.samuelvinay-kumar.workers.dev',
+    NEXT_PUBLIC_E2E_WORKER_URL: process.env.NEXT_PUBLIC_E2E_WORKER_URL || 'https://skopaq-api.samuelvinay-kumar.workers.dev',
   },
   // Transpile Spline packages for ES module compatibility
   transpilePackages: ['@splinetool/react-spline', '@splinetool/runtime'],

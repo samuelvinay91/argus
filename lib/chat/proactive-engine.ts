@@ -32,7 +32,7 @@ interface ProactiveTrigger {
 }
 
 // Storage key for cooldown tracking
-const COOLDOWN_STORAGE_KEY = 'argus_proactive_cooldowns';
+const COOLDOWN_STORAGE_KEY = 'skopaq_proactive_cooldowns';
 
 // Get cooldown state from localStorage
 function getCooldowns(): Record<string, number> {

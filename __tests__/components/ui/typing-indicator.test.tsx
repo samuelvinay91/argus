@@ -139,7 +139,7 @@ describe('TypingIndicator Component', () => {
 
     it('renders with violet color', () => {
       const { container } = render(<TypingIndicator color="violet" />);
-      expect(container.firstChild).toHaveClass('[--dot-color:hsl(var(--argus-violet-400))]');
+      expect(container.firstChild).toHaveClass('[--dot-color:hsl(var(--skopaq-violet-400))]');
     });
 
     it('renders with muted color', () => {
@@ -235,7 +235,7 @@ describe('TypingIndicator Component', () => {
 
     it('generates correct classes for color violet', () => {
       const classes = typingIndicatorVariants({ color: 'violet' });
-      expect(classes).toContain('[--dot-color:hsl(var(--argus-violet-400))]');
+      expect(classes).toContain('[--dot-color:hsl(var(--skopaq-violet-400))]');
     });
   });
 
@@ -287,7 +287,7 @@ describe('TypingIndicator Component', () => {
       );
       expect(container.firstChild).toHaveClass(
         'gap-[5px]',
-        '[--dot-color:hsl(var(--argus-violet-400))]'
+        '[--dot-color:hsl(var(--skopaq-violet-400))]'
       );
     });
 

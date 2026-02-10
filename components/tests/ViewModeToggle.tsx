@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 export type ViewMode = 'timeline' | 'grid' | 'list';
 
-const STORAGE_KEY = 'argus-test-results-view-mode';
+const STORAGE_KEY = 'skopaq-test-results-view-mode';
 
 export interface ViewModeToggleProps {
   value?: ViewMode;

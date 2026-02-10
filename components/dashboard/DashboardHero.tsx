@@ -59,7 +59,7 @@ function QualityScoreRing({ score, trend }: { score: number; trend: 'up' | 'down
 
   const getScoreColor = () => {
     if (score >= 90) return 'hsl(var(--status-healthy))';
-    if (score >= 70) return 'hsl(var(--argus-amber))';
+    if (score >= 70) return 'hsl(var(--skopaq-amber))';
     return 'hsl(var(--status-critical))';
   };
 
@@ -179,11 +179,11 @@ function AIInsightBanner({ insight }: { insight: string }) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.8, duration: 0.5 }}
     >
-      <div className="h-8 w-8 rounded-lg bg-[hsl(var(--argus-violet-400)/0.2)] flex items-center justify-center flex-shrink-0">
-        <Sparkles className="h-4 w-4 text-[hsl(var(--argus-violet-400))]" />
+      <div className="h-8 w-8 rounded-lg bg-[hsl(var(--skopaq-violet-400)/0.2)] flex items-center justify-center flex-shrink-0">
+        <Sparkles className="h-4 w-4 text-[hsl(var(--skopaq-violet-400))]" />
       </div>
       <div>
-        <p className="text-xs font-semibold text-[hsl(var(--argus-violet-300))] uppercase tracking-wide mb-1">
+        <p className="text-xs font-semibold text-[hsl(var(--skopaq-violet-300))] uppercase tracking-wide mb-1">
           AI Insight of the Day
         </p>
         <p className="text-sm text-foreground/90">{insight}</p>
@@ -211,8 +211,8 @@ export function DashboardHero({
           style={{
             background: `
               radial-gradient(ellipse 80% 60% at 20% 30%, hsl(var(--primary) / 0.15), transparent),
-              radial-gradient(ellipse 60% 50% at 80% 70%, hsl(var(--argus-violet-400) / 0.12), transparent),
-              radial-gradient(ellipse 70% 40% at 50% 90%, hsl(var(--argus-cyan) / 0.08), transparent),
+              radial-gradient(ellipse 60% 50% at 80% 70%, hsl(var(--skopaq-violet-400) / 0.12), transparent),
+              radial-gradient(ellipse 70% 40% at 50% 90%, hsl(var(--skopaq-cyan) / 0.08), transparent),
               linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%)
             `,
           }}
@@ -256,7 +256,7 @@ export function DashboardHero({
         <motion.div
           className="absolute w-48 h-48 rounded-full"
           style={{
-            background: 'radial-gradient(circle, hsl(var(--argus-violet-400) / 0.15) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, hsl(var(--skopaq-violet-400) / 0.15) 0%, transparent 70%)',
             right: '15%',
             bottom: '20%',
           }}

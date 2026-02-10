@@ -58,7 +58,7 @@ describe('api (Organization-Scoped)', () => {
     });
 
     it('should return organization ID from localStorage', () => {
-      mockLocalStorage['argus_current_organization_id'] = 'org-123';
+      mockLocalStorage['skopaq_current_organization_id'] = 'org-123';
 
       const result = getCurrentOrganizationId();
 
@@ -70,25 +70,25 @@ describe('api (Organization-Scoped)', () => {
     it('should store organization ID in localStorage', () => {
       setCurrentOrganizationId('org-456');
 
-      expect(mockLocalStorage['argus_current_organization_id']).toBe('org-456');
+      expect(mockLocalStorage['skopaq_current_organization_id']).toBe('org-456');
     });
 
     it('should overwrite existing organization ID', () => {
-      mockLocalStorage['argus_current_organization_id'] = 'old-org';
+      mockLocalStorage['skopaq_current_organization_id'] = 'old-org';
 
       setCurrentOrganizationId('new-org');
 
-      expect(mockLocalStorage['argus_current_organization_id']).toBe('new-org');
+      expect(mockLocalStorage['skopaq_current_organization_id']).toBe('new-org');
     });
   });
 
   describe('clearCurrentOrganizationId', () => {
     it('should remove organization ID from localStorage', () => {
-      mockLocalStorage['argus_current_organization_id'] = 'org-to-remove';
+      mockLocalStorage['skopaq_current_organization_id'] = 'org-to-remove';
 
       clearCurrentOrganizationId();
 
-      expect(mockLocalStorage['argus_current_organization_id']).toBeUndefined();
+      expect(mockLocalStorage['skopaq_current_organization_id']).toBeUndefined();
     });
 
     it('should not throw when no organization ID exists', () => {
@@ -98,7 +98,7 @@ describe('api (Organization-Scoped)', () => {
 
   describe('organizationScopedFetch', () => {
     it('should add X-Organization-ID header from localStorage', async () => {
-      mockLocalStorage['argus_current_organization_id'] = 'org-from-storage';
+      mockLocalStorage['skopaq_current_organization_id'] = 'org-from-storage';
       mockFetch.mockResolvedValue(new Response('{}'));
 
       await organizationScopedFetch('/api/test');
@@ -114,7 +114,7 @@ describe('api (Organization-Scoped)', () => {
     });
 
     it('should use explicitly provided organizationId', async () => {
-      mockLocalStorage['argus_current_organization_id'] = 'stored-org';
+      mockLocalStorage['skopaq_current_organization_id'] = 'stored-org';
       mockFetch.mockResolvedValue(new Response('{}'));
 
       await organizationScopedFetch('/api/test', { organizationId: 'explicit-org' });
@@ -130,7 +130,7 @@ describe('api (Organization-Scoped)', () => {
     });
 
     it('should skip organization header when skipOrganizationHeader is true', async () => {
-      mockLocalStorage['argus_current_organization_id'] = 'org-to-skip';
+      mockLocalStorage['skopaq_current_organization_id'] = 'org-to-skip';
       mockFetch.mockResolvedValue(new Response('{}'));
 
       await organizationScopedFetch('/api/test', { skipOrganizationHeader: true });
@@ -149,7 +149,7 @@ describe('api (Organization-Scoped)', () => {
     });
 
     it('should merge custom headers', async () => {
-      mockLocalStorage['argus_current_organization_id'] = 'org-123';
+      mockLocalStorage['skopaq_current_organization_id'] = 'org-123';
       mockFetch.mockResolvedValue(new Response('{}'));
 
       await organizationScopedFetch('/api/test', {
@@ -268,12 +268,12 @@ describe('api (Organization-Scoped)', () => {
 
       client.setOrganization('new-org-id');
 
-      expect(mockLocalStorage['argus_current_organization_id']).toBe('new-org-id');
+      expect(mockLocalStorage['skopaq_current_organization_id']).toBe('new-org-id');
     });
 
     it('getOrganization should return current org', () => {
       const mockGetToken = vi.fn().mockResolvedValue('token');
-      mockLocalStorage['argus_current_organization_id'] = 'current-org';
+      mockLocalStorage['skopaq_current_organization_id'] = 'current-org';
 
       const client = createOrganizationScopedClient(mockGetToken);
 
@@ -282,12 +282,12 @@ describe('api (Organization-Scoped)', () => {
 
     it('clearOrganization should remove org from localStorage', () => {
       const mockGetToken = vi.fn().mockResolvedValue('token');
-      mockLocalStorage['argus_current_organization_id'] = 'org-to-clear';
+      mockLocalStorage['skopaq_current_organization_id'] = 'org-to-clear';
 
       const client = createOrganizationScopedClient(mockGetToken);
       client.clearOrganization();
 
-      expect(mockLocalStorage['argus_current_organization_id']).toBeUndefined();
+      expect(mockLocalStorage['skopaq_current_organization_id']).toBeUndefined();
     });
   });
 
@@ -338,7 +338,7 @@ describe('api (Organization-Scoped)', () => {
     it('should update localStorage', async () => {
       await switchOrganization('new-org');
 
-      expect(mockLocalStorage['argus_current_organization_id']).toBe('new-org');
+      expect(mockLocalStorage['skopaq_current_organization_id']).toBe('new-org');
     });
 
     it('should call server API when getToken provided', async () => {
@@ -368,7 +368,7 @@ describe('api (Organization-Scoped)', () => {
       // Should not throw
       await switchOrganization('new-org', mockGetToken);
 
-      expect(mockLocalStorage['argus_current_organization_id']).toBe('new-org');
+      expect(mockLocalStorage['skopaq_current_organization_id']).toBe('new-org');
     });
 
     it('should handle null token from getToken', async () => {
@@ -378,7 +378,7 @@ describe('api (Organization-Scoped)', () => {
 
       // Should not make API call when token is null
       expect(mockFetch).not.toHaveBeenCalled();
-      expect(mockLocalStorage['argus_current_organization_id']).toBe('new-org');
+      expect(mockLocalStorage['skopaq_current_organization_id']).toBe('new-org');
     });
   });
 });

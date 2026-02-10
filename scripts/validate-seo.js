@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * SEO Validation Script for Argus Dashboard
+ * SEO Validation Script for Skopaq Dashboard
  * Checks for common SEO issues before deployment
  * 
  * Usage: node scripts/validate-seo.js
@@ -47,7 +47,7 @@ function info(message) {
 }
 
 console.log(`\n${COLORS.magenta}╔═══════════════════════════════════════╗${COLORS.reset}`);
-console.log(`${COLORS.magenta}║   Argus Dashboard SEO Validator       ║${COLORS.reset}`);
+console.log(`${COLORS.magenta}║   Skopaq Dashboard SEO Validator       ║${COLORS.reset}`);
 console.log(`${COLORS.magenta}╚═══════════════════════════════════════╝${COLORS.reset}\n`);
 
 // Check 1: robots.ts exists

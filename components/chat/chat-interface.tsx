@@ -118,7 +118,7 @@ function resolveScreenshotUrl(
   // HTTP(S) URL - check for broken R2 URLs and transform
   if (screenshot.startsWith('http://') || screenshot.startsWith('https://')) {
     // Fix broken R2 URLs by routing through Worker proxy
-    // Old format: https://argus-artifacts.r2.cloudflarestorage.com/screenshots/screenshot_xxx.png
+    // Old format: https://skopaq-artifacts.r2.cloudflarestorage.com/screenshots/screenshot_xxx.png
     // New format: https://skopaq-api.samuelvinay-kumar.workers.dev/screenshots/screenshot_xxx
     if (screenshot.includes('r2.cloudflarestorage.com')) {
       const match = screenshot.match(/screenshots\/([^.]+)(?:\.png)?$/);
@@ -1809,7 +1809,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
     }).length;
 
     const lastVisitTime = typeof window !== 'undefined'
-      ? localStorage.getItem('argus_last_visit')
+      ? localStorage.getItem('skopaq_last_visit')
       : null;
 
     return {
@@ -1846,7 +1846,7 @@ export function ChatInterface({ conversationId, initialMessages = [], onMessages
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('argus_last_visit', new Date().toISOString());
+      localStorage.setItem('skopaq_last_visit', new Date().toISOString());
     }
   }, []);
 

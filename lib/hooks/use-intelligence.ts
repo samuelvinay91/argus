@@ -218,7 +218,7 @@ export function useGenerateTest() {
       };
     }) => {
       // Get Skopaq API URL from environment
-      const apiUrl = process.env.NEXT_PUBLIC_ARGUS_API_URL || 'https://argus-api.your-domain.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_SKOPAQ_API_URL || 'https://skopaq-api.skopaq.ai';
       const apiToken = process.env.NEXT_PUBLIC_ARGUS_API_TOKEN;
 
       const response = await fetch(`${apiUrl}/api/generate-test`, {
@@ -334,7 +334,7 @@ export function useCalculateRiskScores() {
       entityTypes?: string[];
     }) => {
       // Get Skopaq API URL from environment
-      const apiUrl = process.env.NEXT_PUBLIC_ARGUS_API_URL || 'https://argus-api.your-domain.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_SKOPAQ_API_URL || 'https://skopaq-api.skopaq.ai';
       const apiToken = process.env.NEXT_PUBLIC_ARGUS_API_TOKEN;
 
       const response = await fetch(`${apiUrl}/api/calculate-risk-scores`, {
@@ -424,7 +424,7 @@ export function useAIQualityScore(projectId: string | null) {
     queryFn: async () => {
       if (!projectId) return null;
 
-      const apiUrl = process.env.NEXT_PUBLIC_ARGUS_API_URL || 'https://argus-api.your-domain.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_SKOPAQ_API_URL || 'https://skopaq-api.skopaq.ai';
       const apiToken = process.env.NEXT_PUBLIC_ARGUS_API_TOKEN;
 
       const response = await fetch(`${apiUrl}/api/quality-score?project_id=${projectId}`, {
@@ -470,7 +470,7 @@ export function useSemanticSearch() {
       limit?: number;
       minScore?: number;
     }) => {
-      const apiUrl = process.env.NEXT_PUBLIC_ARGUS_API_URL || 'https://argus-api.your-domain.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_SKOPAQ_API_URL || 'https://skopaq-api.skopaq.ai';
       const apiToken = process.env.NEXT_PUBLIC_ARGUS_API_TOKEN;
 
       const response = await fetch(`${apiUrl}/api/semantic-search`, {
@@ -531,7 +531,7 @@ export function useAutonomousLoop() {
         test_directory?: string;
       };
     }) => {
-      const apiUrl = process.env.NEXT_PUBLIC_ARGUS_API_URL || 'https://argus-api.your-domain.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_SKOPAQ_API_URL || 'https://skopaq-api.skopaq.ai';
       const apiToken = process.env.NEXT_PUBLIC_ARGUS_API_TOKEN;
 
       const response = await fetch(`${apiUrl}/api/autonomous-loop`, {
@@ -609,7 +609,7 @@ export function usePredictiveQuality(projectId: string | null, timeframe: string
     queryFn: async () => {
       if (!projectId) return null;
 
-      const apiUrl = process.env.NEXT_PUBLIC_ARGUS_API_URL || 'https://argus-api.your-domain.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_SKOPAQ_API_URL || 'https://skopaq-api.skopaq.ai';
       const apiToken = process.env.NEXT_PUBLIC_ARGUS_API_TOKEN;
 
       const response = await fetch(

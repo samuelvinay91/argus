@@ -34,7 +34,7 @@ export type SDLCSourcePlatform =
   | 'opsgenie'
   | 'launchdarkly'
   | 'vercel'
-  | 'argus'
+  | 'skopaq'
   | 'amplitude';
 
 /**

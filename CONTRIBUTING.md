@@ -34,7 +34,7 @@ This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participatin
 2. **Clone your fork**
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/argus.git
+   git clone https://github.com/YOUR_USERNAME/skopaq-dashboard.git
    cd skopaq
    ```
 

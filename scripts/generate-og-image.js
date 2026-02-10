@@ -42,7 +42,7 @@ const CONFIG = {
   model: 'stability-ai/stable-diffusion',
   version: 'db21e45d3f7023abc2a46ee38a23973f6dce16bb082a930b0c49861f96d1e5bf',
   
-  prompt: `A professional Open Graph social media image for "Argus" - an AI-powered E2E testing platform.
+  prompt: `A professional Open Graph social media image for "Skopaq" - an AI-powered E2E testing platform.
 
 Design specifications:
 - Dimensions: 1200x630 pixels, landscape orientation
@@ -69,7 +69,7 @@ Style: Modern, minimal, tech-forward, professional, clean, high-end software pro
   outputPath: path.join(__dirname, '..', 'public', 'og-image.png'),
 };
 
-console.log('\x1b[36m🎨 Argus OG Image Generator\x1b[0m\n');
+console.log('\x1b[36m🎨 Skopaq OG Image Generator\x1b[0m\n');
 console.log(`Model: ${CONFIG.model}`);
 console.log(`Output: ${CONFIG.outputPath}\n`);
 

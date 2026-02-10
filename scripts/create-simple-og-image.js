@@ -70,7 +70,7 @@ const svgContent = `<svg width="1200" height="630" xmlns="http://www.w3.org/2000
   
   <!-- Bottom branding -->
   <text x="600" y="580" font-family="Arial, sans-serif" font-size="20" fill="#71717a" text-anchor="middle">
-    heyargus.ai
+    skopaq.ai
   </text>
 </svg>`;
 

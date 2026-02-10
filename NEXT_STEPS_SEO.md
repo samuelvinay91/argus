@@ -48,7 +48,7 @@ I've implemented the following SEO improvements to your Skopaq dashboard:
 1. Go to https://www.canva.com/create/og-images/
 2. Search for "Open Graph" template
 3. Add:
-   - Skopaq logo (upload `/public/argus-logo.png`)
+   - Skopaq logo (upload `/public/skopaq-logo.png`)
    - Text: "AI-Powered E2E Testing"
    - Tagline: "Generate tests from production errors"
    - Background color: #14b8a6 (teal) or dark gradient
@@ -64,7 +64,7 @@ I've implemented the following SEO improvements to your Skopaq dashboard:
 ```bash
 # Resize existing logo to 1200x630 (requires ImageMagick)
 cd dashboard/public
-convert argus-logo.png -resize 1200x630 -gravity center -extent 1200x630 og-image.png
+convert skopaq-logo.png -resize 1200x630 -gravity center -extent 1200x630 og-image.png
 ```
 
 **Test it:**

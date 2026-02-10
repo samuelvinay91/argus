@@ -694,7 +694,7 @@ describe('use-presence', () => {
       renderHook(() => useProjectPresence('proj-123'));
 
       expect(getChannelMock()).toHaveBeenCalledWith(
-        'argus-presence:project:proj-123',
+        'skopaq-presence:project:proj-123',
         expect.any(Object)
       );
     });
@@ -706,7 +706,7 @@ describe('use-presence', () => {
       renderHook(() => useProjectPresence(null));
 
       expect(getChannelMock()).toHaveBeenCalledWith(
-        'argus-presence',
+        'skopaq-presence',
         expect.any(Object)
       );
     });

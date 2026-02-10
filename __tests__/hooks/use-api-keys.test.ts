@@ -37,7 +37,7 @@ describe('use-api-keys', () => {
     {
       id: 'key-1',
       name: 'Production Key',
-      key_prefix: 'argus_live_',
+      key_prefix: 'skopaq_live_',
       scopes: ['read', 'write'],
       last_used_at: '2024-01-15T00:00:00Z',
       request_count: 100,
@@ -49,7 +49,7 @@ describe('use-api-keys', () => {
     {
       id: 'key-2',
       name: 'Test Key',
-      key_prefix: 'argus_test_',
+      key_prefix: 'skopaq_test_',
       scopes: ['read'],
       last_used_at: null,
       request_count: 0,
@@ -61,7 +61,7 @@ describe('use-api-keys', () => {
     {
       id: 'key-3',
       name: 'Revoked Key',
-      key_prefix: 'argus_old_',
+      key_prefix: 'skopaq_old_',
       scopes: ['read'],
       last_used_at: '2023-12-01T00:00:00Z',
       request_count: 50,
@@ -189,8 +189,8 @@ describe('use-api-keys', () => {
       const newKey = {
         id: 'new-key',
         name: 'New Key',
-        key_prefix: 'argus_',
-        key: 'argus_live_abc123xyz',
+        key_prefix: 'skopaq_',
+        key: 'skopaq_live_abc123xyz',
         scopes: ['read', 'write'],
         is_active: true,
       };
@@ -219,7 +219,7 @@ describe('use-api-keys', () => {
           expires_in_days: 90,
         });
 
-        expect(created.key).toBe('argus_live_abc123xyz');
+        expect(created.key).toBe('skopaq_live_abc123xyz');
       });
 
       expect(mockFetchJson).toHaveBeenCalledWith(
@@ -237,7 +237,7 @@ describe('use-api-keys', () => {
 
     it('should use default scopes when not provided', async () => {
       const mockFetchJson = vi.fn().mockResolvedValue({
-        data: { id: 'new-key', key: 'argus_abc' },
+        data: { id: 'new-key', key: 'skopaq_abc' },
         error: null,
         status: 201,
       });
@@ -269,7 +269,7 @@ describe('use-api-keys', () => {
       const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
       const mockFetchJson = vi.fn().mockResolvedValue({
-        data: { id: 'new-key', key: 'argus_abc' },
+        data: { id: 'new-key', key: 'skopaq_abc' },
         error: null,
         status: 201,
       });
@@ -386,8 +386,8 @@ describe('use-api-keys', () => {
         new_key: {
           id: 'key-new',
           name: 'Production Key',
-          key: 'argus_live_new123',
-          key_prefix: 'argus_live_',
+          key: 'skopaq_live_new123',
+          key_prefix: 'skopaq_live_',
           scopes: ['read', 'write'],
           is_active: true,
         },
@@ -413,7 +413,7 @@ describe('use-api-keys', () => {
 
       await act(async () => {
         const response = await result.current.mutateAsync('key-1');
-        expect(response.new_key.key).toBe('argus_live_new123');
+        expect(response.new_key.key).toBe('skopaq_live_new123');
         expect(response.old_key_id).toBe('key-1');
       });
 
@@ -429,7 +429,7 @@ describe('use-api-keys', () => {
       const mockFetchJson = vi.fn().mockResolvedValue({
         data: {
           old_key_id: 'key-1',
-          new_key: { id: 'key-new', key: 'argus_new' },
+          new_key: { id: 'key-new', key: 'skopaq_new' },
           message: 'Rotated',
         },
         error: null,

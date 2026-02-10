@@ -912,7 +912,7 @@ export function LandingPage() {
                   Test directly from your IDE. Our MCP server brings Skopaq into Claude Code, Cursor, and any MCP-compatible editor.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {['argus_discover', 'argus_act', 'argus_test', 'argus_agent'].map((tool) => (
+                  {['skopaq_discover', 'skopaq_act', 'skopaq_test', 'skopaq_agent'].map((tool) => (
                     <span key={tool} className="text-xs px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-400 font-mono border border-violet-500/20">{tool}</span>
                   ))}
                 </div>

@@ -13,7 +13,7 @@ import { useAuth } from '@clerk/nextjs';
 import { apiClient } from '@/lib/api-client';
 
 // LocalStorage key - must match org-switcher.tsx
-const CURRENT_ORG_KEY = 'argus_current_org_id';
+const CURRENT_ORG_KEY = 'skopaq_current_org_id';
 
 /**
  * Organization interface matching the backend response

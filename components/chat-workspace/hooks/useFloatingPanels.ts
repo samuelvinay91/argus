@@ -46,7 +46,7 @@ export interface FloatingPanelsState {
 // CONSTANTS
 // =============================================================================
 
-const STORAGE_KEY = 'argus-floating-panels';
+const STORAGE_KEY = 'skopaq-floating-panels';
 const CASCADE_OFFSET = 30;
 const DEFAULT_WIDTH = 480;
 const DEFAULT_HEIGHT = 400;

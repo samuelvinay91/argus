@@ -120,9 +120,9 @@ NEXT_PUBLIC_CLOUDFLARE_WORKER_URL=https://skopaq-api.samuelvinay-kumar.workers.d
 
 ## Branding
 
-- **Internal identifiers** use `argus` (CSS vars `--argus-*`, localStorage keys `argus_*`) — do NOT rename these
-- **User-facing text** uses "Skopaq" — always use this in UI copy, SEO, emails
-- **Domain**: `skopaq.ai` (not `heyargus.ai`)
+- All identifiers use `skopaq` — CSS vars `--skopaq-*`, localStorage keys `skopaq_*`, package name `skopaq-dashboard`
+- **Domain**: `skopaq.ai`
+- **No `argus` references** should exist anywhere in this repo
 
 ## Important Constraints
 

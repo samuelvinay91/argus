@@ -13,7 +13,7 @@ const typingIndicatorVariants = cva('inline-flex items-center', {
     },
     color: {
       primary: '[--dot-color:hsl(var(--primary))]',
-      violet: '[--dot-color:hsl(var(--argus-violet-400))]',
+      violet: '[--dot-color:hsl(var(--skopaq-violet-400))]',
       muted: '[--dot-color:hsl(var(--muted-foreground))]',
     },
   },

@@ -94,7 +94,7 @@ describe('use-current-organization', () => {
     });
 
     it('should return org ID from localStorage', () => {
-      mockLocalStorage['argus_current_org_id'] = 'org-123';
+      mockLocalStorage['skopaq_current_org_id'] = 'org-123';
 
       const result = getCurrentOrgId();
 
@@ -106,17 +106,17 @@ describe('use-current-organization', () => {
     it('should store org ID in localStorage', () => {
       setCurrentOrgId('org-456');
 
-      expect(mockLocalStorage['argus_current_org_id']).toBe('org-456');
+      expect(mockLocalStorage['skopaq_current_org_id']).toBe('org-456');
     });
   });
 
   describe('clearCurrentOrgId', () => {
     it('should remove org ID from localStorage', () => {
-      mockLocalStorage['argus_current_org_id'] = 'org-to-remove';
+      mockLocalStorage['skopaq_current_org_id'] = 'org-to-remove';
 
       clearCurrentOrgId();
 
-      expect(mockLocalStorage['argus_current_org_id']).toBeUndefined();
+      expect(mockLocalStorage['skopaq_current_org_id']).toBeUndefined();
     });
   });
 
@@ -130,7 +130,7 @@ describe('use-current-organization', () => {
     });
 
     it('should return org ID from localStorage', () => {
-      mockLocalStorage['argus_current_org_id'] = 'stored-org-id';
+      mockLocalStorage['skopaq_current_org_id'] = 'stored-org-id';
 
       const { result } = renderHook(() => useCurrentOrganizationId(), {
         wrapper,
@@ -142,7 +142,7 @@ describe('use-current-organization', () => {
 
   describe('useCurrentOrganization', () => {
     it('should return loading state initially when org ID exists', async () => {
-      mockLocalStorage['argus_current_org_id'] = 'org-123';
+      mockLocalStorage['skopaq_current_org_id'] = 'org-123';
       vi.mocked(apiClient.get).mockImplementation(
         () => new Promise(() => {}) // Never resolves
       );
@@ -156,7 +156,7 @@ describe('use-current-organization', () => {
     });
 
     it('should return organization data after successful fetch', async () => {
-      mockLocalStorage['argus_current_org_id'] = 'org-123';
+      mockLocalStorage['skopaq_current_org_id'] = 'org-123';
       const mockOrg = {
         id: 'org-123',
         name: 'Test Organization',
@@ -188,7 +188,7 @@ describe('use-current-organization', () => {
     });
 
     it('should return error state on fetch failure', async () => {
-      mockLocalStorage['argus_current_org_id'] = 'org-123';
+      mockLocalStorage['skopaq_current_org_id'] = 'org-123';
       vi.mocked(apiClient.get).mockRejectedValue(new Error('Fetch failed'));
 
       const { result } = renderHook(() => useCurrentOrganization(), {
@@ -204,7 +204,7 @@ describe('use-current-organization', () => {
     });
 
     it('should clear org ID on 404 error', async () => {
-      mockLocalStorage['argus_current_org_id'] = 'nonexistent-org';
+      mockLocalStorage['skopaq_current_org_id'] = 'nonexistent-org';
       vi.mocked(apiClient.get).mockRejectedValue(new Error('404 Not Found'));
 
       const { result } = renderHook(() => useCurrentOrganization(), {
@@ -216,11 +216,11 @@ describe('use-current-organization', () => {
       });
 
       // LocalStorage should be cleared
-      expect(mockLocalStorage['argus_current_org_id']).toBeUndefined();
+      expect(mockLocalStorage['skopaq_current_org_id']).toBeUndefined();
     });
 
     it('should clear org ID on 403 error', async () => {
-      mockLocalStorage['argus_current_org_id'] = 'forbidden-org';
+      mockLocalStorage['skopaq_current_org_id'] = 'forbidden-org';
       vi.mocked(apiClient.get).mockRejectedValue(new Error('403 Forbidden'));
 
       const { result } = renderHook(() => useCurrentOrganization(), {
@@ -231,12 +231,12 @@ describe('use-current-organization', () => {
         expect(result.current.organization).toBeNull();
       });
 
-      expect(mockLocalStorage['argus_current_org_id']).toBeUndefined();
+      expect(mockLocalStorage['skopaq_current_org_id']).toBeUndefined();
     });
 
     describe('switchOrganization', () => {
       it('should update localStorage with new org ID', async () => {
-        mockLocalStorage['argus_current_org_id'] = 'old-org';
+        mockLocalStorage['skopaq_current_org_id'] = 'old-org';
         vi.mocked(apiClient.get).mockResolvedValue({ id: 'old-org', name: 'Old' });
 
         // Mock window.location.reload
@@ -258,11 +258,11 @@ describe('use-current-organization', () => {
           result.current.switchOrganization('new-org');
         });
 
-        expect(mockLocalStorage['argus_current_org_id']).toBe('new-org');
+        expect(mockLocalStorage['skopaq_current_org_id']).toBe('new-org');
       });
 
       it('should not reload when reload option is false', async () => {
-        mockLocalStorage['argus_current_org_id'] = 'old-org';
+        mockLocalStorage['skopaq_current_org_id'] = 'old-org';
         vi.mocked(apiClient.get).mockResolvedValue({ id: 'old-org', name: 'Old' });
 
         const mockReload = vi.fn();
@@ -287,7 +287,7 @@ describe('use-current-organization', () => {
       });
 
       it('should call server API when updateServer is true', async () => {
-        mockLocalStorage['argus_current_org_id'] = 'old-org';
+        mockLocalStorage['skopaq_current_org_id'] = 'old-org';
         vi.mocked(apiClient.get).mockResolvedValue({ id: 'old-org', name: 'Old' });
         vi.mocked(apiClient.post).mockResolvedValue({});
 
@@ -364,7 +364,7 @@ describe('use-current-organization', () => {
 
     describe('refetch', () => {
       it('should refetch organization data', async () => {
-        mockLocalStorage['argus_current_org_id'] = 'org-123';
+        mockLocalStorage['skopaq_current_org_id'] = 'org-123';
         let callCount = 0;
         vi.mocked(apiClient.get).mockImplementation(() => {
           callCount++;

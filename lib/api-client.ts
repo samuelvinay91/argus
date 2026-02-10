@@ -132,7 +132,7 @@ let authInitialized = false;
 let globalGetOrgId: (() => string | null) | null = null;
 
 // Cross-tab sync storage key
-const AUTH_SYNC_KEY = 'argus_auth_sync';
+const AUTH_SYNC_KEY = 'skopaq_auth_sync';
 
 // Callbacks for cross-tab auth state changes
 type AuthChangeCallback = (event: 'logout' | 'login' | 'org_change') => void;

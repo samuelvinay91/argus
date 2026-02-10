@@ -28,7 +28,7 @@ const glassCardVariants = cva(
         ],
         violet: [
           'bg-gradient-to-br from-[hsl(var(--glass-surface))] to-[hsl(0_0%_100%/0.01)]',
-          'border border-[hsl(var(--argus-violet-400)/0.3)]',
+          'border border-[hsl(var(--skopaq-violet-400)/0.3)]',
           'shadow-[0_8px_32px_hsl(var(--glass-shadow)),0_0_40px_hsl(var(--glow-violet)),inset_0_1px_0_hsl(var(--glass-highlight))]',
         ],
         success: [

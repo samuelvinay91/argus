@@ -22,7 +22,7 @@ import { ResizeDivider } from './ResizeDivider';
 
 export type LayoutState = 'focused' | 'split' | 'multi';
 
-const STORAGE_KEY = 'argus-workspace-panel-size';
+const STORAGE_KEY = 'skopaq-workspace-panel-size';
 const DEFAULT_PANEL_SIZE = 45;
 const MIN_PANEL_SIZE = 25;
 const MAX_PANEL_SIZE = 60;

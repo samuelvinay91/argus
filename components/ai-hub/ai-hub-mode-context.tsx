@@ -21,7 +21,7 @@ import {
 } from 'react';
 
 // Storage key for persisting mode preference
-const AI_HUB_MODE_KEY = 'argus_ai_hub_mode';
+const AI_HUB_MODE_KEY = 'skopaq_ai_hub_mode';
 
 /**
  * AI Hub display modes

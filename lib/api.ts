@@ -8,7 +8,7 @@
 import { authenticatedFetch, AuthenticatedFetchOptions } from './auth-api';
 
 // Storage key for organization ID
-const ORG_ID_STORAGE_KEY = 'argus_current_organization_id';
+const ORG_ID_STORAGE_KEY = 'skopaq_current_organization_id';
 
 // Callbacks for cross-tab organization changes
 type OrgChangeCallback = (orgId: string | null) => void;

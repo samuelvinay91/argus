@@ -85,8 +85,8 @@ const ChatContext = createContext<ChatContextValue | undefined>(undefined);
 
 // Storage keys
 const STORAGE_KEYS = {
-  recentSessions: 'argus_recent_sessions',
-  sidebarCollapsed: 'argus_sidebar_collapsed',
+  recentSessions: 'skopaq_recent_sessions',
+  sidebarCollapsed: 'skopaq_sidebar_collapsed',
 };
 
 // Provider props

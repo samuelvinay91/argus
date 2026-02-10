@@ -21,7 +21,7 @@ interface UsePresenceOptions {
 }
 
 export function usePresence(options: UsePresenceOptions = {}) {
-  const { channelName = 'argus-presence', trackPage = true } = options;
+  const { channelName = 'skopaq-presence', trackPage = true } = options;
   const { user } = useUser();
   const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -180,12 +180,12 @@ export function usePresence(options: UsePresenceOptions = {}) {
 
 // Hook for project-specific presence
 export function useProjectPresence(projectId: string | null) {
-  const channelName = projectId ? `argus-presence:project:${projectId}` : 'argus-presence';
+  const channelName = projectId ? `skopaq-presence:project:${projectId}` : 'skopaq-presence';
   return usePresence({ channelName, trackPage: true });
 }
 
 // Hook for getting presence count
-export function usePresenceCount(channelName: string = 'argus-presence') {
+export function usePresenceCount(channelName: string = 'skopaq-presence') {
   const { onlineUsers, isConnected } = usePresence({ channelName, trackPage: false });
   return { count: onlineUsers.length, isConnected };
 }

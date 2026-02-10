@@ -154,7 +154,7 @@ const jsonLd = {
     name: 'Skopaq',
     logo: {
       '@type': 'ImageObject',
-      url: 'https://skopaq.ai/argus-logo.png',
+      url: 'https://skopaq.ai/skopaq-logo.png',
     },
   },
   featureList: [
@@ -175,7 +175,7 @@ const organizationJsonLd = {
   '@type': 'Organization',
   name: 'Skopaq',
   url: 'https://skopaq.ai',
-  logo: 'https://skopaq.ai/argus-logo.png',
+  logo: 'https://skopaq.ai/skopaq-logo.png',
   description:
     'Agentic AI quality intelligence for modern development teams',
   sameAs: [

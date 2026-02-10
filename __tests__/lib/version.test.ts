@@ -50,7 +50,7 @@ describe('version', () => {
 
       const versionInfo = getVersionInfo();
 
-      expect(versionInfo.name).toBe('argus-dashboard');
+      expect(versionInfo.name).toBe('skopaq-dashboard');
     });
 
     it('should return description from package.json', async () => {

@@ -1,7 +1,7 @@
 # Skopaq Dashboard
 
 <div align="center">
-  <img src="public/argus-logo.png" alt="Skopaq Logo" width="120" />
+  <img src="public/skopaq-logo.png" alt="Skopaq Logo" width="120" />
   <h3>Autonomous Intelligence Agent for Quality</h3>
   <p>AI-powered quality intelligence platform with Claude AI integration</p>
 

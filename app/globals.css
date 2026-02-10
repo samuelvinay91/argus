@@ -51,10 +51,10 @@
     --safe-area-right: env(safe-area-inset-right, 0px);
 
     /* Skopaq Brand Colors */
-    --argus-teal: 173 80% 40%;
-    --argus-cyan: 185 85% 50%;
-    --argus-amber: 38 92% 50%;
-    --argus-emerald: 160 84% 39%;
+    --skopaq-teal: 173 80% 40%;
+    --skopaq-cyan: 185 85% 50%;
+    --skopaq-amber: 38 92% 50%;
+    --skopaq-emerald: 160 84% 39%;
 
     /* Glass Morphism - Light Mode */
     --glass-surface: 220 20% 10% / 0.02;
@@ -78,13 +78,13 @@
     --status-running: 185 85% 45%;
 
     /* Violet Spectrum - Light Mode */
-    --argus-violet-50: 262 80% 97%;
-    --argus-violet-100: 262 80% 92%;
-    --argus-violet-200: 262 75% 80%;
-    --argus-violet-300: 262 70% 65%;
-    --argus-violet-400: 262 70% 55%;
-    --argus-violet-500: 262 70% 50%;
-    --argus-violet-600: 262 70% 40%;
+    --skopaq-violet-50: 262 80% 97%;
+    --skopaq-violet-100: 262 80% 92%;
+    --skopaq-violet-200: 262 75% 80%;
+    --skopaq-violet-300: 262 70% 65%;
+    --skopaq-violet-400: 262 70% 55%;
+    --skopaq-violet-500: 262 70% 50%;
+    --skopaq-violet-600: 262 70% 40%;
   }
 
   .dark {
@@ -126,19 +126,19 @@
     --ring: 173 80% 45%;
 
     /* Skopaq Brand Colors - Dark Mode */
-    --argus-teal: 173 80% 45%;
-    --argus-cyan: 185 85% 55%;
-    --argus-amber: 38 92% 55%;
-    --argus-emerald: 160 84% 44%;
+    --skopaq-teal: 173 80% 45%;
+    --skopaq-cyan: 185 85% 55%;
+    --skopaq-amber: 38 92% 55%;
+    --skopaq-emerald: 160 84% 44%;
 
     /* NEW: AI Feature Colors - Violet Spectrum */
-    --argus-violet-50: 262 80% 95%;
-    --argus-violet-100: 262 80% 85%;
-    --argus-violet-200: 262 80% 70%;
-    --argus-violet-300: 262 80% 60%;
-    --argus-violet-400: 262 80% 55%;
-    --argus-violet-500: 262 80% 50%;
-    --argus-violet-600: 262 80% 40%;
+    --skopaq-violet-50: 262 80% 95%;
+    --skopaq-violet-100: 262 80% 85%;
+    --skopaq-violet-200: 262 80% 70%;
+    --skopaq-violet-300: 262 80% 60%;
+    --skopaq-violet-400: 262 80% 55%;
+    --skopaq-violet-500: 262 80% 50%;
+    --skopaq-violet-600: 262 80% 40%;
 
     /* NEW: Status Colors - Semantic */
     --status-healthy: 160 84% 44%;
@@ -420,7 +420,7 @@
 
   .glass-card-violet {
     @apply glass-card;
-    border-color: hsl(var(--argus-violet-400) / 0.3);
+    border-color: hsl(var(--skopaq-violet-400) / 0.3);
     box-shadow:
       0 8px 32px hsl(var(--glass-shadow)),
       0 0 40px hsl(var(--glow-violet)),
@@ -453,16 +453,16 @@
 
   /* Gradient text utility */
   .gradient-text {
-    @apply bg-gradient-to-r from-primary via-[hsl(var(--argus-cyan))] to-primary bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary via-[hsl(var(--skopaq-cyan))] to-primary bg-clip-text text-transparent;
   }
 
   /* Gradient backgrounds */
   .gradient-primary {
-    @apply bg-gradient-to-r from-primary to-[hsl(var(--argus-cyan))];
+    @apply bg-gradient-to-r from-primary to-[hsl(var(--skopaq-cyan))];
   }
 
   .gradient-accent {
-    @apply bg-gradient-to-r from-[hsl(var(--argus-amber))] to-[hsl(35,90%,55%)];
+    @apply bg-gradient-to-r from-[hsl(var(--skopaq-amber))] to-[hsl(35,90%,55%)];
   }
 
   /* Section spacing - 8px grid */
@@ -591,7 +591,7 @@
     background: linear-gradient(135deg,
       hsl(var(--primary)) 0%,
       hsl(185 85% 50%) 50%,
-      hsl(var(--argus-violet-400)) 100%
+      hsl(var(--skopaq-violet-400)) 100%
     );
     background-size: 200% 200%;
     animation: gradient-shift 4s ease infinite;
@@ -697,20 +697,20 @@
 
   /* NEW: AI/Healing Status */
   .status-healing {
-    @apply text-[hsl(var(--argus-violet-400))] bg-[hsl(var(--argus-violet-400)/0.1)];
+    @apply text-[hsl(var(--skopaq-violet-400))] bg-[hsl(var(--skopaq-violet-400)/0.1)];
   }
 
   /* NEW: Badge Variants */
   .badge-ai {
-    @apply badge bg-[hsl(var(--argus-violet-400)/0.15)] text-[hsl(var(--argus-violet-300))];
+    @apply badge bg-[hsl(var(--skopaq-violet-400)/0.15)] text-[hsl(var(--skopaq-violet-300))];
   }
 
   .badge-new {
-    @apply badge bg-gradient-to-r from-[hsl(var(--argus-violet-400))] to-[hsl(var(--primary))] text-white;
+    @apply badge bg-gradient-to-r from-[hsl(var(--skopaq-violet-400))] to-[hsl(var(--primary))] text-white;
   }
 
   .badge-beta {
-    @apply badge bg-[hsl(var(--argus-amber)/0.15)] text-[hsl(var(--argus-amber))];
+    @apply badge bg-[hsl(var(--skopaq-amber)/0.15)] text-[hsl(var(--skopaq-amber))];
   }
 }
 
@@ -778,11 +778,11 @@
 
   /* NEW: Gradient Text Utilities */
   .gradient-text-violet {
-    @apply bg-gradient-to-r from-[hsl(var(--argus-violet-300))] via-[hsl(var(--argus-violet-400))] to-[hsl(var(--primary))] bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-[hsl(var(--skopaq-violet-300))] via-[hsl(var(--skopaq-violet-400))] to-[hsl(var(--primary))] bg-clip-text text-transparent;
   }
 
   .gradient-text-rainbow {
-    @apply bg-gradient-to-r from-[hsl(var(--primary))] via-[hsl(var(--argus-violet-400))] to-[hsl(var(--argus-amber))] bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-[hsl(var(--primary))] via-[hsl(var(--skopaq-violet-400))] to-[hsl(var(--skopaq-amber))] bg-clip-text text-transparent;
   }
 }
 
@@ -999,7 +999,7 @@
 
 /* Typing indicator dots */
 .typing-dot {
-  @apply w-2 h-2 rounded-full bg-[hsl(var(--argus-violet-400))];
+  @apply w-2 h-2 rounded-full bg-[hsl(var(--skopaq-violet-400))];
   animation: typing-dots 1.4s infinite;
 }
 
@@ -1093,7 +1093,7 @@
 .ai-thinking::after {
   content: '';
   @apply absolute inset-0 rounded-full;
-  background: hsl(var(--argus-violet-400) / 0.2);
+  background: hsl(var(--skopaq-violet-400) / 0.2);
   animation: breathe 2s ease-in-out infinite;
 }
 

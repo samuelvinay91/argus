@@ -28,7 +28,7 @@ import { useAuthApi } from '@/lib/hooks/use-auth-api';
 import { setGlobalOrgIdGetter, clearGlobalOrgIdGetter } from '@/lib/api-client';
 
 // Storage key for persisting selected organization
-const CURRENT_ORG_KEY = 'argus_current_org_id';
+const CURRENT_ORG_KEY = 'skopaq_current_org_id';
 
 export interface Organization {
   id: string; // Backend UUID - NEVER Clerk org_xxx format

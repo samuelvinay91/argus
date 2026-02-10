@@ -108,7 +108,7 @@ function formatScreenshotSrc(src: string): string {
   }
 
   // Fix broken R2 URLs by routing through Worker proxy
-  // Old format: https://argus-artifacts.r2.cloudflarestorage.com/screenshots/screenshot_xxx.png
+  // Old format: https://skopaq-artifacts.r2.cloudflarestorage.com/screenshots/screenshot_xxx.png
   // New format: https://skopaq-api.samuelvinay-kumar.workers.dev/screenshots/screenshot_xxx
   if (src.includes('r2.cloudflarestorage.com')) {
     // Extract artifact ID from the URL

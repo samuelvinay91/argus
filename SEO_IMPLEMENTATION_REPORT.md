@@ -114,7 +114,7 @@ Added two Schema.org types:
 {
   "@type": "Organization",
   "name": "Skopaq",
-  "logo": "https://skopaq.ai/argus-logo.png",
+  "logo": "https://skopaq.ai/skopaq-logo.png",
   "sameAs": ["twitter.com/skopaq", "github.com/skopaq"]
 }
 ```
