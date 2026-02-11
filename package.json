@@ -1,6 +1,6 @@
 {
   "name": "skopaq-dashboard",
-  "version": "1.9.1",
+  "version": "2.0.0",
   "description": "Skopaq - Agentic AI Quality Intelligence",
   "private": true,
   "scripts": {
