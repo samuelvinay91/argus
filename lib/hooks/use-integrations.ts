@@ -254,7 +254,7 @@ export function useIntegrations() {
       return response.data;
     },
     enabled: isLoaded && isSignedIn,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
     // Poll every 5 seconds when any integration is syncing
     refetchInterval: (query) => {

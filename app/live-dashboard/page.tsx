@@ -1,6 +1,6 @@
 import React from 'react';
-import SolarSystem from '@/components/visual/SolarSystem';
 import { Metadata } from 'next';
+import LiveDashboardClient from './LiveDashboardClient';
 
 export const metadata: Metadata = {
     title: 'Live Agent Ecosystem | Skopaq',
@@ -35,9 +35,7 @@ export default function LiveDashboardPage() {
             </div>
 
             {/* 3D Scene */}
-            <div className="flex-1 w-full h-full relative">
-                <SolarSystem />
-            </div>
+            <LiveDashboardClient />
         </div>
     );
 }

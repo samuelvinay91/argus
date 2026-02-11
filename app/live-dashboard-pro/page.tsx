@@ -1,6 +1,6 @@
 import React from 'react';
-import DataMeshNetwork from '@/components/visual/pro/DataMeshNetwork';
 import { Metadata } from 'next';
+import LiveDashboardProClient from './LiveDashboardProClient';
 
 export const metadata: Metadata = {
     title: 'Skopaq Neural Mesh',
@@ -41,9 +41,7 @@ export default function LiveDashboardProPage() {
             </div>
 
             {/* 3D Scene Container */}
-            <div className="flex-1 w-full h-full relative">
-                <DataMeshNetwork />
-            </div>
+            <LiveDashboardProClient />
 
             {/* Footer / Status Line */}
             <div className="absolute bottom-0 left-0 w-full px-8 py-6 z-10 pointer-events-none flex justify-between items-end border-t border-white/5">

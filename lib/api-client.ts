@@ -8,9 +8,10 @@
  *
  * Features:
  * - Automatic auth token injection
- * - Global 30-second timeout
+ * - Global 10-second timeout
  * - AbortController support for cancellation
- * - Exponential backoff retry (max 2 retries)
+ * - Exponential backoff retry (max 1 retry)
+ * - In-flight GET request deduplication
  *
  * Usage:
  * 1. Wrap your app with <ApiClientProvider> (already done in layout)
@@ -18,9 +19,12 @@
  */
 
 // Configuration constants
-const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
-const MAX_RETRIES = 2;
-const INITIAL_RETRY_DELAY_MS = 500;
+const DEFAULT_TIMEOUT_MS = 10000; // 10 seconds
+const MAX_RETRIES = 1;
+const INITIAL_RETRY_DELAY_MS = 300;
+
+// In-flight GET request deduplication map
+const inflightRequests = new Map<string, Promise<unknown>>();
 
 /**
  * Case Conversion Utilities
@@ -428,6 +432,26 @@ export async function fetchJson<T>(
   retryCount = 0
 ): Promise<T> {
   const method = options?.method || 'GET';
+
+  // Deduplicate concurrent identical GET requests
+  if (method === 'GET' && retryCount === 0) {
+    const existing = inflightRequests.get(url) as Promise<T> | undefined;
+    if (existing) return existing;
+
+    const promise = fetchJsonInternal<T>(url, options, 0);
+    inflightRequests.set(url, promise);
+    return promise.finally(() => inflightRequests.delete(url));
+  }
+
+  return fetchJsonInternal<T>(url, options, retryCount);
+}
+
+async function fetchJsonInternal<T>(
+  url: string,
+  options: FetchOptions | undefined,
+  retryCount: number
+): Promise<T> {
+  const method = options?.method || 'GET';
   const maxRetries = options?.retries ?? (method === 'GET' ? MAX_RETRIES : 0);
 
   try {
@@ -438,7 +462,7 @@ export async function fetchJson<T>(
       if (response.status === 401 && retryCount === 0) {
         console.log('[api-client] Got 401, retrying after token refresh...');
         await sleep(INITIAL_RETRY_DELAY_MS);
-        return fetchJson(url, options, retryCount + 1);
+        return fetchJsonInternal(url, options, retryCount + 1);
       }
 
       // Check if error is retryable
@@ -446,7 +470,7 @@ export async function fetchJson<T>(
         const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount);
         console.log(`[api-client] Got ${response.status}, retrying in ${delay}ms...`);
         await sleep(delay);
-        return fetchJson(url, options, retryCount + 1);
+        return fetchJsonInternal(url, options, retryCount + 1);
       }
 
       const error = await response.json().catch(() => ({ message: 'Request failed' }));
@@ -485,7 +509,7 @@ export async function fetchJson<T>(
       const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount);
       console.log(`[api-client] Network error, retrying in ${delay}ms...`);
       await sleep(delay);
-      return fetchJson(url, options, retryCount + 1);
+      return fetchJsonInternal(url, options, retryCount + 1);
     }
 
     throw error;

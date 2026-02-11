@@ -39,7 +39,12 @@ import { AuthButtons } from './auth-buttons';
 import { StatsSection } from './StatsSection';
 import { IntegrationLogos } from './IntegrationLogos';
 import { AnimatedMeshGradient } from './AnimatedMeshGradient';
-import { VantaBackground } from './VantaBackground';
+import dynamic from 'next/dynamic';
+
+const VantaBackground = dynamic(
+  () => import('./VantaBackground').then(mod => mod.VantaBackground),
+  { ssr: false }
+);
 import { ProductShowcase } from './ProductShowcase';
 import { ScrollReveal, StaggerContainer, StaggerItem, TextReveal } from './ScrollReveal';
 

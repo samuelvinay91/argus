@@ -64,27 +64,34 @@ export default function InsightsPage() {
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const currentProject = selectedProjectId || projects[0]?.id;
 
-  const { data: insights = [], isLoading: insightsLoading } = useAIInsights(currentProject || null);
-  const { data: stats } = useInsightStats(currentProject || null);
+  // Tab-gated hooks: pass null projectId when tab is inactive to prevent unnecessary API calls
+  const insightsProject = activeTab === 'insights' ? (currentProject || null) : null;
+  const patternsProject = activeTab === 'patterns' ? (currentProject || null) : null;
+  const coverageProject = activeTab === 'coverage' ? (currentProject || null) : null;
+  const flakyProject = activeTab === 'flaky' ? (currentProject || null) : null;
+  const intelligenceProject = activeTab === 'intelligence' ? (currentProject || null) : null;
+
+  const { data: insights = [], isLoading: insightsLoading } = useAIInsights(insightsProject);
+  const { data: stats } = useInsightStats(insightsProject);
   const resolveInsight = useResolveInsight();
 
   // AI-powered generation mutation
   const generateInsights = useGenerateAIInsights();
   const aiResolveInsight = useAIResolveInsight();
 
-  // Real data hooks (SQL-based fallback)
-  const { data: failureData, isLoading: failuresLoading } = useFailureClusters(currentProject || null);
-  const { data: coverageData, isLoading: coverageLoading } = useCoverageGaps(currentProject || null);
-  const { data: flakyData, isLoading: flakyLoading } = useFlakyTests(currentProject || null);
+  // Real data hooks (SQL-based fallback) — only fetch when their tab is active
+  const { data: failureData, isLoading: failuresLoading } = useFailureClusters(patternsProject);
+  const { data: coverageData, isLoading: coverageLoading } = useCoverageGaps(coverageProject);
+  const { data: flakyData, isLoading: flakyLoading } = useFlakyTests(flakyProject);
 
   // AI-powered data hooks (Claude-based analysis)
-  const { data: aiFailureData, isLoading: aiFailuresLoading } = useAIFailureClusters(currentProject || null);
-  const { data: aiCoverageData, isLoading: aiCoverageLoading } = useAICoverageGaps(currentProject || null);
+  const { data: aiFailureData, isLoading: aiFailuresLoading } = useAIFailureClusters(patternsProject);
+  const { data: aiCoverageData, isLoading: aiCoverageLoading } = useAICoverageGaps(coverageProject);
 
-  // Cross-domain intelligence hooks
-  const { data: correlationsData, isLoading: correlationsLoading } = useCrossDomainCorrelations(currentProject || null);
-  const { data: alertsData, isLoading: alertsLoading } = useProactiveAlerts(currentProject || null);
-  const { data: executiveSummary, isLoading: summaryLoading } = useExecutiveSummary(currentProject || null);
+  // Cross-domain intelligence hooks — only fetch when intelligence tab is active
+  const { data: correlationsData, isLoading: correlationsLoading } = useCrossDomainCorrelations(intelligenceProject);
+  const { data: alertsData, isLoading: alertsLoading } = useProactiveAlerts(intelligenceProject);
+  const { data: executiveSummary, isLoading: summaryLoading } = useExecutiveSummary(intelligenceProject);
 
   // State for showing AI vs simple analysis
   const [useAIAnalysis, setUseAIAnalysis] = useState(true);

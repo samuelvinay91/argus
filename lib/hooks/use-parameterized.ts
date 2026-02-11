@@ -518,7 +518,7 @@ export function useParameterizedResults(projectId: string | null, limit = 50) {
         .slice(0, limit);
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000,
     placeholderData: [],
   });
@@ -534,7 +534,7 @@ export function useParameterizedResultsForTest(testId: string | null, limit = 20
       return results.map(transformResultApiToLegacy);
     },
     enabled: !!testId,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000,
     placeholderData: [],
   });
@@ -567,7 +567,7 @@ export function useIterationResults(resultId: string | null) {
       return iterations.map(transformIterationResultApiToLegacy);
     },
     enabled: !!resultId,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000,
     placeholderData: [],
   });

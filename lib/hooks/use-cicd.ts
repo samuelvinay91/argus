@@ -363,7 +363,7 @@ export function usePipelines(projectId: string | null, options?: {
       return response.pipelines.map(transformPipeline);
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000, // 30 seconds - pipelines update frequently
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000,
     placeholderData: [],
   });
@@ -439,7 +439,7 @@ export function useBuildHistory(projectId: string | null, options?: {
       return response.builds.map(transformBuild);
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000,
     placeholderData: [],
   });
@@ -484,7 +484,7 @@ export function useDeployments(projectId: string | null, options?: {
       return response.deployments.map(transformDeployment);
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000,
     placeholderData: [],
   });

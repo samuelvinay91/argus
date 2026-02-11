@@ -9,6 +9,7 @@ import { MobileBottomNav } from '@/components/layout';
 import { PWAInstallPrompt, PWAUpdatePrompt } from '@/components/pwa';
 import { Toaster } from '@/components/ui/toaster';
 import { CommandPalette } from '@/components/shared/CommandPalette';
+import { DeferredScripts } from '@/components/analytics/DeferredScripts';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -259,18 +260,7 @@ export default function RootLayout({
               __html: `if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(function(r){for(var i of r)i.unregister()})}`,
             }}
           />
-          {/* ReB2B Analytics Tracking */}
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `!function(key){if(window.reb2b)return;window.reb2b={loaded:true};var s=document.createElement("script");s.async=true;s.src="https://ddwl4m2hdecbv.cloudfront.net/b/"+key+"/"+key+".js.gz";document.getElementsByTagName("script")[0].parentNode.insertBefore(s,document.getElementsByTagName("script")[0]);}("4O7Z0HE8RXNX")`,
-            }}
-          />
-          {/* Apollo.io Website Tracking */}
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `function initApollo(){var n=Math.random().toString(36).substring(7),o=document.createElement("script");o.src="https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache="+n,o.async=!0,o.defer=!0,o.onload=function(){window.trackingFunctions.onLoad({appId:"698433f8b8d9480011c24307"})},document.head.appendChild(o)}initApollo();`,
-            }}
-          />
+          {/* ReB2B + Apollo.io tracking scripts — deferred to after hydration via DeferredScripts component */}
         </head>
         <body className={inter.className} suppressHydrationWarning>
           <a href="#main-content" className="skip-link">
@@ -292,6 +282,7 @@ export default function RootLayout({
               </div>
             </SidebarProvider>
           </Providers>
+          <DeferredScripts />
           <SpeedInsights />
           <GoogleAnalytics GA_MEASUREMENT_ID={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
         </body>

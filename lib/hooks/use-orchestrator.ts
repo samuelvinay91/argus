@@ -259,7 +259,7 @@ export function useRecentExecutions(limit: number = 20) {
 
       return executions;
     },
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 2 * 60 * 1000, // 2 minutes
     enabled: isLoaded && isSignedIn,
   });
 }
@@ -307,7 +307,7 @@ export function useExecutionStats() {
       const executions = Array.from(latestByThread.values()).map(mapCheckpointToExecution);
       return calculateStats(executions);
     },
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 2 * 60 * 1000, // 2 minutes
     enabled: isLoaded && isSignedIn,
   });
 }

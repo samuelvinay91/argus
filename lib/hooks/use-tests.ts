@@ -159,7 +159,7 @@ export function useTestRuns(projectId: string | null, limit = 50) {
       }));
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     placeholderData: [],
   });
@@ -484,7 +484,7 @@ export function useTestRunHistory(projectId: string | null, currentRunId: string
       }));
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     placeholderData: [],
   });
@@ -643,7 +643,7 @@ export function useTestRunComparison(projectId: string | null): {
       };
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 }

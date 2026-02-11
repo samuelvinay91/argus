@@ -48,7 +48,7 @@ export function useMCPSessions(orgId: string) {
       // Backend CamelCaseMiddleware returns camelCase already
       return await response.json() as { connections: MCPConnection[]; total: number; activeCount: number };
     },
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 2 * 60 * 1000, // 2 minutes
     // Only fetch when auth is loaded, user is signed in, and orgId is set
     enabled: isLoaded && isSignedIn && !!orgId,
   });

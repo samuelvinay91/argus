@@ -582,7 +582,7 @@ export function useFlowValidation(flowId: string | null) {
       return apiClient.get<FlowValidationResult>(`${API_BASE}/flows/${flowId}/validation-status`);
     },
     enabled: !!flowId,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 
