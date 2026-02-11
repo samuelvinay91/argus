@@ -39,10 +39,10 @@ const getBackendUrl = (): string => {
   if (typeof window !== 'undefined') {
     return window.location.hostname === 'localhost'
       ? '' // Use relative URLs for Next.js proxy
-      : 'https://skopaq-brain-production.up.railway.app';
+      : 'https://argus-brain-production.up.railway.app';
   }
   // Server-side: use production URL
-  return 'https://skopaq-brain-production.up.railway.app';
+  return 'https://argus-brain-production.up.railway.app';
 };
 
 export const BACKEND_URL = getBackendUrl();

@@ -35,7 +35,7 @@ const serwist = new Serwist({
     // API responses should NEVER be cached - always fetch fresh data
     // This prevents stale data and CORS error caching issues
     {
-      matcher: /^https:\/\/skopaq-brain-production\.up\.railway\.app\/api\/.*/i,
+      matcher: /^https:\/\/argus-brain-production\.up\.railway\.app\/api\/.*/i,
       handler: new NetworkOnly(),
     },
     // Supabase API should also not be cached - real-time data

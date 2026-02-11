@@ -44,7 +44,7 @@ const getBackendUrl = () => {
   }
   // Production fallback
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-    return 'https://skopaq-brain-production.up.railway.app';
+    return 'https://argus-brain-production.up.railway.app';
   }
   return 'http://localhost:8000';
 };

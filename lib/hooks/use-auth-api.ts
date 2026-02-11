@@ -29,7 +29,7 @@ const getBackendUrl = () => {
   }
   // Production: use direct URL (Vercel rewrites may strip Authorization headers)
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-    return 'https://skopaq-brain-production.up.railway.app';
+    return 'https://argus-brain-production.up.railway.app';
   }
   // Local development: use relative URLs so Next.js proxy works
   // The proxy is configured in next.config.ts to forward /api/v1/* to production

@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 const BACKEND_URL = process.env.NEXT_PUBLIC_ARGUS_BACKEND_URL
   || process.env.ARGUS_BACKEND_URL
   || (process.env.NODE_ENV === 'production'
-      ? 'https://skopaq-brain-production.up.railway.app'
+      ? 'https://argus-brain-production.up.railway.app'
       : 'http://localhost:8000');
 
 /**

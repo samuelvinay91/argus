@@ -115,7 +115,7 @@ const getBackendUrl = () => {
   }
   // In browser on non-localhost, use production URL
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-    return 'https://skopaq-brain-production.up.railway.app';
+    return 'https://argus-brain-production.up.railway.app';
   }
   // Default: use relative URLs so Next.js proxy works
   return '';
